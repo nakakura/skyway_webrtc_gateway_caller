@@ -14,11 +14,11 @@ cfg-if = "1.0"
 futures = "0.3"
 serde = { version = "^1.0.101", features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-shaku = "*"
+shaku = "0.6.1"
 skyway-webrtc-gateway-api = { path = "webrtc_gateway_controller" }
 tokio = { version = "1.2.0", features = ["full"] }
-
-[dev-dependencies]
 mockall = "0.9.1"
 mockall_double = "0.2.0"
 once_cell = "1.7.2"
+
+[dev-dependencies]
