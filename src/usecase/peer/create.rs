@@ -91,7 +91,8 @@ mod test_create_peer {
 
         // execute
         let target = CreateService {};
-        let result = target.execute("message").await;
+        // FIXME: invalid parameter
+        let result = target.execute("should be valid json").await;
 
         // clear the context
         ctx.checkpoint();
@@ -118,7 +119,8 @@ mod test_create_peer {
 
         // execute
         let target = CreateService {};
-        let result = target.execute("message").await;
+        // FIXME: invalid parameter
+        let result = target.execute("should be valid json").await;
 
         // clear the context
         ctx.checkpoint();

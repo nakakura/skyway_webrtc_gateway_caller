@@ -86,7 +86,8 @@ mod test_delete_peer {
 
         // execute
         let target = DeleteService {};
-        let result = target.execute("message").await;
+        // FIXME: invalid parameter
+        let result = target.execute("should be valid json").await;
 
         // clear the context
         ctx.checkpoint();
@@ -115,7 +116,8 @@ mod test_delete_peer {
 
         // execute
         let target = DeleteService {};
-        let result = target.execute("message").await;
+        // FIXME: invalid parameter
+        let result = target.execute("should be valid json").await;
 
         // clear the context
         ctx.checkpoint();

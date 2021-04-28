@@ -147,7 +147,8 @@ mod test_peer_event {
         let repository: &dyn Peer = module.resolve_ref();
 
         // execute
-        let event = repository.event("message").await;
+        // FIXME: invalid parameter
+        let event = repository.event("should be valid json").await;
 
         // evaluate
         if let Err(error::Error::SerdeError { error: _ }) = event {
