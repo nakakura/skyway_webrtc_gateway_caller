@@ -313,7 +313,6 @@ mod test_peer_event {
         assert_eq!(event.unwrap(), expected);
     }
 
-    /*
     #[tokio::test]
     async fn fail() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
@@ -342,6 +341,4 @@ mod test_peer_event {
             unreachable!();
         }
     }
-
-     */
 }

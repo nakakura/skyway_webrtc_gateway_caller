@@ -3,7 +3,7 @@ use skyway_webrtc_gateway_api::error;
 
 use crate::domain::peer::value_object::{PeerApi, PeerEventEnum, PeerInfo};
 
-use crate::usecase::create_peer::ErrorMessage;
+use crate::usecase::peer::create::ErrorMessage;
 
 pub(crate) const PEER_EVENT_COMMAND: &'static str = "PEER_EVENT";
 
@@ -14,9 +14,9 @@ struct PeerEventMessage {
     params: PeerEventEnum,
 }
 
-pub(crate) struct PeerEventService {}
+pub(crate) struct EventService {}
 
-impl PeerEventService {
+impl EventService {
     pub async fn execute(&self, message: &str, api: &dyn PeerApi) -> String {
         match self.execute_internal(message, api).await {
             Ok(message) => message,
@@ -58,7 +58,7 @@ mod test_peer_event {
 
     use super::*;
     use crate::domain::peer::value_object::MockPeerApi;
-    use crate::usecase::create_peer::ErrorMessage;
+    use crate::usecase::peer::create::ErrorMessage;
     use once_cell::sync::Lazy;
 
     // Lock to prevent tests from running simultaneously
@@ -89,7 +89,7 @@ mod test_peer_event {
         let expected = serde_json::to_string(&expected).unwrap();
 
         // execute
-        let event = PeerEventService {};
+        let event = EventService {};
         let result = event
             .execute(&serde_json::to_string(&peer_info).unwrap(), &mock)
             .await;
@@ -120,7 +120,7 @@ mod test_peer_event {
         let expected = serde_json::to_string(&expected).unwrap();
 
         // execute
-        let event = PeerEventService {};
+        let event = EventService {};
         let result = event
             .execute(&serde_json::to_string(&peer_info).unwrap(), &mock)
             .await;
