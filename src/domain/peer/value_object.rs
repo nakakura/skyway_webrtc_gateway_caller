@@ -5,6 +5,9 @@ use skyway_webrtc_gateway_api::error;
 
 use crate::domain::peer::repository::PeerRepository;
 
+#[cfg(test)]
+use mockall::automock;
+
 pub use skyway_webrtc_gateway_api::peer::PeerEventEnum;
 pub use skyway_webrtc_gateway_api::prelude::PeerId;
 pub use skyway_webrtc_gateway_api::prelude::PeerInfo;
@@ -24,15 +27,16 @@ pub(crate) struct Peer {
     peer_info: PeerInfo,
 }
 
+#[cfg_attr(test, automock)]
 impl Peer {
-    pub fn new(repository: Arc<dyn PeerRepository>, peer_info: PeerInfo) -> Self {
+    pub(crate) fn new(repository: Arc<dyn PeerRepository>, peer_info: PeerInfo) -> Self {
         Self {
             repository,
             peer_info,
         }
     }
 
-    pub async fn try_create_local(
+    pub(crate) async fn try_create_local(
         repository: Arc<dyn PeerRepository>,
         params: &str,
     ) -> Result<Self, error::Error> {
@@ -46,7 +50,7 @@ impl Peer {
         })
     }
 
-    pub async fn try_create(
+    pub(crate) async fn try_create(
         repository: Arc<dyn PeerRepository>,
         params: &str,
     ) -> Result<Self, error::Error> {
@@ -63,7 +67,7 @@ impl Peer {
     // SkyWay上のPeerObjectの削除に失敗した場合でもLocalのPeerObjectは削除される
     // SkyWay上のPeerObjectが既に存在しない場合は、ローカルのPeerObjectも不要なのでこの挙動で問題ない
     // SkyWayと通信できない場合も、ローカルのPeerObjectは不要なので、この挙動で問題ない
-    pub async fn delete(self) -> Result<PeerInfo, error::Error> {
+    pub(crate) async fn delete(self) -> Result<PeerInfo, error::Error> {
         let _ = self.repository.erase(&self.peer_info).await?;
         Ok(self.peer_info)
     }
