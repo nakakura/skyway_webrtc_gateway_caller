@@ -6,7 +6,7 @@ use skyway_webrtc_gateway_api::error;
 use crate::di::PeerRepositoryContainer;
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::peer::value_object::Peer;
+use crate::domain::peer::service::create_service;
 use crate::domain::peer::value_object::PeerInfo;
 
 #[cfg(test)]
@@ -48,9 +48,8 @@ impl CreateService {
 
     async fn execute_internal(&self, message: &str) -> Result<String, error::Error> {
         let module = PeerRepositoryContainer::builder().build();
-        let repository: std::sync::Arc<dyn PeerRepository> = module.resolve();
-        let peer = Peer::try_create(repository, message).await?;
-        let peer_info = peer.peer_info();
+        let repository: &dyn PeerRepository = module.resolve_ref();
+        let peer_info = create_service::try_create(repository, message).await?;
         let message_obj = CreatePeerSuccessMessage {
             result: true,
             command: CREATE_PEER_COMMAND,
@@ -86,13 +85,9 @@ mod test_create_peer {
         };
         let expected = serde_json::to_string(&message_obj).unwrap();
 
-        // 正しいPeerInfoを返す正常なPeerのMockを作る
-        let mut mock = Peer::default();
-        mock.expect_peer_info().return_const(peer_info);
-
-        // 上で作ったPeerの生成に成功するケース
-        let ctx = Peer::try_create_context();
-        ctx.expect().return_once(|_, _| Ok(mock));
+        // 正しいPeerInfoを返す正常系動作
+        let ctx = create_service::try_create_context();
+        ctx.expect().return_once(|_, _| Ok(peer_info));
 
         // execute
         let target = CreateService {};
@@ -117,7 +112,7 @@ mod test_create_peer {
         };
 
         // Peerの生成に失敗するケース
-        let ctx = Peer::try_create_context();
+        let ctx = create_service::try_create_context();
         ctx.expect()
             .return_once(|_, _| Err(error::Error::create_local_error("error")));
 

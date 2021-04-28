@@ -6,7 +6,7 @@ use skyway_webrtc_gateway_api::error;
 use crate::di::PeerRepositoryContainer;
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::peer::value_object::Peer;
+use crate::domain::peer::service::delete_service;
 use crate::domain::peer::value_object::PeerInfo;
 use crate::usecase::peer::create::ErrorMessage;
 
@@ -42,14 +42,13 @@ impl DeleteService {
 
     async fn execute_internal(&self, message: &str) -> Result<String, error::Error> {
         let module = PeerRepositoryContainer::builder().build();
-        let repository: std::sync::Arc<dyn PeerRepository> = module.resolve();
-        let peer = Peer::try_create_local(repository, message).await?;
-        let result = peer.delete().await;
+        let repository: &dyn PeerRepository = module.resolve_ref();
+        let peer_info = delete_service::try_delete(repository, message).await?;
 
         let message_obj = DeletePeerSuccessMessage {
             result: true,
             command: DELETE_PEER_COMMAND,
-            params: result.unwrap(),
+            params: peer_info,
         };
         Ok(serde_json::to_string(&message_obj)
             .map_err(|e| error::Error::SerdeError { error: e })?)
@@ -81,14 +80,9 @@ mod test_delete_peer {
         };
         let expected = serde_json::to_string(&message_obj).unwrap();
 
-        // deleteメソッドを成功させる正常なPeerのMockを作る
-        let mut mock = Peer::default();
-        mock.expect_delete().return_once(|| Ok(peer_info));
-
         // Peerの生成に成功するケース
-        // 上で作ったMockを返す
-        let ctx = Peer::try_create_local_context();
-        ctx.expect().return_once(|_, _| Ok(mock));
+        let ctx = delete_service::try_delete_context();
+        ctx.expect().return_once(|_, _| Ok(peer_info));
 
         // execute
         let target = DeleteService {};
@@ -115,7 +109,7 @@ mod test_delete_peer {
         let expected = serde_json::to_string(&expected).unwrap();
 
         // Peerの生成に失敗するケース
-        let ctx = Peer::try_create_local_context();
+        let ctx = delete_service::try_delete_context();
         ctx.expect()
             .return_once(|_, _| Err(error::Error::create_local_error("error")));
 
