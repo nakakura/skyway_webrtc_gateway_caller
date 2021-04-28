@@ -37,9 +37,7 @@ impl EventService {
         message: &str,
         api: &dyn Peer,
     ) -> Result<String, error::Error> {
-        let peer_info = serde_json::from_str::<PeerInfo>(message)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
-        let event = api.event(peer_info).await?;
+        let event = api.event(message).await?;
         let error_message = PeerEventMessage {
             result: true,
             command: PEER_EVENT_COMMAND,

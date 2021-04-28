@@ -31,7 +31,7 @@ pub trait PeerApi: Interface {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Peer: Interface {
-    async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error>;
+    async fn event(&self, message: &str) -> Result<PeerEventEnum, error::Error>;
 }
 
 #[derive(Component)]
@@ -43,7 +43,10 @@ pub(crate) struct PeerImpl {
 
 #[async_trait]
 impl Peer for PeerImpl {
-    async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error> {
+    async fn event(&self, message: &str) -> Result<PeerEventEnum, error::Error> {
+        // ドメイン層の知識として、JSONメッセージのParseを行う
+        let peer_info = serde_json::from_str::<PeerInfo>(message)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
         self.api.event(peer_info).await
     }
 }
@@ -89,14 +92,16 @@ mod test_peer_event {
         let repository: &dyn Peer = module.resolve_ref();
 
         // execute
-        let event = repository.event(peer_info).await;
+        let event = repository
+            .event(&serde_json::to_string(&peer_info).unwrap())
+            .await;
 
         // evaluate
         assert_eq!(event.unwrap(), expected);
     }
 
     #[tokio::test]
-    async fn fail() {
+    async fn fail_api() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
@@ -114,13 +119,41 @@ mod test_peer_event {
         // execute
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let event = repository.event(peer_info).await;
+        let event = repository
+            .event(&serde_json::to_string(&peer_info).unwrap())
+            .await;
 
         // evaluate
         if let Err(error::Error::LocalError(message)) = event {
             assert_eq!(message.as_str(), "error");
         } else {
-            unreachable!();
+            assert!(false);
+        }
+    }
+
+    #[tokio::test]
+    async fn fail_invalid_json() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // その手前のJSON Parseでエラーになるため、このmockは呼ばれない
+        let mut mock = MockPeerApi::default();
+        mock.expect_event().return_once(move |_| unreachable!());
+
+        // object生成の際にmockを埋め込む
+        let module = PeerApiContainer::builder()
+            .with_component_override::<dyn PeerApi>(Box::new(mock))
+            .build();
+        let repository: &dyn Peer = module.resolve_ref();
+
+        // execute
+        let event = repository.event("message").await;
+
+        // evaluate
+        if let Err(error::Error::SerdeError { error: _ }) = event {
+            assert!(true);
+        } else {
+            assert!(false);
         }
     }
 }
