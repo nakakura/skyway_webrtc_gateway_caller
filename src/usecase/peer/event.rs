@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use skyway_webrtc_gateway_api::error;
 
-use crate::domain::peer::value_object::{PeerApi, PeerEventEnum, PeerInfo};
+use crate::domain::peer::value_object::{Peer, PeerEventEnum, PeerInfo};
 
 use crate::usecase::peer::create::ErrorMessage;
 
@@ -17,7 +17,7 @@ struct PeerEventMessage {
 pub(crate) struct EventService {}
 
 impl EventService {
-    pub async fn execute(&self, message: &str, api: &dyn PeerApi) -> String {
+    pub async fn execute(&self, message: &str, api: &dyn Peer) -> String {
         match self.execute_internal(message, api).await {
             Ok(message) => message,
             Err(e) => {
@@ -35,7 +35,7 @@ impl EventService {
     async fn execute_internal(
         &self,
         message: &str,
-        api: &dyn PeerApi,
+        api: &dyn Peer,
     ) -> Result<String, error::Error> {
         let peer_info = serde_json::from_str::<PeerInfo>(message)
             .map_err(|e| error::Error::SerdeError { error: e })?;
@@ -57,7 +57,7 @@ mod test_peer_event {
     use skyway_webrtc_gateway_api::peer::PeerCloseEvent;
 
     use super::*;
-    use crate::domain::peer::value_object::MockPeerApi;
+    use crate::domain::peer::value_object::MockPeer;
     use crate::usecase::peer::create::ErrorMessage;
     use once_cell::sync::Lazy;
 
@@ -77,7 +77,7 @@ mod test_peer_event {
 
         // CLOSEイベントを返すMockを作る
         let ret_event = event.clone();
-        let mut mock = MockPeerApi::default();
+        let mut mock = MockPeer::default();
         mock.expect_event().return_once(move |_| Ok(ret_event));
 
         // 期待値の生成
@@ -107,7 +107,7 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // CLOSEイベントを返すMockを作る
-        let mut mock = MockPeerApi::default();
+        let mut mock = MockPeer::default();
         mock.expect_event()
             .return_once(move |_| Err(error::Error::create_local_error("error")));
 

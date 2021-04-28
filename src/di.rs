@@ -1,7 +1,7 @@
 use shaku::*;
 
-use crate::domain::peer::value_object::PeerEvent;
-use crate::infra::peer::{PeerControlApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
+use crate::domain::peer::value_object::PeerImpl;
+use crate::infra::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
 
 module! {
     pub(crate) PeerRepositoryContainer {
@@ -11,8 +11,8 @@ module! {
 }
 
 module! {
-    pub(crate) PeerControlApiContainer {
-        components = [PeerEvent, PeerControlApiImpl],
+    pub(crate) PeerApiContainer {
+        components = [PeerImpl, PeerApiImpl],
         providers = []
     }
 }

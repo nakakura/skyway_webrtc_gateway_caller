@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::domain::peer::repository::PeerRepository;
-
 #[cfg(test)]
 use mockall::automock;
 
@@ -26,25 +24,25 @@ pub struct CreatePeerParams {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait PeerControlApi: Interface {
+pub trait PeerApi: Interface {
     async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait PeerApi: Interface {
+pub trait Peer: Interface {
     async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error>;
 }
 
 #[derive(Component)]
-#[shaku(interface = PeerApi)]
-pub(crate) struct PeerEvent {
+#[shaku(interface = Peer)]
+pub(crate) struct PeerImpl {
     #[shaku(inject)]
-    api: Arc<dyn PeerControlApi>,
+    api: Arc<dyn PeerApi>,
 }
 
 #[async_trait]
-impl PeerApi for PeerEvent {
+impl Peer for PeerImpl {
     async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error> {
         self.api.event(peer_info).await
     }
@@ -58,7 +56,7 @@ mod test_peer_event {
     use skyway_webrtc_gateway_api::peer::PeerCloseEvent;
 
     use super::*;
-    use crate::di::PeerControlApiContainer;
+    use crate::di::PeerApiContainer;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -76,7 +74,7 @@ mod test_peer_event {
         });
 
         // CLOSEイベントを返すmockを作成
-        let mut mock = MockPeerControlApi::default();
+        let mut mock = MockPeerApi::default();
         let ret_peer_info = peer_info.clone();
         mock.expect_event().return_once(move |_| {
             Ok(PeerEventEnum::CLOSE(PeerCloseEvent {
@@ -85,10 +83,10 @@ mod test_peer_event {
         });
 
         // object生成の際にmockを埋め込む
-        let module = PeerControlApiContainer::builder()
-            .with_component_override::<dyn PeerControlApi>(Box::new(mock))
+        let module = PeerApiContainer::builder()
+            .with_component_override::<dyn PeerApi>(Box::new(mock))
             .build();
-        let repository: &dyn PeerApi = module.resolve_ref();
+        let repository: &dyn Peer = module.resolve_ref();
 
         // execute
         let event = repository.event(peer_info).await;
@@ -103,15 +101,15 @@ mod test_peer_event {
         let _lock = LOCKER.lock();
 
         // Errorを返すmockを作成
-        let mut mock = MockPeerControlApi::default();
+        let mut mock = MockPeerApi::default();
         mock.expect_event()
             .return_once(move |_| Err(error::Error::create_local_error("error")));
 
         // object生成の際にmockを埋め込む
-        let module = PeerControlApiContainer::builder()
-            .with_component_override::<dyn PeerControlApi>(Box::new(mock))
+        let module = PeerApiContainer::builder()
+            .with_component_override::<dyn PeerApi>(Box::new(mock))
             .build();
-        let repository: &dyn PeerApi = module.resolve_ref();
+        let repository: &dyn Peer = module.resolve_ref();
 
         // execute
         let peer_info =
