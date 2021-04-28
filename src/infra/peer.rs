@@ -6,7 +6,9 @@ use skyway_webrtc_gateway_api::error;
 use skyway_webrtc_gateway_api::peer;
 
 use crate::domain::peer::repository::{PeerRepository, PeerRepositoryApi};
-use crate::domain::peer::value_object::{CreatePeerParams, PeerEventEnum, PeerInfo};
+use crate::domain::peer::value_object::{
+    CreatePeerParams, PeerControlApi, PeerEventEnum, PeerInfo,
+};
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
@@ -456,5 +458,24 @@ mod test_close {
         } else {
             unreachable!();
         }
+    }
+}
+
+// PeerControlApiの具象Struct
+#[derive(Component)]
+#[shaku(interface = PeerControlApi)]
+pub(crate) struct PeerControlApiImpl;
+
+impl Default for PeerControlApiImpl {
+    fn default() -> Self {
+        PeerControlApiImpl {}
+    }
+}
+
+// シンプルなのでテストはしていない
+#[async_trait]
+impl PeerControlApi for PeerControlApiImpl {
+    async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error> {
+        peer::event(peer_info).await
     }
 }
