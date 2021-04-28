@@ -22,10 +22,10 @@ struct CreatePeerSuccessMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-struct ErrorMessage {
-    result: bool, // should be false
-    command: &'static str,
-    error_message: String,
+pub(crate) struct ErrorMessage {
+    pub result: bool, // should be false
+    pub command: &'static str,
+    pub error_message: String,
 }
 
 pub(crate) struct CreatePeer;
