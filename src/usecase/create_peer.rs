@@ -7,10 +7,10 @@ use crate::di::PeerRepositoryContainer;
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::value_object::Peer;
+use crate::domain::peer::value_object::PeerInfo;
 
 #[cfg(test)]
 use mockall_double::double;
-use skyway_webrtc_gateway_api::peer::PeerInfo;
 
 pub(crate) const CREATE_PEER_COMMAND: &'static str = "CreatePeer";
 
@@ -28,7 +28,7 @@ struct ErrorMessage {
     error_message: String,
 }
 
-pub struct CreatePeer;
+pub(crate) struct CreatePeer;
 
 impl CreatePeer {
     pub async fn execute(&self, message: &str) -> String {

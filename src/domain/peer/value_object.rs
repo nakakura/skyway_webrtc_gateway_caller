@@ -23,7 +23,7 @@ pub struct CreatePeerParams {
 }
 
 pub(crate) struct Peer {
-    repository: std::sync::Arc<dyn PeerRepository>,
+    repository: Arc<dyn PeerRepository>,
     peer_info: PeerInfo,
 }
 
