@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
@@ -31,7 +32,7 @@ pub trait PeerApi: Interface {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Peer: Interface {
-    async fn event(&self, message: &str) -> Result<PeerEventEnum, error::Error>;
+    async fn event(&self, message: Value) -> Result<PeerEventEnum, error::Error>;
 }
 
 #[derive(Component)]
@@ -43,9 +44,9 @@ pub(crate) struct PeerImpl {
 
 #[async_trait]
 impl Peer for PeerImpl {
-    async fn event(&self, message: &str) -> Result<PeerEventEnum, error::Error> {
+    async fn event(&self, message: Value) -> Result<PeerEventEnum, error::Error> {
         // ドメイン層の知識として、JSONメッセージのParseを行う
-        let peer_info = serde_json::from_str::<PeerInfo>(message)
+        let peer_info = serde_json::from_value::<PeerInfo>(message)
             .map_err(|e| error::Error::SerdeError { error: e })?;
         self.api.event(peer_info).await
     }
@@ -59,7 +60,7 @@ mod test_peer_event {
     use skyway_webrtc_gateway_api::peer::PeerCloseEvent;
 
     use super::*;
-    use crate::di::PeerApiContainer;
+    use crate::di::PeerEventServiceContainer;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -86,14 +87,14 @@ mod test_peer_event {
         });
 
         // object生成の際にmockを埋め込む
-        let module = PeerApiContainer::builder()
+        let module = PeerEventServiceContainer::builder()
             .with_component_override::<dyn PeerApi>(Box::new(mock))
             .build();
         let repository: &dyn Peer = module.resolve_ref();
 
         // execute
         let event = repository
-            .event(&serde_json::to_string(&peer_info).unwrap())
+            .event(serde_json::to_value(&peer_info).unwrap())
             .await;
 
         // evaluate
@@ -111,7 +112,7 @@ mod test_peer_event {
             .return_once(move |_| Err(error::Error::create_local_error("error")));
 
         // object生成の際にmockを埋め込む
-        let module = PeerApiContainer::builder()
+        let module = PeerEventServiceContainer::builder()
             .with_component_override::<dyn PeerApi>(Box::new(mock))
             .build();
         let repository: &dyn Peer = module.resolve_ref();
@@ -120,7 +121,7 @@ mod test_peer_event {
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         let event = repository
-            .event(&serde_json::to_string(&peer_info).unwrap())
+            .event(serde_json::to_value(&peer_info).unwrap())
             .await;
 
         // evaluate
@@ -141,14 +142,13 @@ mod test_peer_event {
         mock.expect_event().return_once(move |_| unreachable!());
 
         // object生成の際にmockを埋め込む
-        let module = PeerApiContainer::builder()
+        let module = PeerEventServiceContainer::builder()
             .with_component_override::<dyn PeerApi>(Box::new(mock))
             .build();
         let repository: &dyn Peer = module.resolve_ref();
 
         // execute
-        // FIXME: invalid parameter
-        let event = repository.event("should be valid json").await;
+        let event = repository.event(serde_json::Value::Bool(true)).await;
 
         // evaluate
         if let Err(error::Error::SerdeError { error: _ }) = event {

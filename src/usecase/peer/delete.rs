@@ -1,57 +1,61 @@
-use serde::{Deserialize, Serialize};
-use shaku::HasComponent;
+use std::sync::Arc;
 
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::di::PeerRepositoryContainer;
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::delete_service;
 use crate::domain::peer::value_object::PeerInfo;
 use crate::usecase::peer::create::ErrorMessage;
+use crate::usecase::service::{ReturnMessage, Service};
 
 #[cfg(test)]
 use mockall_double::double;
 
-pub(crate) const DELETE_PEER_COMMAND: &'static str = "DeletePeer";
+pub(crate) const DELETE_PEER_COMMAND: &'static str = "PEER_DELETE";
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-struct DeletePeerSuccessMessage {
+pub(crate) struct DeletePeerSuccessMessage {
     result: bool, // should be true
     command: &'static str,
     params: PeerInfo,
 }
 
-pub(crate) struct DeleteService {}
+// Serviceの具象Struct
+// DIコンテナからのみオブジェクトを生成できる
+#[derive(Component)]
+#[shaku(interface = Service)]
+pub(crate) struct DeleteService {
+    #[shaku(inject)]
+    repository: Arc<dyn PeerRepository>,
+}
 
 impl DeleteService {
-    pub async fn execute(&self, message: &str) -> String {
-        match self.execute_internal(message).await {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                let err = ErrorMessage {
-                    result: false,
-                    command: DELETE_PEER_COMMAND,
-                    error_message: message,
-                };
-                serde_json::to_string(&err).unwrap()
-            }
-        }
-    }
-
-    async fn execute_internal(&self, message: &str) -> Result<String, error::Error> {
-        let module = PeerRepositoryContainer::builder().build();
-        let repository: &dyn PeerRepository = module.resolve_ref();
-        let peer_info = delete_service::try_delete(repository, message).await?;
+    async fn execute_internal(&self, message: Value) -> Result<ReturnMessage, error::Error> {
+        let peer_info = delete_service::try_delete(&self.repository, message).await?;
 
         let message_obj = DeletePeerSuccessMessage {
             result: true,
             command: DELETE_PEER_COMMAND,
             params: peer_info,
         };
-        Ok(serde_json::to_string(&message_obj)
-            .map_err(|e| error::Error::SerdeError { error: e })?)
+        Ok(ReturnMessage::PEER_DELETE(message_obj))
+    }
+}
+
+#[async_trait]
+impl Service for DeleteService {
+    fn command(&self) -> &'static str {
+        return DELETE_PEER_COMMAND;
+    }
+
+    async fn execute(&self, params: Value) -> ReturnMessage {
+        let result = self.execute_internal(params).await;
+        self.create_return_message(result)
     }
 }
 
@@ -59,8 +63,10 @@ impl DeleteService {
 mod test_delete_peer {
     use std::sync::Mutex;
 
-    use super::*;
     use once_cell::sync::Lazy;
+
+    use super::*;
+    use crate::di::PeerDeleteServiceContainer;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -78,18 +84,23 @@ mod test_delete_peer {
             command: DELETE_PEER_COMMAND,
             params: peer_info.clone(),
         };
-        let expected = serde_json::to_string(&message_obj).unwrap();
+        let expected = ReturnMessage::PEER_DELETE(message_obj);
 
         // Peerの生成に成功するケース
+        let ret_peer_info = peer_info.clone();
         let ctx = delete_service::try_delete_context();
-        ctx.expect().return_once(|_, _| Ok(peer_info));
+        ctx.expect().return_once(|_, _| Ok(ret_peer_info));
+
+        // Mockを埋め込んだEventServiceを生成
+        let module = PeerDeleteServiceContainer::builder().build();
+        let delete_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let target = DeleteService {};
-        // FIXME: invalid parameter
-        let result = target.execute("should be valid json").await;
+        let result = delete_service
+            .execute(serde_json::to_value(&peer_info).unwrap())
+            .await;
 
-        // clear the context
+        // clear context
         ctx.checkpoint();
 
         // evaluate
@@ -107,19 +118,21 @@ mod test_delete_peer {
             command: DELETE_PEER_COMMAND,
             error_message: format!("{:?}", error::Error::create_local_error("error")),
         };
-        let expected = serde_json::to_string(&expected).unwrap();
+        let expected = ReturnMessage::ERROR(expected);
 
         // Peerの生成に失敗するケース
         let ctx = delete_service::try_delete_context();
         ctx.expect()
             .return_once(|_, _| Err(error::Error::create_local_error("error")));
 
-        // execute
-        let target = DeleteService {};
-        // FIXME: invalid parameter
-        let result = target.execute("should be valid json").await;
+        // Mockを埋め込んだEventServiceを生成
+        let module = PeerDeleteServiceContainer::builder().build();
+        let delete_service: &dyn Service = module.resolve_ref();
 
-        // clear the context
+        // execute
+        let result = delete_service.execute(serde_json::Value::Bool(true)).await;
+
+        // clear context
         ctx.checkpoint();
 
         // evaluate

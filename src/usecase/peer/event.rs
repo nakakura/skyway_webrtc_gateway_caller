@@ -1,71 +1,67 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::domain::peer::value_object::{Peer, PeerEventEnum, PeerInfo};
-
-use crate::usecase::peer::create::ErrorMessage;
+use crate::usecase::service::{ReturnMessage, Service};
 
 pub(crate) const PEER_EVENT_COMMAND: &'static str = "PEER_EVENT";
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct PeerEventMessage {
+#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
+pub(crate) struct PeerEventMessage {
     result: bool, // should be true
     command: &'static str,
     params: PeerEventEnum,
 }
 
-pub(crate) struct EventService {}
+// Serviceの具象Struct
+// DIコンテナからのみオブジェクトを生成できる
+#[derive(Component)]
+#[shaku(interface = Service)]
+pub(crate) struct EventService {
+    #[shaku(inject)]
+    api: Arc<dyn Peer>,
+}
 
 impl EventService {
-    pub async fn execute(&self, message: &str, api: &dyn Peer) -> String {
-        match self.execute_internal(message, api).await {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                let err = ErrorMessage {
-                    result: false,
-                    command: PEER_EVENT_COMMAND,
-                    error_message: message,
-                };
-                serde_json::to_string(&err).unwrap()
-            }
-        }
-    }
-
-    async fn execute_internal(
-        &self,
-        message: &str,
-        api: &dyn Peer,
-    ) -> Result<String, error::Error> {
-        let event = api.event(message).await?;
-        let error_message = PeerEventMessage {
+    async fn execute_internal(&self, message: Value) -> Result<ReturnMessage, error::Error> {
+        let event = self.api.event(message).await?;
+        let event_message = PeerEventMessage {
             result: true,
             command: PEER_EVENT_COMMAND,
             params: event,
         };
-        Ok(serde_json::to_string(&error_message)
-            .map_err(|e| error::Error::SerdeError { error: e })?)
+        Ok(ReturnMessage::PEER_EVENT(event_message))
+    }
+}
+
+#[async_trait]
+impl Service for EventService {
+    fn command(&self) -> &'static str {
+        return PEER_EVENT_COMMAND;
+    }
+
+    async fn execute(&self, params: Value) -> ReturnMessage {
+        let result = self.execute_internal(params).await;
+        self.create_return_message(result)
     }
 }
 
 #[cfg(test)]
 mod test_peer_event {
-    use std::sync::Mutex;
-
     use skyway_webrtc_gateway_api::peer::PeerCloseEvent;
 
     use super::*;
+    use crate::di::PeerEventServiceContainer;
     use crate::domain::peer::value_object::MockPeer;
     use crate::usecase::peer::create::ErrorMessage;
-    use once_cell::sync::Lazy;
-
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     #[tokio::test]
     async fn success() {
-        let _ = LOCKER.lock();
-
         // create parameter
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
@@ -73,23 +69,27 @@ mod test_peer_event {
             params: peer_info.clone(),
         });
 
+        // 期待値の生成
+        let expected = ReturnMessage::PEER_EVENT(PeerEventMessage {
+            result: true,
+            command: PEER_EVENT_COMMAND,
+            params: event.clone(),
+        });
+
         // CLOSEイベントを返すMockを作る
-        let ret_event = event.clone();
+        let ret_event = event;
         let mut mock = MockPeer::default();
         mock.expect_event().return_once(move |_| Ok(ret_event));
 
-        // 期待値の生成
-        let expected = PeerEventMessage {
-            result: true,
-            command: PEER_EVENT_COMMAND,
-            params: event,
-        };
-        let expected = serde_json::to_string(&expected).unwrap();
+        // Mockを埋め込んだEventServiceを生成
+        let module = PeerEventServiceContainer::builder()
+            .with_component_override::<dyn Peer>(Box::new(mock))
+            .build();
+        let event_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let event = EventService {};
-        let result = event
-            .execute(&serde_json::to_string(&peer_info).unwrap(), &mock)
+        let result = event_service
+            .execute(serde_json::to_value(&peer_info).unwrap())
             .await;
 
         // evaluate
@@ -98,29 +98,31 @@ mod test_peer_event {
 
     #[tokio::test]
     async fn fail() {
-        let _ = LOCKER.lock();
-
         // create parameter
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+
+        // 期待値の生成
+        let expected = ReturnMessage::ERROR(ErrorMessage {
+            result: false,
+            command: PEER_EVENT_COMMAND,
+            error_message: format!("{:?}", error::Error::create_local_error("error")),
+        });
 
         // CLOSEイベントを返すMockを作る
         let mut mock = MockPeer::default();
         mock.expect_event()
             .return_once(move |_| Err(error::Error::create_local_error("error")));
 
-        // 期待値の生成
-        let expected = ErrorMessage {
-            result: false,
-            command: PEER_EVENT_COMMAND,
-            error_message: format!("{:?}", error::Error::create_local_error("error")),
-        };
-        let expected = serde_json::to_string(&expected).unwrap();
+        // Mockを埋め込んだEventServiceを生成
+        let module = PeerEventServiceContainer::builder()
+            .with_component_override::<dyn Peer>(Box::new(mock))
+            .build();
+        let event_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let event = EventService {};
-        let result = event
-            .execute(&serde_json::to_string(&peer_info).unwrap(), &mock)
+        let result = event_service
+            .execute(serde_json::to_value(&peer_info).unwrap())
             .await;
 
         // evaluate

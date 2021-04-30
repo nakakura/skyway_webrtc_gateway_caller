@@ -97,7 +97,7 @@ mod test_create {
     use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerOpenEvent};
 
     use super::*;
-    use crate::di::PeerRepositoryContainer;
+    use crate::di::PeerCreateServiceContainer;
     use crate::domain::peer::repository::MockPeerRepositoryApi;
     use crate::domain::peer::value_object::PeerId;
 
@@ -138,7 +138,7 @@ mod test_create {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerCreateServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -176,7 +176,7 @@ mod test_create {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerCreateServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -209,7 +209,7 @@ mod test_create {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerCreateServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -235,7 +235,7 @@ mod test_create {
             .return_once(move |_| Err(error::Error::LocalError("error".into())));
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerCreateServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -269,7 +269,7 @@ mod test_create {
             .return_once(move |_| Err(error::Error::LocalError("error".into())));
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerCreateServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -291,7 +291,7 @@ mod test_close {
     use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerOpenEvent};
 
     use super::*;
-    use crate::di::PeerRepositoryContainer;
+    use crate::di::PeerDeleteServiceContainer;
     use crate::domain::peer::repository::MockPeerRepositoryApi;
 
     fn create_peer_info() -> PeerInfo {
@@ -316,7 +316,7 @@ mod test_close {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerDeleteServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -350,7 +350,7 @@ mod test_close {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerDeleteServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -378,7 +378,7 @@ mod test_close {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerDeleteServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -408,7 +408,7 @@ mod test_close {
             .return_once(move |_| Err(error::Error::create_local_error("error")));
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerDeleteServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();
@@ -442,7 +442,7 @@ mod test_close {
         });
 
         // create target obj
-        let module = PeerRepositoryContainer::builder()
+        let module = PeerDeleteServiceContainer::builder()
             .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
             .build();
         let repository: &dyn PeerRepository = module.resolve_ref();

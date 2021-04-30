@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use skyway_webrtc_gateway_api::error;
 
 use super::value_object::{CreatePeerParams, PeerInfo};
@@ -9,13 +11,14 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 pub(crate) mod create_service {
     use super::*;
+    use serde_json::Value;
 
     pub(crate) async fn try_create(
-        repository: &dyn PeerRepository,
-        message: &str,
+        repository: &Arc<dyn PeerRepository>,
+        params: Value,
     ) -> Result<PeerInfo, error::Error> {
         // この位置でドメイン層の知識としてJSONの値をチェックする
-        let params = serde_json::from_str::<CreatePeerParams>(message)
+        let params = serde_json::from_value::<CreatePeerParams>(params)
             .map_err(|e| error::Error::SerdeError { error: e })?;
         repository.register(params).await
     }
@@ -23,17 +26,21 @@ pub(crate) mod create_service {
 
 #[cfg(test)]
 mod test_peer_create {
+    use serde_json::Value;
+
     use super::*;
     use crate::domain::peer::repository::MockPeerRepository;
 
-    fn create_valid_json_message() -> &'static str {
-        r#"{
+    fn create_valid_json_message() -> Value {
+        let message = r#"{
             "base_url": "http://localhost:8000",
             "key": "api_key",
             "domain": "localhost",
             "peer_id": "peer_id",
             "turn": true
-        }"#
+        }"#;
+
+        serde_json::from_str::<Value>(message).unwrap()
     }
 
     #[tokio::test]
@@ -46,6 +53,7 @@ mod test_peer_create {
         mock.expect_register().returning(|_| {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308")
         });
+        let mock = Arc::new(mock) as Arc<dyn PeerRepository>;
 
         // execute
         let result = create_service::try_create(&mock, message).await;
@@ -66,12 +74,14 @@ mod test_peer_create {
             "peer_id": "peer_id",
             "turn": true
         }"#;
+        let invalid_message: Value = serde_json::from_str(invalid_message).unwrap();
 
         // setup mock
         let mut mock = MockPeerRepository::default();
         mock.expect_register().returning(|_| {
             unreachable!();
         });
+        let mock = Arc::new(mock) as Arc<dyn PeerRepository>;
 
         // execute
         let result = create_service::try_create(&mock, invalid_message).await;
@@ -81,7 +91,7 @@ mod test_peer_create {
             let message = format!("{:?}", e);
             assert_eq!(
                 message.as_str(),
-                "Error(\"missing field `base_url`\", line: 6, column: 9)"
+                "Error(\"missing field `base_url`\", line: 0, column: 0)"
             );
         } else {
             unreachable!();
@@ -97,6 +107,7 @@ mod test_peer_create {
         let mut mock = MockPeerRepository::default();
         mock.expect_register()
             .returning(|_| Err(error::Error::create_local_error("error")));
+        let mock = Arc::new(mock) as Arc<dyn PeerRepository>;
 
         // execute
         let result = create_service::try_create(&mock, message).await;
@@ -113,13 +124,14 @@ mod test_peer_create {
 #[cfg_attr(test, automock)]
 pub(crate) mod delete_service {
     use super::*;
+    use serde_json::Value;
 
     pub(crate) async fn try_delete(
-        repository: &dyn PeerRepository,
-        message: &str,
+        repository: &Arc<dyn PeerRepository>,
+        message: Value,
     ) -> Result<PeerInfo, error::Error> {
         // この位置でドメイン層の知識としてJSONの値をチェックする
-        let peer_info = serde_json::from_str::<PeerInfo>(message)
+        let peer_info = serde_json::from_value::<PeerInfo>(message)
             .map_err(|e| error::Error::SerdeError { error: e })?;
 
         let _ = repository.erase(&peer_info).await?;
@@ -129,6 +141,8 @@ pub(crate) mod delete_service {
 
 #[cfg(test)]
 mod test_peer_delete {
+    use serde_json::Value;
+
     use super::*;
     use crate::domain::peer::repository::MockPeerRepository;
 
@@ -136,8 +150,8 @@ mod test_peer_delete {
         PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap()
     }
 
-    fn create_message() -> String {
-        serde_json::to_string(&create_peer_info()).unwrap()
+    fn create_message() -> Value {
+        serde_json::to_value(&create_peer_info()).unwrap()
     }
 
     #[tokio::test]
@@ -145,9 +159,10 @@ mod test_peer_delete {
         // setup mock
         let mut mock = MockPeerRepository::default();
         mock.expect_erase().returning(|_| Ok(()));
+        let mock = Arc::new(mock) as Arc<dyn PeerRepository>;
 
         // execute
-        let result = delete_service::try_delete(&mock, &create_message()).await;
+        let result = delete_service::try_delete(&mock, create_message()).await;
 
         let expected = create_peer_info();
 
@@ -161,9 +176,10 @@ mod test_peer_delete {
         let mut mock = MockPeerRepository::default();
         mock.expect_erase()
             .returning(|_| Err(error::Error::create_local_error("error")));
+        let mock = Arc::new(mock) as Arc<dyn PeerRepository>;
 
         // execute
-        let result = delete_service::try_delete(&mock, &create_message()).await;
+        let result = delete_service::try_delete(&mock, create_message()).await;
 
         // evaluate
         if let Err(error::Error::LocalError(e)) = result {
