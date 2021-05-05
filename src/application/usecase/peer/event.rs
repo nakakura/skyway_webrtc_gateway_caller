@@ -6,15 +6,15 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
+use crate::application::usecase::service::{ReturnMessage, Service};
 use crate::domain::peer::value_object::{Peer, PeerEventEnum, PeerInfo};
-use crate::usecase::service::{ReturnMessage, Service};
 
 pub(crate) const PEER_EVENT_COMMAND: &'static str = "PEER_EVENT";
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
-pub(crate) struct PeerEventMessage {
+pub struct PeerEventMessage {
     result: bool, // should be true
-    command: &'static str,
+    command: String,
     params: PeerEventEnum,
 }
 
@@ -32,7 +32,7 @@ impl EventService {
         let event = self.api.event(message).await?;
         let event_message = PeerEventMessage {
             result: true,
-            command: PEER_EVENT_COMMAND,
+            command: PEER_EVENT_COMMAND.into(),
             params: event,
         };
         Ok(ReturnMessage::PEER_EVENT(event_message))
@@ -56,9 +56,9 @@ mod test_peer_event {
     use skyway_webrtc_gateway_api::peer::PeerCloseEvent;
 
     use super::*;
+    use crate::application::usecase::peer::create::ErrorMessage;
     use crate::di::PeerEventServiceContainer;
     use crate::domain::peer::value_object::MockPeer;
-    use crate::usecase::peer::create::ErrorMessage;
 
     #[tokio::test]
     async fn success() {
@@ -72,7 +72,7 @@ mod test_peer_event {
         // 期待値の生成
         let expected = ReturnMessage::PEER_EVENT(PeerEventMessage {
             result: true,
-            command: PEER_EVENT_COMMAND,
+            command: PEER_EVENT_COMMAND.into(),
             params: event.clone(),
         });
 
@@ -105,7 +105,7 @@ mod test_peer_event {
         // 期待値の生成
         let expected = ReturnMessage::ERROR(ErrorMessage {
             result: false,
-            command: PEER_EVENT_COMMAND,
+            command: PEER_EVENT_COMMAND.into(),
             error_message: format!("{:?}", error::Error::create_local_error("error")),
         });
 

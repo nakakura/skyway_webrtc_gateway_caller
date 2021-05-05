@@ -1,10 +1,10 @@
 use shaku::*;
 
+use crate::application::usecase::peer::create::CreateService;
+use crate::application::usecase::peer::delete::DeleteService;
+use crate::application::usecase::peer::event::EventService;
 use crate::domain::peer::value_object::PeerImpl;
 use crate::infra::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
-use crate::usecase::peer::create::CreateService;
-use crate::usecase::peer::delete::DeleteService;
-use crate::usecase::peer::event::EventService;
 
 module! {
     pub(crate) PeerCreateServiceContainer {

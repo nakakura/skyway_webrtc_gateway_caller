@@ -6,12 +6,12 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
+use crate::application::usecase::peer::create::ErrorMessage;
+use crate::application::usecase::service::{ReturnMessage, Service};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::delete_service;
 use crate::domain::peer::value_object::PeerInfo;
-use crate::usecase::peer::create::ErrorMessage;
-use crate::usecase::service::{ReturnMessage, Service};
 
 #[cfg(test)]
 use mockall_double::double;
@@ -19,9 +19,9 @@ use mockall_double::double;
 pub(crate) const DELETE_PEER_COMMAND: &'static str = "PEER_DELETE";
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub(crate) struct DeletePeerSuccessMessage {
+pub struct DeletePeerSuccessMessage {
     result: bool, // should be true
-    command: &'static str,
+    command: String,
     params: PeerInfo,
 }
 
@@ -40,7 +40,7 @@ impl DeleteService {
 
         let message_obj = DeletePeerSuccessMessage {
             result: true,
-            command: DELETE_PEER_COMMAND,
+            command: DELETE_PEER_COMMAND.into(),
             params: peer_info,
         };
         Ok(ReturnMessage::PEER_DELETE(message_obj))
@@ -81,7 +81,7 @@ mod test_delete_peer {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         let message_obj = DeletePeerSuccessMessage {
             result: true,
-            command: DELETE_PEER_COMMAND,
+            command: DELETE_PEER_COMMAND.into(),
             params: peer_info.clone(),
         };
         let expected = ReturnMessage::PEER_DELETE(message_obj);
@@ -115,7 +115,7 @@ mod test_delete_peer {
         // 正解の値を作成
         let expected = ErrorMessage {
             result: false,
-            command: DELETE_PEER_COMMAND,
+            command: DELETE_PEER_COMMAND.into(),
             error_message: format!("{:?}", error::Error::create_local_error("error")),
         };
         let expected = ReturnMessage::ERROR(expected);

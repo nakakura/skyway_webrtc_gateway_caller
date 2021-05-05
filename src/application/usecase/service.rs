@@ -4,10 +4,14 @@ use serde_json::Value;
 use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
 
-use crate::usecase::peer::create::{CreatePeerSuccessMessage, ErrorMessage};
-use crate::usecase::peer::delete::DeletePeerSuccessMessage;
-use crate::usecase::peer::event::PeerEventMessage;
+use crate::application::usecase::peer::create::{CreatePeerSuccessMessage, ErrorMessage};
+use crate::application::usecase::peer::delete::DeletePeerSuccessMessage;
+use crate::application::usecase::peer::event::PeerEventMessage;
 
+#[cfg(test)]
+use mockall::automock;
+
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
     fn command(&self) -> &'static str;
@@ -19,7 +23,7 @@ pub(crate) trait Service: Interface {
                 let message = format!("{:?}", e);
                 ReturnMessage::ERROR(ErrorMessage {
                     result: false,
-                    command: self.command(),
+                    command: self.command().into(),
                     error_message: message,
                 })
             }
@@ -88,9 +92,9 @@ mod deserialize_str {
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Debug, Clone, PartialOrd, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
 #[serde(untagged)]
-pub(crate) enum ReturnMessage {
+pub enum ReturnMessage {
     PEER_CREATE(CreatePeerSuccessMessage),
     PEER_DELETE(DeletePeerSuccessMessage),
     PEER_EVENT(PeerEventMessage),
@@ -100,8 +104,8 @@ pub(crate) enum ReturnMessage {
 #[cfg(test)]
 mod serialize_enum {
     use super::*;
+    use crate::application::usecase::peer::create::CREATE_PEER_COMMAND;
     use crate::domain::peer::value_object::PeerInfo;
-    use crate::usecase::peer::create::CREATE_PEER_COMMAND;
 
     #[test]
     fn create_message() {
@@ -112,7 +116,7 @@ mod serialize_enum {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         let obj = CreatePeerSuccessMessage {
             result: true,
-            command: CREATE_PEER_COMMAND,
+            command: CREATE_PEER_COMMAND.into(),
             params: peer_info,
         };
         let ret_message = ReturnMessage::PEER_CREATE(obj);
@@ -131,7 +135,7 @@ mod serialize_enum {
         // create a param
         let obj = ErrorMessage {
             result: false,
-            command: CREATE_PEER_COMMAND,
+            command: CREATE_PEER_COMMAND.into(),
             error_message: "error".to_string(),
         };
         let ret_message = ReturnMessage::ERROR(obj);

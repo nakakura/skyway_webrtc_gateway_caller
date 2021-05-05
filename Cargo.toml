@@ -1,12 +1,12 @@
 [package]
-name = "module"
+name = "rust_module"
 version = "0.0.1"
 authors = ["Toshiya Nakakura <nakakura@me.com>"]
 edition = "2018"
 
 [lib]
-name = "module"
-crate-type = ["staticlib"]
+name = "rust_module"
+path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.48"
@@ -18,7 +18,10 @@ serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 shaku = "0.6.1"
 skyway-webrtc-gateway-api = { path = "webrtc_gateway_controller" }
 tokio = { version = "1.2.0", features = ["full"] }
+tokio-stream = "0.1.5"
 
 [dev-dependencies]
 mockall = "0.9.1"
 mockall_double = "0.2.0"
+mockito = "0.30.0"
+reqwest = { version = "0.11.0", features = ["json"] }

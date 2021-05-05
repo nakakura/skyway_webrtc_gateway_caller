@@ -6,11 +6,11 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
+use crate::application::usecase::service::{ReturnMessage, Service};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::create_service;
 use crate::domain::peer::value_object::PeerInfo;
-use crate::usecase::service::{ReturnMessage, Service};
 
 #[cfg(test)]
 use mockall_double::double;
@@ -18,16 +18,16 @@ use mockall_double::double;
 pub(crate) const CREATE_PEER_COMMAND: &'static str = "PEER_CREATE";
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub(crate) struct CreatePeerSuccessMessage {
+pub struct CreatePeerSuccessMessage {
     pub result: bool, // should be true
-    pub command: &'static str,
+    pub command: String,
     pub params: PeerInfo,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub(crate) struct ErrorMessage {
+pub struct ErrorMessage {
     pub result: bool, // should be false
-    pub command: &'static str,
+    pub command: String,
     pub error_message: String,
 }
 
@@ -45,7 +45,7 @@ impl CreateService {
         let peer_info = create_service::try_create(&self.repository, params).await?;
         let message_obj = CreatePeerSuccessMessage {
             result: true,
-            command: CREATE_PEER_COMMAND,
+            command: CREATE_PEER_COMMAND.into(),
             params: peer_info.clone(),
         };
         Ok(ReturnMessage::PEER_CREATE(message_obj))
@@ -96,7 +96,7 @@ mod test_create_peer {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         let message_obj = CreatePeerSuccessMessage {
             result: true,
-            command: CREATE_PEER_COMMAND,
+            command: CREATE_PEER_COMMAND.into(),
             params: peer_info.clone(),
         };
         let expected = ReturnMessage::PEER_CREATE(message_obj);
@@ -135,7 +135,7 @@ mod test_create_peer {
 
         let expected = ReturnMessage::ERROR(ErrorMessage {
             result: false,
-            command: CREATE_PEER_COMMAND,
+            command: CREATE_PEER_COMMAND.into(),
             error_message: format!("{:?}", error::Error::create_local_error("error")),
         });
 
