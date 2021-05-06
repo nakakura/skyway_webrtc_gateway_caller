@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
+use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::peer::create::{CreatePeerSuccessMessage, ErrorMessage};
 use crate::application::usecase::peer::delete::DeletePeerSuccessMessage;
@@ -11,6 +12,10 @@ use crate::application::usecase::peer::event::PeerEventMessage;
 #[cfg(test)]
 use mockall::automock;
 
+// 副作用のない単発のサービス
+// WebRTC Gatewayを叩いて結果を返す
+// create系のように、createのapiを叩いたあとopenイベントを確認するためevent apiを叩くものもあるが、
+// return以外の結果の外部出力やステータスを持たない
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
@@ -145,5 +150,29 @@ mod serialize_enum {
 
         //evaluate
         assert_eq!(message.as_str(), expected);
+    }
+}
+
+// WebRTC Gatewayのイベントを監視する
+// Errorの発生もしくはCLOSEイベントの発火まで監視し続ける
+// 終了理由をreturnする
+// 個別の取得したイベントについては、TIMEOUTを除きexecuteメソッドで受け取ったSenderで通知する
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub(crate) trait EventListener: Interface {
+    fn command(&self) -> &'static str;
+    async fn execute(&self, event_tx: Sender<String>, params: Value) -> ReturnMessage;
+    fn create_return_message(&self, result: Result<ReturnMessage, error::Error>) -> ReturnMessage {
+        match result {
+            Ok(message) => message,
+            Err(e) => {
+                let message = format!("{:?}", e);
+                ReturnMessage::ERROR(ErrorMessage {
+                    result: false,
+                    command: self.command().into(),
+                    error_message: message,
+                })
+            }
+        }
     }
 }
