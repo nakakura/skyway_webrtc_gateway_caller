@@ -1,35 +1,20 @@
-use std::sync::Arc;
-
-use async_trait::async_trait;
 #[cfg(test)]
 use mockall::automock;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use shaku::Interface;
-use skyway_webrtc_gateway_api::error;
-
-use usecase::peer::create::{CreatePeerSuccessMessage, ErrorMessage};
-use usecase::peer::delete::DeletePeerSuccessMessage;
-use usecase::peer::event::PeerEventMessage;
-use usecase::service::{Service, ServiceParams};
 
 pub(crate) mod usecase;
 
-// FIXME: 未テスト
-// Unit TestではなくIntegration Testでテストするため
+// Unit TestではなくIntegration Testでテストする
 #[cfg_attr(test, automock)]
 pub(crate) mod service_creator {
-    use shaku::HasComponent;
-
-    use crate::application::usecase::service::{ReturnMessage, Service, ServiceParams};
-    use crate::di::*;
-
-    use super::*;
+    use crate::application::usecase::service::ReturnMessage;
 
     pub(crate) async fn create(params_string: String) -> ReturnMessage {
-        let params = serde_json::from_str::<ServiceParams>(&params_string);
+        use shaku::HasComponent;
 
-        match params {
+        use crate::application::usecase::service::{Service, ServiceParams};
+        use crate::di::*;
+
+        match serde_json::from_str::<ServiceParams>(&params_string) {
             Ok(ServiceParams::PEER_CREATE { params }) => {
                 let module = PeerCreateServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
@@ -40,7 +25,7 @@ pub(crate) mod service_creator {
                 let service: &dyn Service = module.resolve_ref();
                 service.execute(params).await
             }
-            Err(e) => ReturnMessage::ERROR(ErrorMessage {
+            Err(e) => ReturnMessage::ERROR(crate::ErrorMessage {
                 result: false,
                 command: "UNKNOWN".into(),
                 error_message: format!("{:?}", e),

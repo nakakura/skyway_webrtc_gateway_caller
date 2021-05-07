@@ -1,21 +1,10 @@
-use std::sync::Mutex;
-
-use mockito::mock;
 use rust_module::*;
-use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
-use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
-
-fn create_params() -> (PeerId, Token) {
-    let peer_id = PeerId::new("hoge");
-    let token = Token::try_create("pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-    (peer_id, token)
-}
 
 #[tokio::test]
 async fn test_create_peer() {
-    let (message_tx, mut event_rx) = run().await;
+    let (message_tx, _) = run().await;
     // set up parameters
-    let (peer_id, token) = create_params();
+    let peer_id = PeerId::new("hoge");
 
     // create peer
     let message = format!(
@@ -40,7 +29,7 @@ async fn test_create_peer() {
 
     match serde_json::from_str::<ReturnMessage>(&result) {
         // PEER_CREATEが帰ってきていればpeer_infoを取り出す
-        Ok(ReturnMessage::ERROR(message)) => {
+        Ok(ReturnMessage::ERROR(_)) => {
             assert!(true);
         }
         // それ以外のケースはバグが発生しているので、テストを失敗にする

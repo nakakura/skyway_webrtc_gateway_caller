@@ -180,6 +180,9 @@ async fn test_create_peer() {
         }),
     });
 
+    // serverが呼ばれたかチェックする
+    mock_event_api.assert();
+
     // 1つめのEVENTの取得
     let result = event_rx.recv().await.unwrap();
     assert_eq!(

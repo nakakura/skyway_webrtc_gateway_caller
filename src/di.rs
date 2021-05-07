@@ -4,7 +4,6 @@ use crate::application::usecase::peer::create::CreateService;
 use crate::application::usecase::peer::delete::DeleteService;
 use crate::application::usecase::peer::event::EventService;
 use crate::domain::peer::value_object::PeerImpl;
-use crate::domain::utility::ApplicationState;
 use crate::infra::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
 use crate::infra::utility::ApplicationStateImpl;
 

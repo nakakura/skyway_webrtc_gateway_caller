@@ -70,7 +70,7 @@ async fn skyway_control_service_observe(
                 // 内部で適切に各Serviceに振り分けて結果のみ返してもらう
                 // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ReturnMessage::ERROR)ので、ROS側に送る
                 let result = application::service_creator::create(message).await;
-                message_response_tx.send(serde_json::to_string(&result).unwrap());
+                let _ = message_response_tx.send(serde_json::to_string(&result).unwrap());
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、

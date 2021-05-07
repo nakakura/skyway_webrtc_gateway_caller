@@ -6,7 +6,6 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::peer::create::ErrorMessage;
 use crate::application::usecase::service::{ReturnMessage, Service};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
@@ -66,6 +65,7 @@ mod test_delete_peer {
     use once_cell::sync::Lazy;
 
     use super::*;
+    use crate::application::usecase::peer::create::ErrorMessage;
     use crate::di::PeerDeleteServiceContainer;
 
     // Lock to prevent tests from running simultaneously
