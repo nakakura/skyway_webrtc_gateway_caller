@@ -37,6 +37,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) DataDeleteServiceContainer {
+        components = [data::delete::DeleteService, DataApiImpl],
+        providers = []
+    }
+}
+
 //========== Util ==========
 module! {
     pub(crate) ApplicationStateContainer {

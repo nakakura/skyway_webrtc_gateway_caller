@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::data;
 use skyway_webrtc_gateway_api::error;
@@ -23,5 +24,10 @@ impl Default for DataApiImpl {
 impl DataApi for DataApiImpl {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error> {
         data::open_data_socket().await
+    }
+
+    async fn delete(&self, data_id: Value) -> Result<DataId, error::Error> {
+        // FIXME
+        unreachable!()
     }
 }

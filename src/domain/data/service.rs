@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use serde_json::Value;
 use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
 
@@ -12,4 +13,5 @@ use mockall::automock;
 #[async_trait]
 pub(crate) trait DataApi: Interface {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error>;
+    async fn delete(&self, data_id: Value) -> Result<DataId, error::Error>;
 }
