@@ -60,10 +60,10 @@ mod test_create_data {
     use skyway_webrtc_gateway_api::error;
 
     use super::*;
+    use crate::application::usecase::ErrorMessage;
     use crate::di::DataCreateServiceContainer;
     use crate::domain::common::value_object::SerializableSocket;
     use crate::domain::data::service::MockDataApi;
-    use crate::ErrorMessage;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

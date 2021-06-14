@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+#[cfg(test)]
+use mockall_double::double;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
@@ -12,9 +14,6 @@ use crate::domain::peer::repository::PeerRepository;
 use crate::domain::peer::service::create_service;
 use crate::domain::peer::value_object::PeerInfo;
 
-#[cfg(test)]
-use mockall_double::double;
-
 pub(crate) const CREATE_PEER_COMMAND: &'static str = "PEER_CREATE";
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
@@ -22,13 +21,6 @@ pub struct CreatePeerSuccessMessage {
     pub result: bool, // should be true
     pub command: String,
     pub params: PeerInfo,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub struct ErrorMessage {
-    pub result: bool, // should be false
-    pub command: String,
-    pub error_message: String,
 }
 
 // Serviceの具象Struct
@@ -70,8 +62,10 @@ mod test_create_peer {
 
     use once_cell::sync::Lazy;
 
-    use super::*;
+    use crate::application::usecase::ErrorMessage;
     use crate::di::PeerCreateServiceContainer;
+
+    use super::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

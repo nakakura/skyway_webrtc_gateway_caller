@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+#[cfg(test)]
+use mockall::automock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::Interface;
@@ -6,12 +8,10 @@ use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
-use crate::application::usecase::peer::create::{CreatePeerSuccessMessage, ErrorMessage};
+use crate::application::usecase::peer::create::CreatePeerSuccessMessage;
 use crate::application::usecase::peer::delete::DeletePeerSuccessMessage;
 use crate::application::usecase::peer::event::PeerEventMessage;
-
-#[cfg(test)]
-use mockall::automock;
+use crate::application::usecase::ErrorMessage;
 
 // 副作用のない単発のサービス
 // WebRTC Gatewayを叩いて結果を返す
@@ -49,9 +49,11 @@ pub(crate) enum ServiceParams {
 
 #[cfg(test)]
 mod deserialize_str {
-    use super::*;
-    use crate::domain::peer::value_object::CreatePeerParams;
     use skyway_webrtc_gateway_api::peer::PeerInfo;
+
+    use crate::domain::peer::value_object::CreatePeerParams;
+
+    use super::*;
 
     #[test]
     fn create_message() {
@@ -110,9 +112,10 @@ pub enum ReturnMessage {
 
 #[cfg(test)]
 mod serialize_enum {
-    use super::*;
     use crate::application::usecase::peer::create::CREATE_PEER_COMMAND;
     use crate::domain::peer::value_object::PeerInfo;
+
+    use super::*;
 
     #[test]
     fn create_message() {

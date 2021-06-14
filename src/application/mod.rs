@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
-use tokio::sync::{mpsc, oneshot};
-
-use crate::application::usecase::service::ServiceParams;
-use crate::domain::peer::value_object::Token;
-
 #[cfg(test)]
 use mockall::automock;
 #[cfg(test)]
 use mockall_double::double;
+use tokio::sync::{mpsc, oneshot};
+
+use crate::application::usecase::service::ServiceParams;
+use crate::domain::peer::value_object::Token;
 
 // TODO: まだtestでしか使っていない
 #[allow(dead_code)]
@@ -107,18 +106,19 @@ pub(crate) mod event {
 
 #[cfg_attr(test, automock)]
 pub(crate) mod router {
-    // 何故かwarningが出るのでマクロを入れる
-    #[allow(unused_imports)]
-    #[cfg_attr(test, double)]
-    use super::service_creator_refactor;
-    #[allow(unused_imports)]
-    use super::{event, mpsc, oneshot, EventEnum, PeerEventHash};
+    #[cfg(test)]
+    use mockall_double::double;
+
     #[allow(unused_imports)]
     use crate::application::usecase::service::ReturnMessage;
     use crate::domain::peer::value_object::PeerInfo;
 
-    #[cfg(test)]
-    use mockall_double::double;
+    #[allow(unused_imports)]
+    use super::{event, mpsc, oneshot, EventEnum, PeerEventHash};
+    // 何故かwarningが出るのでマクロを入れる
+    #[allow(unused_imports)]
+    #[cfg_attr(test, double)]
+    use super::service_creator_refactor;
 
     // TODO: まだtestでしか使っていない
     #[allow(dead_code)]
@@ -156,11 +156,13 @@ mod test_run_event {
 
     use once_cell::sync::Lazy;
 
+    use crate::application::router::run_event;
+    use crate::application::usecase::ErrorMessage;
+    use crate::{CreatePeerSuccessMessage, PeerInfo, ReturnMessage};
+
     #[cfg_attr(test, double)]
     use super::service_creator_refactor;
     use super::*;
-    use crate::application::router::run_event;
-    use crate::{CreatePeerSuccessMessage, ErrorMessage, PeerInfo, ReturnMessage};
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
