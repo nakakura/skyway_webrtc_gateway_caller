@@ -1,8 +1,10 @@
+use std::sync::Mutex;
+
 use mockito::mock;
 use rust_module::*;
+
 use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
 use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
-use std::sync::Mutex;
 
 fn create_params() -> (PeerId, Token) {
     let peer_id = PeerId::new("hoge");
@@ -54,22 +56,31 @@ fn create_close_message(peer_id: &str, token: &str) -> String {
 
 #[tokio::test]
 async fn test_create_peer() {
+    // サービスにメッセージを流し込むためのチャンネル
+    // 操作は基本的にこのチャンネルで行う
     let (message_tx, mut event_rx) = run().await;
     // set up parameters
     let (peer_id, token) = create_params();
 
-    let counter = Mutex::new(-1isize);
     // GET /peers/{peer_id}/eventsに対応するmock
     // create peerの時点でOPENを返しているので、それ以外のイベントしか来ない
     let mock_event_api = {
+        // Mockの動作を変更するためのフラグとして利用する
+        // このテストでは、OPEN, CONNECTION, CLOSEの順で返したいので、カウンタを利用する
+        let counter = Mutex::new(-1isize);
+
+        // OPENイベントとして返すメッセージ
         let open_message = create_open_message(peer_id.as_str(), token.as_str());
+        // CONNECTIONイベントとして返すメッセージ
         let connection_message = create_connection_message(
             peer_id.as_str(),
             token.as_str(),
             "dc-102127d9-30de-413b-93f7-41a33e39d82b",
         );
+        // CLOSEイベントとして返すメッセージ
         let close_message = create_close_message(peer_id.as_str(), token.as_str());
 
+        // 参照) http://35.200.46.204/#/1.peers/peer_event
         let bind_url = format!(
             "/peers/{}/events?token={}",
             peer_id.as_str(),
@@ -96,9 +107,10 @@ async fn test_create_peer() {
             .create()
     };
 
-    // create peer
+    // まず最初にPeerObjectを生成する
     let peer_info = {
         // POST /peersに対応するmock
+        // http://35.200.46.204/#/1.peers/peer
         let mock_create_peer = {
             let ret_message = format!(
                 r#"{{
@@ -119,7 +131,9 @@ async fn test_create_peer() {
                 .create()
         };
 
-        let message = format!(
+        // POST /peersで送信するbody
+        // http://35.200.46.204/#/1.peers/peer
+        let body = format!(
             r#"{{
                 "command": "PEER_CREATE",
                 "params": {{
@@ -135,14 +149,15 @@ async fn test_create_peer() {
         );
 
         // call create peer api
-        let (tx, rx) = tokio::sync::oneshot::channel::<String>();
-        let _ = message_tx.send((tx, message)).await;
-        let result = rx.await.unwrap();
+        let (tx, rx) = tokio::sync::oneshot::channel::<ReturnMessage>();
+        let body = serde_json::from_str::<ServiceParams>(&body).unwrap();
+        let _ = message_tx.send((tx, body)).await;
+        let result = rx.await;
 
         // serverが呼ばれたかチェックする
         mock_create_peer.assert();
 
-        match serde_json::from_str::<ReturnMessage>(&result) {
+        match result {
             // PEER_CREATEが帰ってきていればpeer_infoを取り出す
             Ok(ReturnMessage::PEER_CREATE(message)) => {
                 assert!(true);
@@ -185,17 +200,11 @@ async fn test_create_peer() {
 
     // 1つめのEVENTの取得
     let result = event_rx.recv().await.unwrap();
-    assert_eq!(
-        serde_json::from_str::<ReturnMessage>(&result).unwrap(),
-        expected_connect
-    );
+    assert_eq!(result, expected_connect);
 
     // 2つめのEVENTの取得
     let result = event_rx.recv().await.unwrap();
-    assert_eq!(
-        serde_json::from_str::<ReturnMessage>(&result).unwrap(),
-        expected_close
-    );
+    assert_eq!(result, expected_close);
 
     // 3つめは来ない
 }

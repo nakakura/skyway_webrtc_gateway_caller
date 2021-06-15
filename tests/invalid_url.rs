@@ -23,11 +23,12 @@ async fn test_create_peer() {
     );
 
     // call create peer api
-    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
-    let _ = message_tx.send((tx, message)).await;
-    let result = rx.await.unwrap();
+    let (tx, rx) = tokio::sync::oneshot::channel::<ReturnMessage>();
+    let body = serde_json::from_str::<ServiceParams>(&message).unwrap();
+    let _ = message_tx.send((tx, body)).await;
+    let result = rx.await;
 
-    match serde_json::from_str::<ReturnMessage>(&result) {
+    match result {
         // PEER_CREATEが帰ってきていればpeer_infoを取り出す
         Ok(ReturnMessage::ERROR(_)) => {
             assert!(true);

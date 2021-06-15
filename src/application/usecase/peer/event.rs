@@ -49,7 +49,7 @@ impl EventListener for EventService {
         return PEER_EVENT_COMMAND;
     }
 
-    async fn execute(&self, event_tx: mpsc::Sender<String>, params: Value) -> ReturnMessage {
+    async fn execute(&self, event_tx: mpsc::Sender<ReturnMessage>, params: Value) -> ReturnMessage {
         println!("execute event");
         let module = ApplicationStateContainer::builder().build();
         let state: &dyn ApplicationState = module.resolve_ref();
@@ -59,9 +59,7 @@ impl EventListener for EventService {
             let flag = result.is_err();
             let message = self.create_return_message(result);
             // send event
-            let result = event_tx
-                .send(serde_json::to_string(&message).unwrap())
-                .await;
+            let result = event_tx.send(message.clone()).await;
 
             // APIからerrorを受け取っていたら終了する
             if flag {
@@ -148,7 +146,7 @@ mod test_peer_event {
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // execute
-        let (event_tx, mut event_rx) = mpsc::channel::<String>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ReturnMessage>(10);
         let return_result = event_service
             .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
             .await;
@@ -160,10 +158,7 @@ mod test_peer_event {
         // 1つめはCONNECTイベント
         let result = event_rx.recv().await;
         if let Some(result_close_event) = result {
-            assert_eq!(
-                serde_json::from_str::<ReturnMessage>(&result_close_event).unwrap(),
-                expected_connect
-            );
+            assert_eq!(result_close_event, expected_connect);
         } else {
             assert!(false);
         }
@@ -171,10 +166,7 @@ mod test_peer_event {
         // 2つめはCLOSEイベント
         let result = event_rx.recv().await;
         if let Some(result_close_event) = result {
-            assert_eq!(
-                serde_json::from_str::<ReturnMessage>(&result_close_event).unwrap(),
-                expected_close
-            );
+            assert_eq!(result_close_event, expected_close);
         } else {
             assert!(false);
         }
@@ -209,7 +201,7 @@ mod test_peer_event {
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // execute
-        let (event_tx, mut event_rx) = mpsc::channel::<String>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ReturnMessage>(10);
         let result = event_service
             .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
             .await;
@@ -220,7 +212,6 @@ mod test_peer_event {
         // eventが通知されていることを確認
         // ERRORを受信していることを確認
         let result = event_rx.recv().await.unwrap();
-        let result: ReturnMessage = serde_json::from_str(&result).unwrap();
         assert_eq!(result, expected);
 
         // ERRORのあとは狩猟済みなのでイベントは来ない

@@ -23,42 +23,9 @@ pub(crate) enum EventEnum {
     Json(ServiceParams),
 }
 
-// Unit TestではなくIntegration Testでテストする
-// こっちは差し替える
-#[cfg_attr(test, automock)]
-pub(crate) mod service_creator {
-    // 何故かwarningが出るのでマクロを入れる
-    #[allow(unused_imports)]
-    use crate::application::usecase::service::{ReturnMessage, Service, ServiceParams};
-
-    pub(crate) async fn create(params_string: String) -> ReturnMessage {
-        use shaku::HasComponent;
-
-        use crate::di::*;
-
-        match serde_json::from_str::<ServiceParams>(&params_string) {
-            Ok(ServiceParams::PEER_CREATE { params }) => {
-                let module = PeerCreateServiceContainer::builder().build();
-                let service: &dyn Service = module.resolve_ref();
-                service.execute(params).await
-            }
-            Ok(ServiceParams::PEER_DELETE { params }) => {
-                let module = PeerDeleteServiceContainer::builder().build();
-                let service: &dyn Service = module.resolve_ref();
-                service.execute(params).await
-            }
-            Err(e) => ReturnMessage::ERROR(crate::ErrorMessage {
-                result: false,
-                command: "UNKNOWN".into(),
-                error_message: format!("{:?}", e),
-            }),
-        }
-    }
-}
-
 // 設計変更に伴いこちらを使う
 #[cfg_attr(test, automock)]
-pub(crate) mod service_creator_refactor {
+pub(crate) mod service_creator {
     // 何故かwarningが出るのでマクロを入れる
     #[allow(unused_imports)]
     use crate::application::usecase::service::{ReturnMessage, Service, ServiceParams};
@@ -118,7 +85,7 @@ pub(crate) mod router {
     // 何故かwarningが出るのでマクロを入れる
     #[allow(unused_imports)]
     #[cfg_attr(test, double)]
-    use super::service_creator_refactor;
+    use super::service_creator;
 
     // TODO: まだtestでしか使っていない
     #[allow(dead_code)]
@@ -134,7 +101,7 @@ pub(crate) mod router {
                 hash.remove(&key);
             }
             EventEnum::Json(params) => {
-                let result = service_creator_refactor::create(params).await;
+                let result = service_creator::create(params).await;
                 // to_string always success
                 let _ = response_tx.send(serde_json::to_string(&result).unwrap());
 
@@ -161,7 +128,7 @@ mod test_run_event {
     use crate::{CreatePeerSuccessMessage, PeerInfo, ReturnMessage};
 
     #[cfg_attr(test, double)]
-    use super::service_creator_refactor;
+    use super::service_creator;
     use super::*;
 
     // Lock to prevent tests from running simultaneously
@@ -213,7 +180,7 @@ mod test_run_event {
         let _lock = LOCKER.lock();
 
         // PEER_CREATEメッセージを返すmockを作成
-        let ctx = service_creator_refactor::create_context();
+        let ctx = service_creator::create_context();
         let message = ReturnMessage::PEER_CREATE(CreatePeerSuccessMessage {
             result: true,
             command: "PEER_CREATE".to_string(),
@@ -282,7 +249,7 @@ mod test_run_event {
         let _lock = LOCKER.lock();
 
         // ERRORメッセージを返すmockを作成
-        let ctx = service_creator_refactor::create_context();
+        let ctx = service_creator::create_context();
         let message = ReturnMessage::ERROR(ErrorMessage {
             result: false,
             command: "PEER_CREATE".to_string(),

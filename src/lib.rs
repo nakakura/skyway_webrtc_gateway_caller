@@ -1,5 +1,4 @@
 use futures::stream::StreamExt;
-pub use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
@@ -7,6 +6,7 @@ pub use application::usecase::peer::create::CreatePeerSuccessMessage;
 pub use application::usecase::peer::delete::DeletePeerSuccessMessage;
 pub use application::usecase::peer::event::PeerEventMessage;
 pub use application::usecase::service::ReturnMessage;
+pub use application::usecase::service::ServiceParams;
 pub use application::usecase::ErrorMessage;
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
 
@@ -15,29 +15,45 @@ pub(crate) mod di;
 pub(crate) mod domain;
 pub(crate) mod infra;
 
-// C++側から呼び出される、Rust側のmain関数として動作
-// Integration Testでのみテストを行う
+// ROS Serviceは2つ準備する
+// 操作を行うためのskyway_control serviceと、イベントを受信するためのskyway_event serviceである
+// この関数でそれらのサービスとデータをやりとりするためのチャンネルを生成する
+//
+// End-User Application <--> Presentation層間
+// End-User ApplicationはJSONもしくはService Paramsで操作指示を行い、
+// 結果としてReturnMessageを受け取る
+// エンドユーザから受け取ったJSONのパースはPresentation層の責務として処理する
+//
+// Presentation層 <--> Application層間
+// Service Paramsで操作指示を行い、ReturnMessageを受け取る
+//
+// Application層 <--> Domain層間
+// Service Paramsで操作指示を行い、ReturnMessageを受け取る
+//
+// Domain層, Infra層
+// Service Paramsとして与えられた値がDomain知識に適合するかどうかはDomain Objectの責務として判断する
+// Domain層 <--> Infra層間のやり取りはDomain Objectを利用する
+
+// Application層以降のパイプラインを組み上げる関数
+// Presentation層に渡すチャンネルを返す
+//
+// なお、Unit Testは行わずIntegration Testでのみテストを行う
 pub async fn run() -> (
-    mpsc::Sender<(oneshot::Sender<String>, String)>,
-    mpsc::Receiver<String>,
+    mpsc::Sender<(oneshot::Sender<ReturnMessage>, ServiceParams)>,
+    mpsc::Receiver<ReturnMessage>,
 ) {
-    // ROS Serviceは2つ準備する
-    // 操作を行うためのskyway_control serviceと、イベントを受信するためのskyway_event serviceである
-    // この関数でそれらのサービスとデータをやりとりするためのチャンネルを生成する
-    // サービスではJSONメッセージで外部とやり取りするので、String型のチャンネルを生成する
-
-    // skyway_control serviceとやりとりするためのチャンネル
-    // 結果の返却のためのoneshot::Sender<String>と、操作メッセージのJSONを受け取るためのmpsc::channelを生成
-    // SenderをROS側に渡し、Receiverを監視する
+    // skyway_control serviceのデータのやりとり
+    // ServiceParamsで与えられた支持に対し、oneshotチャンネルへReturnMessageを返す
+    // 副作用としてイベントが発生した場合はskyway_event serviceへ転送し、ここでは返さない
     // ROS終了時にSenderをdropすることでReceiverの監視を停止する
-    let (message_tx, message_rx) = mpsc::channel::<(oneshot::Sender<String>, String)>(10);
-
-    // skyway_event serviceとやりとりするためのチャンネル
-    // イベント自体は自動的に監視しておき、発生時にevent_txにsendしておく。
+    let (message_tx, message_rx) =
+        mpsc::channel::<(oneshot::Sender<ReturnMessage>, ServiceParams)>(10);
+    // skyway_event serviceとやりとりするためのチャンネルを生成する
+    // イベント監視の必要性が生じた場合は自動で監視を行い、このチャンネルへsendする
     // skyway_event serviceにアクセスがあった場合、event_rxからイベントをpopして返す
     // イベントがない場合は来るまで待機して返す
     // TODO: タイムアウトの仕様を検討する
-    let (event_tx, event_rx) = mpsc::channel::<String>(10);
+    let (event_tx, event_rx) = mpsc::channel::<ReturnMessage>(10);
 
     // message_txの監視を開始
     // messege_txの指示次第でeventを監視する必要が生じるので、event_txも渡す
@@ -49,29 +65,27 @@ pub async fn run() -> (
     (message_tx, event_rx)
 }
 
-// skyway_control serviceからのJSONメッセージを監視し続ける
+// skyway_control serviceからのメッセージ(ServiceParams)を監視し続ける
 // これは保持するReceiverが結びついているSenderが破棄されるまで続ける
-// Integration Testでのみテスト
+// crate全体を通して、Stateはこの関数内のfoldのみが保持する。
+// Stateとして、各PeerIdに対応するMediaConnectionId, DataConnectionIDなどを保持する
+//
+// なお、Unit Testは行わずIntegration Testでのみテストを行う
 async fn skyway_control_service_observe(
-    receiver: mpsc::Receiver<(oneshot::Sender<String>, String)>,
-    event_tx: mpsc::Sender<String>,
+    receiver: mpsc::Receiver<(oneshot::Sender<ReturnMessage>, ServiceParams)>,
+    event_tx: mpsc::Sender<ReturnMessage>,
 ) {
-    // 時々eventの方に返さなければならないものはevent_txに送る
-    // 全体通して副作用はここだけ
-    // peer, media, dataのステータスを保管
-
     let receiver = ReceiverStream::new(receiver);
-    // fold内部で状態を持つ。Rust側のコードで状態を持つのはこのfoldのみに留める
     receiver
         .fold(
-            // TODO: ここで必要な状態を保持するHashMapも保持する
+            // TODO: ここで必要な状態を保持するHashMapも保持する。StateはこのHashMapのみに留める
             event_tx,
             |event_tx, (message_response_tx, message)| async move {
                 // application層のメソッドにメッセージを渡す
                 // 内部で適切に各Serviceに振り分けて結果のみ返してもらう
-                // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ReturnMessage::ERROR)ので、ROS側に送る
+                // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ReturnMessage::ERROR)のでそのままPresentation層へ渡す
                 let result = application::service_creator::create(message).await;
-                let _ = message_response_tx.send(serde_json::to_string(&result).unwrap());
+                let _ = message_response_tx.send(result.clone());
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
@@ -86,7 +100,7 @@ async fn skyway_control_service_observe(
         .await;
 }
 
-async fn event_observe(peer_info: PeerInfo, event_tx: mpsc::Sender<String>) {
+async fn event_observe(peer_info: PeerInfo, event_tx: mpsc::Sender<ReturnMessage>) {
     use shaku::HasComponent;
 
     use crate::application::usecase::service::EventListener;

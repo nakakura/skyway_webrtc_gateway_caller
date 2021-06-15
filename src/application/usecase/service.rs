@@ -43,7 +43,7 @@ pub(crate) trait Service: Interface {
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "command")]
-pub(crate) enum ServiceParams {
+pub enum ServiceParams {
     PEER_CREATE { params: Value },
     PEER_DELETE { params: Value },
 }
@@ -168,7 +168,7 @@ mod serialize_enum {
 #[async_trait]
 pub(crate) trait EventListener: Interface {
     fn command(&self) -> &'static str;
-    async fn execute(&self, event_tx: Sender<String>, params: Value) -> ReturnMessage;
+    async fn execute(&self, event_tx: Sender<ReturnMessage>, params: Value) -> ReturnMessage;
     fn create_return_message(&self, result: Result<ReturnMessage, error::Error>) -> ReturnMessage {
         match result {
             Ok(message) => message,
