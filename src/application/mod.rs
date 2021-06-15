@@ -58,6 +58,9 @@ pub(crate) mod service_creator {
                 let service: &dyn Service = module.resolve_ref();
                 service.execute(params).await
             }
+            _ => {
+                unreachable!()
+            }
         }
     }
 }

@@ -44,6 +44,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) DataConnectServiceContainer {
+        components = [data::connect::ConnectService, DataApiImpl],
+        providers = []
+    }
+}
+
 //========== Util ==========
 module! {
     pub(crate) ApplicationStateContainer {

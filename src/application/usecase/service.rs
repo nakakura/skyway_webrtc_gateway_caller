@@ -7,6 +7,7 @@ use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
+use crate::application::usecase::data::connect::DataConnectSuccessMessage;
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
 use crate::application::usecase::data::delete::DeleteDataSuccessMessage;
 use crate::application::usecase::peer::create::CreatePeerSuccessMessage;
@@ -48,6 +49,7 @@ pub enum ServiceParams {
     PEER_DELETE { params: Value },
     DATA_CREATE { params: Value },
     DATA_DELETE { params: Value },
+    DATA_CONNECT { params: Value },
 }
 
 #[cfg(test)]
@@ -111,6 +113,7 @@ pub enum ReturnMessage {
     PEER_EVENT(PeerEventMessage),
     DATA_CREATE(CreateDataSuccessMessage),
     DATA_DELETE(DeleteDataSuccessMessage),
+    DATA_CONNECT(DataConnectSuccessMessage),
     ERROR(ErrorMessage),
 }
 
