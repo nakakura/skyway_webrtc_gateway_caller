@@ -7,7 +7,6 @@ use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::{ReturnMessage, Service};
-use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
 

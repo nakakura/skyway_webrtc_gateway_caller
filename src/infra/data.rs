@@ -27,7 +27,15 @@ impl DataApi for DataApiImpl {
     }
 
     async fn delete(&self, data_id: Value) -> Result<DataId, error::Error> {
-        // FIXME
-        unreachable!()
+        use serde::Deserialize;
+        #[derive(Deserialize, Debug)]
+        struct Message {
+            pub data_id: DataId,
+        }
+        let data_id = serde_json::from_value::<Message>(data_id)
+            .map_err(|e| error::Error::SerdeError { error: e })?
+            .data_id;
+        let _ = data::close_data_socket(&data_id).await?;
+        Ok(data_id)
     }
 }
