@@ -53,8 +53,10 @@ pub(crate) mod service_creator {
                 let service: &dyn Service = module.resolve_ref();
                 service.execute(params).await
             }
-            ServiceParams::DATA_DELETE { params: _params } => {
-                unreachable!()
+            ServiceParams::DATA_DELETE { params } => {
+                let module = DataDeleteServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                service.execute(params).await
             }
         }
     }
