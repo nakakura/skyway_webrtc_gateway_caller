@@ -38,10 +38,15 @@ pub(crate) mod infra;
 // Presentation層に渡すチャンネルを返す
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
-pub async fn run() -> (
+pub async fn run(
+    base_url: &str,
+) -> (
     mpsc::Sender<(oneshot::Sender<ReturnMessage>, ServiceParams)>,
     mpsc::Receiver<ReturnMessage>,
 ) {
+    // skyway webrtc gateway のbase_urlを設定する
+    skyway_webrtc_gateway_api::initialize(base_url);
+
     // skyway_control serviceのデータのやりとり
     // ServiceParamsで与えられた支持に対し、oneshotチャンネルへReturnMessageを返す
     // 副作用としてイベントが発生した場合はskyway_event serviceへ転送し、ここでは返さない

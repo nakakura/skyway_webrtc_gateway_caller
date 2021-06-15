@@ -48,6 +48,14 @@ pub(crate) mod service_creator {
                 let service: &dyn Service = module.resolve_ref();
                 service.execute(params).await
             }
+            ServiceParams::DATA_CREATE { params } => {
+                let module = DataCreateServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                service.execute(params).await
+            }
+            ServiceParams::DATA_DELETE { params: _params } => {
+                unreachable!()
+            }
         }
     }
 }

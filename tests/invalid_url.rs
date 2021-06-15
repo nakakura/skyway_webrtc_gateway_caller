@@ -2,7 +2,7 @@ use rust_module::*;
 
 #[tokio::test]
 async fn test_create_peer() {
-    let (message_tx, _) = run().await;
+    let (message_tx, _) = run("http://localhost:0").await;
     // set up parameters
     let peer_id = PeerId::new("hoge");
 
@@ -11,14 +11,12 @@ async fn test_create_peer() {
         r#"{{
                 "command": "PEER_CREATE",
                 "params": {{
-                    "base_url": "{}",
                     "key": "api_key",
                     "domain": "localhost",
                     "peer_id": "{}",
                     "turn": true
                 }}
             }}"#,
-        "http://localhost:0",
         peer_id.as_str()
     );
 

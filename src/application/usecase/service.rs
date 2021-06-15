@@ -41,11 +41,13 @@ pub(crate) trait Service: Interface {
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで受け取る
 #[allow(non_camel_case_types)]
-#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "command")]
 pub enum ServiceParams {
     PEER_CREATE { params: Value },
     PEER_DELETE { params: Value },
+    DATA_CREATE { params: Value },
+    DATA_DELETE { params: Value },
 }
 
 #[cfg(test)]

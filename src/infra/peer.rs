@@ -47,11 +47,6 @@ pub(crate) struct PeerRepositoryImpl {
 #[async_trait]
 impl PeerRepository for PeerRepositoryImpl {
     async fn register(&self, params: CreatePeerParams) -> Result<PeerInfo, error::Error> {
-        // skyway_webrtc_gateway_api crate must be initialized by giving the base_url only once.
-        // It doesn't matter how many times you give it, it won't make an error.
-        // And since SkyWay can't do anything without creating a peer object,
-        // I decided to give it the value here.
-        skyway_webrtc_gateway_api::initialize(&params.base_url);
         // The information is returned for accessing the Peer Object on the SkyWay WebRTC Gateway.
         // At this point, the Peer Object is not yet registered with the SkyWay server.
         let peer_info = self.api.create(params).await?;
@@ -107,7 +102,6 @@ mod test_create {
 
     fn create_params() -> CreatePeerParams {
         CreatePeerParams {
-            base_url: "http://localhost:8000".into(),
             key: "api_key".into(),
             domain: "localhost".into(),
             peer_id: PeerId::new("peer_id"),

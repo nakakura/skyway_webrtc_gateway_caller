@@ -50,7 +50,6 @@ impl EventListener for EventService {
     }
 
     async fn execute(&self, event_tx: mpsc::Sender<ReturnMessage>, params: Value) -> ReturnMessage {
-        println!("execute event");
         let module = ApplicationStateContainer::builder().build();
         let state: &dyn ApplicationState = module.resolve_ref();
 

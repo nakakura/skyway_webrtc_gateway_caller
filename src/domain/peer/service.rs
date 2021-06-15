@@ -69,7 +69,6 @@ mod test_peer_create {
     async fn parameter_wrong() {
         // create parameter
         let invalid_message = r#"{
-            "key": "api_key",
             "domain": "localhost",
             "peer_id": "peer_id",
             "turn": true
@@ -91,7 +90,7 @@ mod test_peer_create {
             let message = format!("{:?}", e);
             assert_eq!(
                 message.as_str(),
-                "Error(\"missing field `base_url`\", line: 0, column: 0)"
+                "Error(\"missing field `key`\", line: 0, column: 0)"
             );
         } else {
             unreachable!();

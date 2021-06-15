@@ -58,7 +58,7 @@ fn create_close_message(peer_id: &str, token: &str) -> String {
 async fn test_create_peer() {
     // サービスにメッセージを流し込むためのチャンネル
     // 操作は基本的にこのチャンネルで行う
-    let (message_tx, mut event_rx) = run().await;
+    let (message_tx, mut event_rx) = run(&mockito::server_url()).await;
     // set up parameters
     let (peer_id, token) = create_params();
 
@@ -137,14 +137,12 @@ async fn test_create_peer() {
             r#"{{
                 "command": "PEER_CREATE",
                 "params": {{
-                    "base_url": "{}",
                     "key": "api_key",
                     "domain": "localhost",
                     "peer_id": "{}",
                     "turn": true
                 }}
             }}"#,
-            mockito::server_url(),
             peer_id.as_str()
         );
 
