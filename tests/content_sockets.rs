@@ -85,5 +85,8 @@ async fn test_delete_data() {
     let result = rx.await.unwrap();
 
     // evaluate
-    assert_eq!(serde_json::to_string(&result).unwrap(), "{\"result\":true,\"command\":\"DATA_DELETE\",\"params\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\"}");
+    assert_eq!(
+        serde_json::to_string(&result).unwrap(),
+        "{\"is_success\":true,\"result\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\"}"
+    );
 }

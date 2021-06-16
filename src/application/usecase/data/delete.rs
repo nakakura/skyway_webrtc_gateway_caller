@@ -6,17 +6,16 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ResponseMessage, Service};
+use crate::application::usecase::service::{ErrorMessageRefactor, ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
+use crate::ResponseMessageContent;
 
-pub(crate) const DELETE_DATA_COMMAND: &'static str = "DATA_DELETE";
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub struct DeleteDataSuccessMessage {
-    pub result: bool, // should be true
-    pub command: String,
-    pub params: DataId,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum DataDeleteResponseMessage {
+    Success(ResponseMessageContent<DataId>),
+    Error(ErrorMessageRefactor),
 }
 
 // Serviceの具象Struct
@@ -31,23 +30,29 @@ pub(crate) struct DeleteService {
 impl DeleteService {
     async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
-        Ok(ResponseMessage::DATA_DELETE(DeleteDataSuccessMessage {
-            result: true,
-            command: DELETE_DATA_COMMAND.to_string(),
-            params: param,
-        }))
+        Ok(ResponseMessage::DataDelete(
+            DataDeleteResponseMessage::Success(ResponseMessageContent::new(param)),
+        ))
     }
 }
 
 #[async_trait]
 impl Service for DeleteService {
     fn command(&self) -> &'static str {
-        return DELETE_DATA_COMMAND;
+        return "";
     }
 
     async fn execute(&self, params: Value) -> ResponseMessage {
-        let param = self.execute_internal(params).await;
-        self.create_return_message(param)
+        let result = self.execute_internal(params).await;
+        match result {
+            Ok(message) => message,
+            Err(e) => {
+                let message = format!("{:?}", e);
+                ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(
+                    ErrorMessageRefactor::new(message),
+                ))
+            }
+        }
     }
 }
 
@@ -75,11 +80,9 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ResponseMessage::DATA_DELETE(DeleteDataSuccessMessage {
-            result: true,
-            command: DELETE_DATA_COMMAND.to_string(),
-            params: DataId::try_create(data_id_str).unwrap(),
-        });
+        let expected = ResponseMessage::DataDelete(DataDeleteResponseMessage::Success(
+            ResponseMessageContent::new(DataId::try_create(data_id_str).unwrap()),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
@@ -121,13 +124,12 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ResponseMessage::ERROR(ErrorMessage {
-            result: false,
-            command: DELETE_DATA_COMMAND.to_string(),
-            error_message:
+        let expected = ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(
+            ErrorMessageRefactor::new(
                 "SerdeError { error: Error(\"missing field `data_id`\", line: 0, column: 0) }"
                     .to_string(),
-        });
+            ),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

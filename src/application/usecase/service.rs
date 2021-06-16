@@ -9,7 +9,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::data::connect::DataConnectSuccessMessage;
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
-use crate::application::usecase::data::delete::DeleteDataSuccessMessage;
+use crate::application::usecase::data::delete::DataDeleteResponseMessage;
 use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
 use crate::application::usecase::ErrorMessage;
 use crate::PeerInfo;
@@ -160,7 +160,8 @@ pub enum ResponseMessage {
     #[serde(rename = "PEER_EVENT")]
     PeerEvent(super::peer::event::PeerEventResponseMessage),
     DATA_CREATE(CreateDataSuccessMessage),
-    DATA_DELETE(DeleteDataSuccessMessage),
+    #[serde(rename = "DATA_DELETE")]
+    DataDelete(super::data::delete::DataDeleteResponseMessage),
     DATA_CONNECT(DataConnectSuccessMessage),
     DATA_DISCONNECT(DataDisconnectSuccessMessage),
     ERROR(ErrorMessage),
