@@ -172,10 +172,9 @@ async fn test_create_peer() {
 
     // 期待値の生成
     // 1回目のevent listenerが取得するはずのCONNECT
-    let expected_connect = ResponseMessage::PEER_EVENT(PeerEventMessage {
-        result: true,
-        command: "PEER_EVENT".into(),
-        params: PeerEventEnum::CONNECTION(PeerConnectionEvent {
+    use rust_module::PeerEventResponseMessage;
+    let expected_connect = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
+        ResponseMessageContent::new(PeerEventEnum::CONNECTION(PeerConnectionEvent {
             params: peer_info.clone(),
             data_params: DataConnectionIdWrapper {
                 data_connection_id: DataConnectionId::try_create(
@@ -183,16 +182,15 @@ async fn test_create_peer() {
                 )
                 .unwrap(),
             },
-        }),
-    });
+        })),
+    ));
+
     // 2回目のevent listenerが取得するはずのCLOSE
-    let expected_close = ResponseMessage::PEER_EVENT(PeerEventMessage {
-        result: true,
-        command: "PEER_EVENT".into(),
-        params: PeerEventEnum::CLOSE(PeerCloseEvent {
+    let expected_close = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
+        ResponseMessageContent::new(PeerEventEnum::CLOSE(PeerCloseEvent {
             params: peer_info.clone(),
-        }),
-    });
+        })),
+    ));
 
     // serverが呼ばれたかチェックする
     mock_event_api.assert();

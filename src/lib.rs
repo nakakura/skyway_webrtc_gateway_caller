@@ -3,8 +3,9 @@ use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
 pub use application::usecase::peer::create::PeerCreateResponseMessage;
-pub use application::usecase::peer::event::PeerEventMessage;
+pub use application::usecase::peer::event::PeerEventResponseMessage;
 pub use application::usecase::service::ResponseMessage;
+pub use application::usecase::service::ResponseMessageContent;
 pub use application::usecase::service::ServiceParams;
 pub use application::usecase::ErrorMessage;
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};

@@ -7,19 +7,19 @@ use shaku::*;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc;
 
-use crate::application::usecase::service::{EventListener, ResponseMessage};
+use crate::application::usecase::service::{
+    ErrorMessageRefactor, EventListener, ResponseMessage, ResponseMessageContent,
+};
 use crate::application::usecase::ErrorMessage;
 use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
 use crate::domain::utility::ApplicationState;
 
-pub(crate) const PEER_EVENT_COMMAND: &'static str = "PEER_EVENT";
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
-pub struct PeerEventMessage {
-    pub result: bool, // should be true
-    pub command: String,
-    pub params: PeerEventEnum,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum PeerEventResponseMessage {
+    Success(ResponseMessageContent<PeerEventEnum>),
+    Error(ErrorMessageRefactor),
 }
 
 // Serviceの具象Struct
@@ -34,29 +34,38 @@ pub(crate) struct EventService {
 impl EventService {
     async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let event = self.api.event(message).await?;
-        let event_message = PeerEventMessage {
-            result: true,
-            command: PEER_EVENT_COMMAND.into(),
-            params: event,
-        };
-        Ok(ResponseMessage::PEER_EVENT(event_message))
+        Ok(ResponseMessage::PeerEvent(
+            PeerEventResponseMessage::Success(ResponseMessageContent::new(event)),
+        ))
     }
 }
 
 #[async_trait]
 impl EventListener for EventService {
     fn command(&self) -> &'static str {
-        return PEER_EVENT_COMMAND;
+        return "";
     }
 
-    async fn execute(&self, event_tx: mpsc::Sender<ResponseMessage>, params: Value) -> ResponseMessage {
+    async fn execute(
+        &self,
+        event_tx: mpsc::Sender<ResponseMessage>,
+        params: Value,
+    ) -> ResponseMessage {
         let module = ApplicationStateContainer::builder().build();
         let state: &dyn ApplicationState = module.resolve_ref();
 
         while state.is_running() {
             let result = self.execute_internal(params.clone()).await;
             let flag = result.is_err();
-            let message = self.create_return_message(result);
+            let message = match result {
+                Ok(message) => message,
+                Err(e) => {
+                    let message = format!("{:?}", e);
+                    ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
+                        ErrorMessageRefactor::new(message),
+                    ))
+                }
+            };
             // send event
             let result = event_tx.send(message.clone()).await;
 
@@ -75,8 +84,11 @@ impl EventListener for EventService {
             }
 
             // close eventを受け取っていたら終了する
-            if let ResponseMessage::PEER_EVENT(ref peer_event_message) = message {
-                if let PeerEventEnum::CLOSE(_) = &peer_event_message.params {
+            if let ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
+                ref peer_event_message,
+            )) = message
+            {
+                if let PeerEventEnum::CLOSE(_) = &peer_event_message.result {
                     return message;
                 }
             }
@@ -115,16 +127,12 @@ mod test_peer_event {
         });
 
         // 期待値の生成
-        let expected_connect = ResponseMessage::PEER_EVENT(PeerEventMessage {
-            result: true,
-            command: PEER_EVENT_COMMAND.into(),
-            params: connect_event.clone(),
-        });
-        let expected_close = ResponseMessage::PEER_EVENT(PeerEventMessage {
-            result: true,
-            command: PEER_EVENT_COMMAND.into(),
-            params: close_event.clone(),
-        });
+        let expected_connect = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
+            ResponseMessageContent::new(connect_event.clone()),
+        ));
+        let expected_close = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
+            ResponseMessageContent::new(close_event.clone()),
+        ));
 
         // 1回目はCONNECT、2回目はCLOSEイベントを返すMockを作る
         let mut counter = 0u8;
@@ -182,11 +190,9 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 期待値の生成
-        let expected = ResponseMessage::ERROR(ErrorMessage {
-            result: false,
-            command: PEER_EVENT_COMMAND.into(),
-            error_message: format!("{:?}", error::Error::create_local_error("error")),
-        });
+        let err =
+            ErrorMessageRefactor::new(format!("{:?}", error::Error::create_local_error("error")));
+        let expected = ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(err));
 
         // CLOSEイベントを返すMockを作る
         let mut mock = MockPeer::default();

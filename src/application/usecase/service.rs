@@ -11,7 +11,6 @@ use crate::application::usecase::data::connect::DataConnectSuccessMessage;
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
 use crate::application::usecase::data::delete::DeleteDataSuccessMessage;
 use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
-use crate::application::usecase::peer::event::PeerEventMessage;
 use crate::application::usecase::ErrorMessage;
 use crate::PeerInfo;
 
@@ -158,7 +157,8 @@ pub enum ResponseMessage {
     PeerCreate(super::peer::create::PeerCreateResponseMessage),
     #[serde(rename = "PEER_DELETE")]
     PeerDelete(super::peer::delete::PeerDeleteResponseMessage),
-    PEER_EVENT(PeerEventMessage),
+    #[serde(rename = "PEER_EVENT")]
+    PeerEvent(super::peer::event::PeerEventResponseMessage),
     DATA_CREATE(CreateDataSuccessMessage),
     DATA_DELETE(DeleteDataSuccessMessage),
     DATA_CONNECT(DataConnectSuccessMessage),
