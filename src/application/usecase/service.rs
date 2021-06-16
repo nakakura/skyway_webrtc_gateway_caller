@@ -39,24 +39,17 @@ pub(crate) trait Service: Interface {
 #[serde(tag = "command")]
 pub enum ServiceParams {
     #[serde(rename = "PEER_CREATE")]
-    PeerCreate {
-        params: Value,
-    },
-    PEER_DELETE {
-        params: Value,
-    },
-    DATA_CREATE {
-        params: Value,
-    },
-    DATA_DELETE {
-        params: Value,
-    },
-    DATA_CONNECT {
-        params: Value,
-    },
-    DATA_DISCONNECT {
-        params: Value,
-    },
+    PeerCreate { params: Value },
+    #[serde(rename = "PEER_DELETE")]
+    PeerDelete { params: Value },
+    #[serde(rename = "DATA_CREATE")]
+    DataCreate { params: Value },
+    #[serde(rename = "DATA_DELETE")]
+    DataDelete { params: Value },
+    #[serde(rename = "DATA_CONNECT")]
+    DataConnect { params: Value },
+    #[serde(rename = "DATA_DISCONNECT")]
+    DataDisconnect { params: Value },
 }
 
 #[cfg(test)]
@@ -100,7 +93,7 @@ mod deserialize_str {
         }"#;
 
         let create_message = serde_json::from_str::<ServiceParams>(message);
-        if let Ok(ServiceParams::PEER_DELETE { params }) = create_message {
+        if let Ok(ServiceParams::PeerDelete { params }) = create_message {
             let _ = serde_json::from_value::<PeerInfo>(params).unwrap();
             assert!(true);
         } else {

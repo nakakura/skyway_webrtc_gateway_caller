@@ -45,17 +45,17 @@ pub(crate) mod service_creator {
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, params).await
             }
-            ServiceParams::PEER_DELETE { params } => {
+            ServiceParams::PeerDelete { params } => {
                 let module = PeerDeleteServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, params).await
             }
-            ServiceParams::DATA_CREATE { params } => {
+            ServiceParams::DataCreate { params } => {
                 let module = DataCreateServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, params).await
             }
-            ServiceParams::DATA_DELETE { params } => {
+            ServiceParams::DataDelete { params } => {
                 let module = DataDeleteServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, params).await
