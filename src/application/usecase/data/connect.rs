@@ -6,17 +6,16 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ResponseMessage, Service};
+use crate::application::usecase::service::{ErrorMessageRefactor, ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
+use crate::ResponseMessageContent;
 use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 
-pub(crate) const CONNECT_COMMAND: &'static str = "DATA_CONNECT";
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
-pub struct DataConnectSuccessMessage {
-    pub result: bool, // should be true
-    pub command: String,
-    pub params: DataConnectionIdWrapper,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum DataConnectResponseMessage {
+    Success(ResponseMessageContent<DataConnectionIdWrapper>),
+    Error(ErrorMessageRefactor),
 }
 
 // Serviceの具象Struct
@@ -31,23 +30,30 @@ pub(crate) struct ConnectService {
 impl ConnectService {
     async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
-        Ok(ResponseMessage::DATA_CONNECT(DataConnectSuccessMessage {
-            result: true,
-            command: CONNECT_COMMAND.to_string(),
-            params: param,
-        }))
+        let content = ResponseMessageContent::new(param);
+        Ok(ResponseMessage::DataConnect(
+            DataConnectResponseMessage::Success(content),
+        ))
     }
 }
 
 #[async_trait]
 impl Service for ConnectService {
     fn command(&self) -> &'static str {
-        return CONNECT_COMMAND;
+        return "";
     }
 
     async fn execute(&self, params: Value) -> ResponseMessage {
-        let param = self.execute_internal(params).await;
-        self.create_return_message(param)
+        let result = self.execute_internal(params).await;
+        match result {
+            Ok(message) => message,
+            Err(e) => {
+                let message = format!("{:?}", e);
+                ResponseMessage::DataConnect(DataConnectResponseMessage::Error(
+                    ErrorMessageRefactor::new(message),
+                ))
+            }
+        }
     }
 }
 
@@ -120,7 +126,7 @@ mod test_create_data {
         let result = connect_service.execute(message).await;
 
         // evaluate
-        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"result\":true,\"command\":\"DATA_CONNECT\",\"params\":{\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
+        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"is_success\":true,\"result\":{\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
     }
 
     #[tokio::test]
@@ -130,11 +136,9 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::ERROR(ErrorMessage {
-            result: false,
-            command: CONNECT_COMMAND.to_string(),
-            error_message: format!("{:?}", err),
-        });
+        let expected = ResponseMessage::DataConnect(DataConnectResponseMessage::Error(
+            ErrorMessageRefactor::new(format!("{:?}", err)),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
