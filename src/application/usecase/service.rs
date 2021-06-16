@@ -11,7 +11,6 @@ use crate::application::usecase::data::connect::DataConnectSuccessMessage;
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
 use crate::application::usecase::data::delete::DeleteDataSuccessMessage;
 use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
-use crate::application::usecase::peer::delete::DeletePeerSuccessMessage;
 use crate::application::usecase::peer::event::PeerEventMessage;
 use crate::application::usecase::ErrorMessage;
 use crate::PeerInfo;
@@ -157,7 +156,8 @@ impl<T: Serialize + PartialEq> ResponseMessageContent<T> {
 pub enum ResponseMessage {
     #[serde(rename = "PEER_CREATE")]
     PeerCreate(super::peer::create::PeerCreateResponseMessage),
-    PEER_DELETE(DeletePeerSuccessMessage),
+    #[serde(rename = "PEER_DELETE")]
+    PeerDelete(super::peer::delete::PeerDeleteResponseMessage),
     PEER_EVENT(PeerEventMessage),
     DATA_CREATE(CreateDataSuccessMessage),
     DATA_DELETE(DeleteDataSuccessMessage),
