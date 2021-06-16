@@ -57,7 +57,6 @@ mod test_delete_peer {
     use once_cell::sync::Lazy;
 
     use super::*;
-    use crate::application::usecase::ErrorMessage;
     use crate::di::PeerDeleteServiceContainer;
 
     // Lock to prevent tests from running simultaneously

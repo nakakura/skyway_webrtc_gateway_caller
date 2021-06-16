@@ -27,6 +27,7 @@ pub(crate) enum EventEnum {
 #[cfg_attr(test, automock)]
 pub(crate) mod service_creator {
     // 何故かwarningが出るのでマクロを入れる
+    #[allow(unused_imports)]
     use crate::application::usecase::service::execute_service;
     #[allow(unused_imports)]
     use crate::application::usecase::service::{ResponseMessage, Service, ServiceParams};

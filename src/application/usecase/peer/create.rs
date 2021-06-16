@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-#[cfg(test)]
-use mockall_double::double;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
+
+#[cfg(test)]
+use mockall_double::double;
 
 use crate::application::usecase::service::{
     ErrorMessageRefactor, ResponseMessage, ResponseMessageContent, Service,
@@ -55,11 +56,8 @@ mod test_create_peer {
 
     use once_cell::sync::Lazy;
 
-    use crate::application::usecase::ErrorMessage;
-    use crate::di::PeerCreateServiceContainer;
-
     use super::*;
-    use std::net::Shutdown::Read;
+    use crate::di::PeerCreateServiceContainer;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -104,8 +102,6 @@ mod test_create_peer {
         // evaluate
         assert_eq!(result, expected);
     }
-
-    fn hoge(x: usize) {}
 
     #[tokio::test]
     async fn fail() {

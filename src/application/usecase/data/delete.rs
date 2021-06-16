@@ -51,7 +51,6 @@ mod test_create_data {
     use skyway_webrtc_gateway_api::error;
 
     use super::*;
-    use crate::application::usecase::ErrorMessage;
     use crate::di::DataDeleteServiceContainer;
     use crate::domain::common::value_object::SerializableId;
     use crate::domain::data::service::MockDataApi;

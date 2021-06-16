@@ -10,7 +10,6 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::{
     ErrorMessageRefactor, EventListener, ResponseMessage, ResponseMessageContent,
 };
-use crate::application::usecase::ErrorMessage;
 use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
 use crate::domain::utility::ApplicationState;
@@ -98,7 +97,6 @@ mod test_peer_event {
     use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
 
     use super::*;
-    use crate::application::usecase::ErrorMessage;
     use crate::di::PeerEventServiceContainer;
     use crate::domain::peer::value_object::{MockPeer, PeerInfo};
 

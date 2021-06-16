@@ -7,7 +7,6 @@ pub use application::usecase::peer::event::PeerEventResponseMessage;
 pub use application::usecase::service::ResponseMessage;
 pub use application::usecase::service::ResponseMessageContent;
 pub use application::usecase::service::ServiceParams;
-pub use application::usecase::ErrorMessage;
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
 
 pub(crate) mod application;
@@ -95,7 +94,6 @@ async fn skyway_control_service_observe(
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
                 // 適宜event_txへsendされる
-                use application::usecase::peer::create::PeerCreateResponseMessage;
                 if let ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(params)) =
                     result
                 {

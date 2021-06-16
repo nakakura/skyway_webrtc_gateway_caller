@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-#[cfg(test)]
-use mockall::automock;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::Interface;
@@ -8,7 +7,9 @@ use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::ErrorMessage;
-use crate::PeerInfo;
+
+#[cfg(test)]
+use mockall::automock;
 
 pub(crate) async fn execute_service(service: &dyn Service, params: Value) -> ResponseMessage {
     let result = service.execute(params).await;
