@@ -7,8 +7,6 @@ use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
-use crate::application::usecase::data::delete::DataDeleteResponseMessage;
-use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
 use crate::application::usecase::ErrorMessage;
 use crate::PeerInfo;
 
@@ -163,7 +161,8 @@ pub enum ResponseMessage {
     DataDelete(super::data::delete::DataDeleteResponseMessage),
     #[serde(rename = "DATA_CONNECT")]
     DataConnect(super::data::connect::DataConnectResponseMessage),
-    DATA_DISCONNECT(DataDisconnectSuccessMessage),
+    #[serde(rename = "DATA_DISCONNECT")]
+    DataDisconnect(super::data::disconnect::DataDisconnectResponseMessage),
     ERROR(ErrorMessage),
 }
 

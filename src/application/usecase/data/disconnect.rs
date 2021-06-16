@@ -6,17 +6,16 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ResponseMessage, Service};
+use crate::application::usecase::service::{ErrorMessageRefactor, ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
+use crate::ResponseMessageContent;
 use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 
-pub(crate) const DISCONNECT_COMMAND: &'static str = "DATA_DISCONNECT";
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
-pub struct DataDisconnectSuccessMessage {
-    pub result: bool, // should be true
-    pub command: String,
-    pub params: DataConnectionIdWrapper,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum DataDisconnectResponseMessage {
+    Success(ResponseMessageContent<DataConnectionIdWrapper>),
+    Error(ErrorMessageRefactor),
 }
 
 // Serviceの具象Struct
@@ -31,12 +30,9 @@ pub(crate) struct DisconnectService {
 impl DisconnectService {
     async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.disconnect(params).await?;
-        Ok(ResponseMessage::DATA_DISCONNECT(
-            DataDisconnectSuccessMessage {
-                result: true,
-                command: self.command().to_string(),
-                params: param,
-            },
+        let content = ResponseMessageContent::new(param);
+        Ok(ResponseMessage::DataDisconnect(
+            DataDisconnectResponseMessage::Success(content),
         ))
     }
 }
@@ -44,12 +40,20 @@ impl DisconnectService {
 #[async_trait]
 impl Service for DisconnectService {
     fn command(&self) -> &'static str {
-        return DISCONNECT_COMMAND;
+        return "";
     }
 
     async fn execute(&self, params: Value) -> ResponseMessage {
-        let param = self.execute_internal(params).await;
-        self.create_return_message(param)
+        let result = self.execute_internal(params).await;
+        match result {
+            Ok(message) => message,
+            Err(e) => {
+                let message = format!("{:?}", e);
+                ResponseMessage::DataDisconnect(DataDisconnectResponseMessage::Error(
+                    ErrorMessageRefactor::new(message),
+                ))
+            }
+        }
     }
 }
 
@@ -106,7 +110,7 @@ mod test_create_data {
         let result = disconnect_service.execute(message).await;
 
         // evaluate
-        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"result\":true,\"command\":\"DATA_DISCONNECT\",\"params\":{\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
+        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"is_success\":true,\"result\":{\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
     }
 
     #[tokio::test]
@@ -116,11 +120,9 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::ERROR(ErrorMessage {
-            result: false,
-            command: DISCONNECT_COMMAND.to_string(),
-            error_message: format!("{:?}", err),
-        });
+        let expected = ResponseMessage::DataDisconnect(DataDisconnectResponseMessage::Error(
+            ErrorMessageRefactor::new(format!("{:?}", err)),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
