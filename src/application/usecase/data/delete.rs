@@ -27,28 +27,19 @@ pub(crate) struct DeleteService {
     api: Arc<dyn DataApi>,
 }
 
-impl DeleteService {
-    async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
+#[async_trait]
+impl Service for DeleteService {
+    fn create_error_message(&self, message: String) -> ResponseMessage {
+        ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(ErrorMessageRefactor::new(
+            message,
+        )))
+    }
+
+    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
         Ok(ResponseMessage::DataDelete(
             DataDeleteResponseMessage::Success(ResponseMessageContent::new(param)),
         ))
-    }
-}
-
-#[async_trait]
-impl Service for DeleteService {
-    async fn execute(&self, params: Value) -> ResponseMessage {
-        let result = self.execute_internal(params).await;
-        match result {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(
-                    ErrorMessageRefactor::new(message),
-                ))
-            }
-        }
     }
 }
 
@@ -106,7 +97,8 @@ mod test_create_data {
             data_id_str
         );
         let message = serde_json::from_str::<Value>(&message).unwrap();
-        let result = delete_service.execute(message).await;
+        let result =
+            crate::application::usecase::service::execute_service(delete_service, message).await;
 
         // evaluate
         assert_eq!(result, expected);
@@ -154,7 +146,8 @@ mod test_create_data {
             data_id_str
         );
         let message = serde_json::from_str::<Value>(&message).unwrap();
-        let result = delete_service.execute(message).await;
+        let result =
+            crate::application::usecase::service::execute_service(delete_service, message).await;
 
         // evaluate
         assert_eq!(result, expected);

@@ -27,29 +27,20 @@ pub(crate) struct ConnectService {
     api: Arc<dyn DataApi>,
 }
 
-impl ConnectService {
-    async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
+#[async_trait]
+impl Service for ConnectService {
+    fn create_error_message(&self, message: String) -> ResponseMessage {
+        ResponseMessage::DataConnect(DataConnectResponseMessage::Error(
+            ErrorMessageRefactor::new(message),
+        ))
+    }
+
+    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
         let content = ResponseMessageContent::new(param);
         Ok(ResponseMessage::DataConnect(
             DataConnectResponseMessage::Success(content),
         ))
-    }
-}
-
-#[async_trait]
-impl Service for ConnectService {
-    async fn execute(&self, params: Value) -> ResponseMessage {
-        let result = self.execute_internal(params).await;
-        match result {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                ResponseMessage::DataConnect(DataConnectResponseMessage::Error(
-                    ErrorMessageRefactor::new(message),
-                ))
-            }
-        }
     }
 }
 
@@ -119,7 +110,8 @@ mod test_create_data {
         let message = serde_json::to_value(message).unwrap();
 
         //実行
-        let result = connect_service.execute(message).await;
+        let result =
+            crate::application::usecase::service::execute_service(connect_service, message).await;
 
         // evaluate
         assert_eq!(serde_json::to_string(&result).unwrap(), "{\"is_success\":true,\"result\":{\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
@@ -148,7 +140,11 @@ mod test_create_data {
         let connect_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let result = connect_service.execute(serde_json::Value::Null).await;
+        let result = crate::application::usecase::service::execute_service(
+            connect_service,
+            serde_json::Value::Null,
+        )
+        .await;
 
         // evaluate
         assert_eq!(result, expected);

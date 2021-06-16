@@ -27,6 +27,7 @@ pub(crate) enum EventEnum {
 #[cfg_attr(test, automock)]
 pub(crate) mod service_creator {
     // 何故かwarningが出るのでマクロを入れる
+    use crate::application::usecase::service::execute_service;
     #[allow(unused_imports)]
     use crate::application::usecase::service::{ResponseMessage, Service, ServiceParams};
 
@@ -41,22 +42,22 @@ pub(crate) mod service_creator {
             ServiceParams::PeerCreate { params } => {
                 let module = PeerCreateServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
-                service.execute(params).await
+                execute_service(service, params).await
             }
             ServiceParams::PEER_DELETE { params } => {
                 let module = PeerDeleteServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
-                service.execute(params).await
+                execute_service(service, params).await
             }
             ServiceParams::DATA_CREATE { params } => {
                 let module = DataCreateServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
-                service.execute(params).await
+                execute_service(service, params).await
             }
             ServiceParams::DATA_DELETE { params } => {
                 let module = DataDeleteServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
-                service.execute(params).await
+                execute_service(service, params).await
             }
             _ => {
                 unreachable!()

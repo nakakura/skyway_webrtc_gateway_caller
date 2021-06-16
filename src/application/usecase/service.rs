@@ -10,6 +10,18 @@ use tokio::sync::mpsc::Sender;
 use crate::application::usecase::ErrorMessage;
 use crate::PeerInfo;
 
+pub(crate) async fn execute_service(service: &dyn Service, params: Value) -> ResponseMessage {
+    let result = service.execute(params).await;
+
+    match result {
+        Ok(message) => message,
+        Err(e) => {
+            let message = format!("{:?}", e);
+            service.create_error_message(message)
+        }
+    }
+}
+
 // 副作用のない単発のサービス
 // WebRTC Gatewayを叩いて結果を返す
 // create系のように、createのapiを叩いたあとopenイベントを確認するためevent apiを叩くものもあるが、
@@ -17,23 +29,8 @@ use crate::PeerInfo;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
-    async fn execute(&self, params: Value) -> ResponseMessage;
-    fn create_return_message(
-        &self,
-        result: Result<ResponseMessage, error::Error>,
-    ) -> ResponseMessage {
-        match result {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                ResponseMessage::ERROR(ErrorMessage {
-                    result: false,
-                    command: "hoge".into(),
-                    error_message: message,
-                })
-            }
-        }
-    }
+    fn create_error_message(&self, message: String) -> ResponseMessage;
+    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error>;
 }
 
 // JSONでクライアントから受け取るメッセージ

@@ -33,30 +33,20 @@ pub(crate) struct DeleteService {
     repository: Arc<dyn PeerRepository>,
 }
 
-impl DeleteService {
-    async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
+#[async_trait]
+impl Service for DeleteService {
+    fn create_error_message(&self, message: String) -> ResponseMessage {
+        ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(ErrorMessageRefactor::new(
+            message,
+        )))
+    }
+
+    async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = delete_service::try_delete(&self.repository, message).await?;
         let content = ResponseMessageContent::new(peer_info);
         Ok(ResponseMessage::PeerDelete(
             PeerDeleteResponseMessage::Success(content),
         ))
-    }
-}
-
-#[async_trait]
-impl Service for DeleteService {
-    async fn execute(&self, params: Value) -> ResponseMessage {
-        let result = self.execute_internal(params).await;
-
-        match result {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(
-                    ErrorMessageRefactor::new(message),
-                ))
-            }
-        }
     }
 }
 
@@ -94,9 +84,11 @@ mod test_delete_peer {
         let delete_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let result = delete_service
-            .execute(serde_json::to_value(&peer_info).unwrap())
-            .await;
+        let result = crate::application::usecase::service::execute_service(
+            delete_service,
+            serde_json::to_value(&peer_info).unwrap(),
+        )
+        .await;
 
         // clear context
         ctx.checkpoint();
@@ -125,7 +117,11 @@ mod test_delete_peer {
         let delete_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let result = delete_service.execute(serde_json::Value::Bool(true)).await;
+        let result = crate::application::usecase::service::execute_service(
+            delete_service,
+            serde_json::Value::Bool(true),
+        )
+        .await;
 
         // clear context
         ctx.checkpoint();

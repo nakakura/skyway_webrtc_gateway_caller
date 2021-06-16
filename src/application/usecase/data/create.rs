@@ -28,29 +28,22 @@ pub(crate) struct CreateService {
     api: Arc<dyn DataApi>,
 }
 
-impl CreateService {
-    async fn execute_internal(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
+impl CreateService {}
+
+#[async_trait]
+impl Service for CreateService {
+    fn create_error_message(&self, message: String) -> ResponseMessage {
+        ResponseMessage::DataCreate(DataCreateResponseMessage::Error(ErrorMessageRefactor::new(
+            message,
+        )))
+    }
+
+    async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
         let content = ResponseMessageContent::new(param);
         Ok(ResponseMessage::DataCreate(
             DataCreateResponseMessage::Success(content),
         ))
-    }
-}
-
-#[async_trait]
-impl Service for CreateService {
-    async fn execute(&self, params: Value) -> ResponseMessage {
-        let result = self.execute_internal(params).await;
-        match result {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                ResponseMessage::DataCreate(DataCreateResponseMessage::Error(
-                    ErrorMessageRefactor::new(message),
-                ))
-            }
-        }
     }
 }
 
@@ -99,7 +92,11 @@ mod test_create_data {
         let create_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let result = create_service.execute(serde_json::Value::Bool(true)).await;
+        let result = crate::application::usecase::service::execute_service(
+            create_service,
+            serde_json::Value::Bool(true),
+        )
+        .await;
 
         // evaluate
         assert_eq!(result, expected);
@@ -128,7 +125,11 @@ mod test_create_data {
         let create_service: &dyn Service = module.resolve_ref();
 
         // execute
-        let result = create_service.execute(serde_json::Value::Bool(true)).await;
+        let result = crate::application::usecase::service::execute_service(
+            create_service,
+            serde_json::Value::Bool(true),
+        )
+        .await;
 
         // evaluate
         assert_eq!(result, expected);
