@@ -6,7 +6,7 @@ use skyway_webrtc_gateway_api::error;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
-use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
+use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId, DataIdWrapper};
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
@@ -27,12 +27,7 @@ impl DataApi for DataApiImpl {
     }
 
     async fn delete(&self, data_id: Value) -> Result<DataId, error::Error> {
-        use serde::Deserialize;
-        #[derive(Deserialize, Debug)]
-        struct Message {
-            pub data_id: DataId,
-        }
-        let data_id = serde_json::from_value::<Message>(data_id)
+        let data_id = serde_json::from_value::<DataIdWrapper>(data_id)
             .map_err(|e| error::Error::SerdeError { error: e })?
             .data_id;
         let _ = data::close_data_socket(&data_id).await?;
