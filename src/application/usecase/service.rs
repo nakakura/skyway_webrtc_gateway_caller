@@ -8,7 +8,6 @@ use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::data::connect::DataConnectSuccessMessage;
-use crate::application::usecase::data::create::CreateDataSuccessMessage;
 use crate::application::usecase::data::delete::DataDeleteResponseMessage;
 use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
 use crate::application::usecase::ErrorMessage;
@@ -159,7 +158,8 @@ pub enum ResponseMessage {
     PeerDelete(super::peer::delete::PeerDeleteResponseMessage),
     #[serde(rename = "PEER_EVENT")]
     PeerEvent(super::peer::event::PeerEventResponseMessage),
-    DATA_CREATE(CreateDataSuccessMessage),
+    #[serde(rename = "DATA_CREATE")]
+    DataCreate(super::data::create::DataCreateResponseMessage),
     #[serde(rename = "DATA_DELETE")]
     DataDelete(super::data::delete::DataDeleteResponseMessage),
     DATA_CONNECT(DataConnectSuccessMessage),

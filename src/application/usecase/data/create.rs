@@ -6,18 +6,17 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ResponseMessage, Service};
+use crate::application::usecase::service::{ErrorMessageRefactor, ResponseMessage, Service};
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
+use crate::ResponseMessageContent;
 
-pub(crate) const CREATE_DATA_COMMAND: &'static str = "DATA_CREATE";
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub struct CreateDataSuccessMessage {
-    pub result: bool, // should be true
-    pub command: String,
-    pub params: SocketInfo<DataId>,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum DataCreateResponseMessage {
+    Success(ResponseMessageContent<SocketInfo<DataId>>),
+    Error(ErrorMessageRefactor),
 }
 
 // Serviceの具象Struct
@@ -32,23 +31,30 @@ pub(crate) struct CreateService {
 impl CreateService {
     async fn execute_internal(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
-        Ok(ResponseMessage::DATA_CREATE(CreateDataSuccessMessage {
-            result: true,
-            command: CREATE_DATA_COMMAND.to_string(),
-            params: param,
-        }))
+        let content = ResponseMessageContent::new(param);
+        Ok(ResponseMessage::DataCreate(
+            DataCreateResponseMessage::Success(content),
+        ))
     }
 }
 
 #[async_trait]
 impl Service for CreateService {
     fn command(&self) -> &'static str {
-        return CREATE_DATA_COMMAND;
+        return "";
     }
 
     async fn execute(&self, params: Value) -> ResponseMessage {
-        let param = self.execute_internal(params).await;
-        self.create_return_message(param)
+        let result = self.execute_internal(params).await;
+        match result {
+            Ok(message) => message,
+            Err(e) => {
+                let message = format!("{:?}", e);
+                ResponseMessage::DataCreate(DataCreateResponseMessage::Error(
+                    ErrorMessageRefactor::new(message),
+                ))
+            }
+        }
     }
 }
 
@@ -80,11 +86,9 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected = ResponseMessage::DATA_CREATE(CreateDataSuccessMessage {
-            result: true,
-            command: CREATE_DATA_COMMAND.to_string(),
-            params: data_id.clone(),
-        });
+        let expected = ResponseMessage::DataCreate(DataCreateResponseMessage::Success(
+            ResponseMessageContent::new(data_id.clone()),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
@@ -112,11 +116,9 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::ERROR(ErrorMessage {
-            result: false,
-            command: CREATE_DATA_COMMAND.to_string(),
-            error_message: format!("{:?}", err),
-        });
+        let expected = ResponseMessage::DataCreate(DataCreateResponseMessage::Error(
+            ErrorMessageRefactor::new(format!("{:?}", err)),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
