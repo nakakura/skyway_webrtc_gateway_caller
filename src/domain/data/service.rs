@@ -15,4 +15,5 @@ pub(crate) trait DataApi: Interface {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error>;
     async fn delete(&self, data_id: Value) -> Result<DataId, error::Error>;
     async fn connect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
+    async fn disconnect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
 }

@@ -51,6 +51,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) DataDisconnectServiceContainer {
+        components = [data::disconnect::DisconnectService, DataApiImpl],
+        providers = []
+    }
+}
+
 //========== Util ==========
 module! {
     pub(crate) ApplicationStateContainer {

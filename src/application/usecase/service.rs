@@ -10,6 +10,7 @@ use tokio::sync::mpsc::Sender;
 use crate::application::usecase::data::connect::DataConnectSuccessMessage;
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
 use crate::application::usecase::data::delete::DeleteDataSuccessMessage;
+use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
 use crate::application::usecase::peer::create::CreatePeerSuccessMessage;
 use crate::application::usecase::peer::delete::DeletePeerSuccessMessage;
 use crate::application::usecase::peer::event::PeerEventMessage;
@@ -50,6 +51,7 @@ pub enum ServiceParams {
     DATA_CREATE { params: Value },
     DATA_DELETE { params: Value },
     DATA_CONNECT { params: Value },
+    DATA_DISCONNECT { params: Value },
 }
 
 #[cfg(test)]
@@ -114,6 +116,7 @@ pub enum ReturnMessage {
     DATA_CREATE(CreateDataSuccessMessage),
     DATA_DELETE(DeleteDataSuccessMessage),
     DATA_CONNECT(DataConnectSuccessMessage),
+    DATA_DISCONNECT(DataDisconnectSuccessMessage),
     ERROR(ErrorMessage),
 }
 
