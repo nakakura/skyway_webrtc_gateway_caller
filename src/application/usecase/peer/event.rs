@@ -7,7 +7,7 @@ use shaku::*;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc;
 
-use crate::application::usecase::service::{EventListener, ReturnMessage};
+use crate::application::usecase::service::{EventListener, ResponseMessage};
 use crate::application::usecase::ErrorMessage;
 use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
@@ -32,14 +32,14 @@ pub(crate) struct EventService {
 }
 
 impl EventService {
-    async fn execute_internal(&self, message: Value) -> Result<ReturnMessage, error::Error> {
+    async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let event = self.api.event(message).await?;
         let event_message = PeerEventMessage {
             result: true,
             command: PEER_EVENT_COMMAND.into(),
             params: event,
         };
-        Ok(ReturnMessage::PEER_EVENT(event_message))
+        Ok(ResponseMessage::PEER_EVENT(event_message))
     }
 }
 
@@ -49,7 +49,7 @@ impl EventListener for EventService {
         return PEER_EVENT_COMMAND;
     }
 
-    async fn execute(&self, event_tx: mpsc::Sender<ReturnMessage>, params: Value) -> ReturnMessage {
+    async fn execute(&self, event_tx: mpsc::Sender<ResponseMessage>, params: Value) -> ResponseMessage {
         let module = ApplicationStateContainer::builder().build();
         let state: &dyn ApplicationState = module.resolve_ref();
 
@@ -67,7 +67,7 @@ impl EventListener for EventService {
             // event_txへの送信がエラーなら終了する
             if let Err(e) = result {
                 let message = format!("{:?}", e);
-                return ReturnMessage::ERROR(ErrorMessage {
+                return ResponseMessage::ERROR(ErrorMessage {
                     result: false,
                     command: self.command().into(),
                     error_message: message,
@@ -75,7 +75,7 @@ impl EventListener for EventService {
             }
 
             // close eventを受け取っていたら終了する
-            if let ReturnMessage::PEER_EVENT(ref peer_event_message) = message {
+            if let ResponseMessage::PEER_EVENT(ref peer_event_message) = message {
                 if let PeerEventEnum::CLOSE(_) = &peer_event_message.params {
                     return message;
                 }
@@ -115,12 +115,12 @@ mod test_peer_event {
         });
 
         // 期待値の生成
-        let expected_connect = ReturnMessage::PEER_EVENT(PeerEventMessage {
+        let expected_connect = ResponseMessage::PEER_EVENT(PeerEventMessage {
             result: true,
             command: PEER_EVENT_COMMAND.into(),
             params: connect_event.clone(),
         });
-        let expected_close = ReturnMessage::PEER_EVENT(PeerEventMessage {
+        let expected_close = ResponseMessage::PEER_EVENT(PeerEventMessage {
             result: true,
             command: PEER_EVENT_COMMAND.into(),
             params: close_event.clone(),
@@ -145,7 +145,7 @@ mod test_peer_event {
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // execute
-        let (event_tx, mut event_rx) = mpsc::channel::<ReturnMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
         let return_result = event_service
             .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
             .await;
@@ -182,7 +182,7 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 期待値の生成
-        let expected = ReturnMessage::ERROR(ErrorMessage {
+        let expected = ResponseMessage::ERROR(ErrorMessage {
             result: false,
             command: PEER_EVENT_COMMAND.into(),
             error_message: format!("{:?}", error::Error::create_local_error("error")),
@@ -200,7 +200,7 @@ mod test_peer_event {
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // execute
-        let (event_tx, mut event_rx) = mpsc::channel::<ReturnMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
         let result = event_service
             .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
             .await;

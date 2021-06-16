@@ -11,10 +11,10 @@ use crate::application::usecase::data::connect::DataConnectSuccessMessage;
 use crate::application::usecase::data::create::CreateDataSuccessMessage;
 use crate::application::usecase::data::delete::DeleteDataSuccessMessage;
 use crate::application::usecase::data::disconnect::DataDisconnectSuccessMessage;
-use crate::application::usecase::peer::create::CreatePeerSuccessMessage;
 use crate::application::usecase::peer::delete::DeletePeerSuccessMessage;
 use crate::application::usecase::peer::event::PeerEventMessage;
 use crate::application::usecase::ErrorMessage;
+use crate::PeerInfo;
 
 // 副作用のない単発のサービス
 // WebRTC Gatewayを叩いて結果を返す
@@ -24,13 +24,16 @@ use crate::application::usecase::ErrorMessage;
 #[async_trait]
 pub(crate) trait Service: Interface {
     fn command(&self) -> &'static str;
-    async fn execute(&self, params: Value) -> ReturnMessage;
-    fn create_return_message(&self, result: Result<ReturnMessage, error::Error>) -> ReturnMessage {
+    async fn execute(&self, params: Value) -> ResponseMessage;
+    fn create_return_message(
+        &self,
+        result: Result<ResponseMessage, error::Error>,
+    ) -> ResponseMessage {
         match result {
             Ok(message) => message,
             Err(e) => {
                 let message = format!("{:?}", e);
-                ReturnMessage::ERROR(ErrorMessage {
+                ResponseMessage::ERROR(ErrorMessage {
                     result: false,
                     command: self.command().into(),
                     error_message: message,
@@ -46,12 +49,25 @@ pub(crate) trait Service: Interface {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "command")]
 pub enum ServiceParams {
-    PEER_CREATE { params: Value },
-    PEER_DELETE { params: Value },
-    DATA_CREATE { params: Value },
-    DATA_DELETE { params: Value },
-    DATA_CONNECT { params: Value },
-    DATA_DISCONNECT { params: Value },
+    #[serde(rename = "PEER_CREATE")]
+    PeerCreate {
+        params: Value,
+    },
+    PEER_DELETE {
+        params: Value,
+    },
+    DATA_CREATE {
+        params: Value,
+    },
+    DATA_DELETE {
+        params: Value,
+    },
+    DATA_CONNECT {
+        params: Value,
+    },
+    DATA_DISCONNECT {
+        params: Value,
+    },
 }
 
 #[cfg(test)]
@@ -76,7 +92,7 @@ mod deserialize_str {
         }"#;
 
         let create_message = serde_json::from_str::<ServiceParams>(message);
-        if let Ok(ServiceParams::PEER_CREATE { params }) = create_message {
+        if let Ok(ServiceParams::PeerCreate { params }) = create_message {
             let _ = serde_json::from_value::<CreatePeerParams>(params).unwrap();
             assert!(true);
         } else {
@@ -104,13 +120,43 @@ mod deserialize_str {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ErrorMessageRefactor {
+    is_success: bool,
+    pub result: String,
+}
+
+impl ErrorMessageRefactor {
+    pub fn new(result: String) -> Self {
+        Self {
+            is_success: false,
+            result,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ResponseMessageContent<T: Serialize + PartialEq> {
+    is_success: bool,
+    pub result: T,
+}
+
+impl<T: Serialize + PartialEq> ResponseMessageContent<T> {
+    pub fn new(result: T) -> Self {
+        Self {
+            is_success: true,
+            result,
+        }
+    }
+}
+
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
-pub enum ReturnMessage {
-    PEER_CREATE(CreatePeerSuccessMessage),
+pub enum ResponseMessage {
+    #[serde(rename = "PEER_CREATE")]
+    PeerCreate(super::peer::create::PeerCreateResponseMessage),
     PEER_DELETE(DeletePeerSuccessMessage),
     PEER_EVENT(PeerEventMessage),
     DATA_CREATE(CreateDataSuccessMessage),
@@ -122,24 +168,20 @@ pub enum ReturnMessage {
 
 #[cfg(test)]
 mod serialize_enum {
-    use crate::application::usecase::peer::create::CREATE_PEER_COMMAND;
     use crate::domain::peer::value_object::PeerInfo;
 
     use super::*;
 
     #[test]
     fn create_message() {
-        let expected = "{\"result\":true,\"command\":\"PEER_CREATE\",\"params\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\"}}";
+        let expected = "{\"is_success\":true,\"result\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\"}}";
 
         // create a param
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let obj = CreatePeerSuccessMessage {
-            result: true,
-            command: CREATE_PEER_COMMAND.into(),
-            params: peer_info,
-        };
-        let ret_message = ReturnMessage::PEER_CREATE(obj);
+        let content = ResponseMessageContent::new(peer_info);
+        use crate::application::usecase::peer::create::PeerCreateResponseMessage;
+        let ret_message = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(content));
 
         // serialize
         let message = serde_json::to_string(&ret_message).unwrap();
@@ -155,10 +197,10 @@ mod serialize_enum {
         // create a param
         let obj = ErrorMessage {
             result: false,
-            command: CREATE_PEER_COMMAND.into(),
+            command: "PEER_CREATE".into(),
             error_message: "error".to_string(),
         };
-        let ret_message = ReturnMessage::ERROR(obj);
+        let ret_message = ResponseMessage::ERROR(obj);
 
         // serialize
         let message = serde_json::to_string(&ret_message).unwrap();
@@ -176,13 +218,16 @@ mod serialize_enum {
 #[async_trait]
 pub(crate) trait EventListener: Interface {
     fn command(&self) -> &'static str;
-    async fn execute(&self, event_tx: Sender<ReturnMessage>, params: Value) -> ReturnMessage;
-    fn create_return_message(&self, result: Result<ReturnMessage, error::Error>) -> ReturnMessage {
+    async fn execute(&self, event_tx: Sender<ResponseMessage>, params: Value) -> ResponseMessage;
+    fn create_return_message(
+        &self,
+        result: Result<ResponseMessage, error::Error>,
+    ) -> ResponseMessage {
         match result {
             Ok(message) => message,
             Err(e) => {
                 let message = format!("{:?}", e);
-                ReturnMessage::ERROR(ErrorMessage {
+                ResponseMessage::ERROR(ErrorMessage {
                     result: false,
                     command: self.command().into(),
                     error_message: message,

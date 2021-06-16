@@ -6,7 +6,7 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ReturnMessage, Service};
+use crate::application::usecase::service::{ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
 use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 
@@ -29,9 +29,9 @@ pub(crate) struct ConnectService {
 }
 
 impl ConnectService {
-    async fn execute_internal(&self, params: Value) -> Result<ReturnMessage, error::Error> {
+    async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
-        Ok(ReturnMessage::DATA_CONNECT(DataConnectSuccessMessage {
+        Ok(ResponseMessage::DATA_CONNECT(DataConnectSuccessMessage {
             result: true,
             command: CONNECT_COMMAND.to_string(),
             params: param,
@@ -45,7 +45,7 @@ impl Service for ConnectService {
         return CONNECT_COMMAND;
     }
 
-    async fn execute(&self, params: Value) -> ReturnMessage {
+    async fn execute(&self, params: Value) -> ResponseMessage {
         let param = self.execute_internal(params).await;
         self.create_return_message(param)
     }
@@ -130,7 +130,7 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ReturnMessage::ERROR(ErrorMessage {
+        let expected = ResponseMessage::ERROR(ErrorMessage {
             result: false,
             command: CONNECT_COMMAND.to_string(),
             error_message: format!("{:?}", err),

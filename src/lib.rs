@@ -2,10 +2,10 @@ use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
-pub use application::usecase::peer::create::CreatePeerSuccessMessage;
+pub use application::usecase::peer::create::PeerCreateResponseMessage;
 pub use application::usecase::peer::delete::DeletePeerSuccessMessage;
 pub use application::usecase::peer::event::PeerEventMessage;
-pub use application::usecase::service::ReturnMessage;
+pub use application::usecase::service::ResponseMessage;
 pub use application::usecase::service::ServiceParams;
 pub use application::usecase::ErrorMessage;
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
@@ -21,14 +21,14 @@ pub(crate) mod infra;
 //
 // End-User Application <--> Presentation層間
 // End-User ApplicationはJSONもしくはService Paramsで操作指示を行い、
-// 結果としてReturnMessageを受け取る
+// 結果としてResponseMessageを受け取る
 // エンドユーザから受け取ったJSONのパースはPresentation層の責務として処理する
 //
 // Presentation層 <--> Application層間
-// Service Paramsで操作指示を行い、ReturnMessageを受け取る
+// Service Paramsで操作指示を行い、ResponseMessageを受け取る
 //
 // Application層 <--> Domain層間
-// Service Paramsで操作指示を行い、ReturnMessageを受け取る
+// Service Paramsで操作指示を行い、ResponseMessageを受け取る
 //
 // Domain層, Infra層
 // Service Paramsとして与えられた値がDomain知識に適合するかどうかはDomain Objectの責務として判断する
@@ -41,24 +41,24 @@ pub(crate) mod infra;
 pub async fn run(
     base_url: &str,
 ) -> (
-    mpsc::Sender<(oneshot::Sender<ReturnMessage>, ServiceParams)>,
-    mpsc::Receiver<ReturnMessage>,
+    mpsc::Sender<(oneshot::Sender<ResponseMessage>, ServiceParams)>,
+    mpsc::Receiver<ResponseMessage>,
 ) {
     // skyway webrtc gateway のbase_urlを設定する
     skyway_webrtc_gateway_api::initialize(base_url);
 
     // skyway_control serviceのデータのやりとり
-    // ServiceParamsで与えられた支持に対し、oneshotチャンネルへReturnMessageを返す
+    // ServiceParamsで与えられた支持に対し、oneshotチャンネルへResponseMessageを返す
     // 副作用としてイベントが発生した場合はskyway_event serviceへ転送し、ここでは返さない
     // ROS終了時にSenderをdropすることでReceiverの監視を停止する
     let (message_tx, message_rx) =
-        mpsc::channel::<(oneshot::Sender<ReturnMessage>, ServiceParams)>(10);
+        mpsc::channel::<(oneshot::Sender<ResponseMessage>, ServiceParams)>(10);
     // skyway_event serviceとやりとりするためのチャンネルを生成する
     // イベント監視の必要性が生じた場合は自動で監視を行い、このチャンネルへsendする
     // skyway_event serviceにアクセスがあった場合、event_rxからイベントをpopして返す
     // イベントがない場合は来るまで待機して返す
     // TODO: タイムアウトの仕様を検討する
-    let (event_tx, event_rx) = mpsc::channel::<ReturnMessage>(10);
+    let (event_tx, event_rx) = mpsc::channel::<ResponseMessage>(10);
 
     // message_txの監視を開始
     // messege_txの指示次第でeventを監視する必要が生じるので、event_txも渡す
@@ -77,8 +77,8 @@ pub async fn run(
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
 async fn skyway_control_service_observe(
-    receiver: mpsc::Receiver<(oneshot::Sender<ReturnMessage>, ServiceParams)>,
-    event_tx: mpsc::Sender<ReturnMessage>,
+    receiver: mpsc::Receiver<(oneshot::Sender<ResponseMessage>, ServiceParams)>,
+    event_tx: mpsc::Sender<ResponseMessage>,
 ) {
     let receiver = ReceiverStream::new(receiver);
     receiver
@@ -88,15 +88,18 @@ async fn skyway_control_service_observe(
             |event_tx, (message_response_tx, message)| async move {
                 // application層のメソッドにメッセージを渡す
                 // 内部で適切に各Serviceに振り分けて結果のみ返してもらう
-                // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ReturnMessage::ERROR)のでそのままPresentation層へ渡す
+                // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ResponseMessage::ERROR)のでそのままPresentation層へ渡す
                 let result = application::service_creator::create(message).await;
                 let _ = message_response_tx.send(result.clone());
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
                 // 適宜event_txへsendされる
-                if let ReturnMessage::PEER_CREATE(params) = result {
-                    tokio::spawn(event_observe(params.params, event_tx.clone()));
+                use application::usecase::peer::create::PeerCreateResponseMessage;
+                if let ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(params)) =
+                    result
+                {
+                    tokio::spawn(event_observe(params.result, event_tx.clone()));
                 }
 
                 event_tx
@@ -105,7 +108,7 @@ async fn skyway_control_service_observe(
         .await;
 }
 
-async fn event_observe(peer_info: PeerInfo, event_tx: mpsc::Sender<ReturnMessage>) {
+async fn event_observe(peer_info: PeerInfo, event_tx: mpsc::Sender<ResponseMessage>) {
     use shaku::HasComponent;
 
     use crate::application::usecase::service::EventListener;

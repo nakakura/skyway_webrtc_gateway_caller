@@ -6,7 +6,7 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ReturnMessage, Service};
+use crate::application::usecase::service::{ResponseMessage, Service};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::delete_service;
@@ -34,7 +34,7 @@ pub(crate) struct DeleteService {
 }
 
 impl DeleteService {
-    async fn execute_internal(&self, message: Value) -> Result<ReturnMessage, error::Error> {
+    async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = delete_service::try_delete(&self.repository, message).await?;
 
         let message_obj = DeletePeerSuccessMessage {
@@ -42,7 +42,7 @@ impl DeleteService {
             command: DELETE_PEER_COMMAND.into(),
             params: peer_info,
         };
-        Ok(ReturnMessage::PEER_DELETE(message_obj))
+        Ok(ResponseMessage::PEER_DELETE(message_obj))
     }
 }
 
@@ -52,7 +52,7 @@ impl Service for DeleteService {
         return DELETE_PEER_COMMAND;
     }
 
-    async fn execute(&self, params: Value) -> ReturnMessage {
+    async fn execute(&self, params: Value) -> ResponseMessage {
         let result = self.execute_internal(params).await;
         self.create_return_message(result)
     }
@@ -84,7 +84,7 @@ mod test_delete_peer {
             command: DELETE_PEER_COMMAND.into(),
             params: peer_info.clone(),
         };
-        let expected = ReturnMessage::PEER_DELETE(message_obj);
+        let expected = ResponseMessage::PEER_DELETE(message_obj);
 
         // Peerの生成に成功するケース
         let ret_peer_info = peer_info.clone();
@@ -118,7 +118,7 @@ mod test_delete_peer {
             command: DELETE_PEER_COMMAND.into(),
             error_message: format!("{:?}", error::Error::create_local_error("error")),
         };
-        let expected = ReturnMessage::ERROR(expected);
+        let expected = ResponseMessage::ERROR(expected);
 
         // Peerの生成に失敗するケース
         let ctx = delete_service::try_delete_context();

@@ -28,17 +28,17 @@ pub(crate) enum EventEnum {
 pub(crate) mod service_creator {
     // 何故かwarningが出るのでマクロを入れる
     #[allow(unused_imports)]
-    use crate::application::usecase::service::{ReturnMessage, Service, ServiceParams};
+    use crate::application::usecase::service::{ResponseMessage, Service, ServiceParams};
 
     // TODO: まだtestでしか使っていない
     #[allow(dead_code)]
-    pub(crate) async fn create(params: ServiceParams) -> ReturnMessage {
+    pub(crate) async fn create(params: ServiceParams) -> ResponseMessage {
         use shaku::HasComponent;
 
         use crate::di::*;
 
         match params {
-            ServiceParams::PEER_CREATE { params } => {
+            ServiceParams::PeerCreate { params } => {
                 let module = PeerCreateServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
                 service.execute(params).await
@@ -90,7 +90,7 @@ pub(crate) mod router {
     use mockall_double::double;
 
     #[allow(unused_imports)]
-    use crate::application::usecase::service::ReturnMessage;
+    use crate::application::usecase::service::ResponseMessage;
     use crate::domain::peer::value_object::PeerInfo;
 
     #[allow(unused_imports)]
@@ -118,10 +118,13 @@ pub(crate) mod router {
                 // to_string always success
                 let _ = response_tx.send(serde_json::to_string(&result).unwrap());
 
-                if let ReturnMessage::PEER_CREATE(params) = result {
+                use super::usecase::peer::create::PeerCreateResponseMessage;
+                if let ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(params)) =
+                    result
+                {
                     let (tx, rx) = mpsc::channel::<String>(100);
-                    let _ = event_observer_tx.send((params.params.clone(), rx)).await;
-                    tokio::spawn(event::event(params.params, tx, system_tx.clone()));
+                    let _ = event_observer_tx.send((params.result.clone(), rx)).await;
+                    tokio::spawn(event::event(params.result, tx, system_tx.clone()));
                 }
             }
         }
@@ -138,11 +141,12 @@ mod test_run_event {
 
     use crate::application::router::run_event;
     use crate::application::usecase::ErrorMessage;
-    use crate::{CreatePeerSuccessMessage, PeerInfo, ReturnMessage};
+    use crate::{PeerInfo, ResponseMessage};
 
     #[cfg_attr(test, double)]
     use super::service_creator;
     use super::*;
+    use crate::application::usecase::service::ResponseMessageContent;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -192,14 +196,13 @@ mod test_run_event {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
-        // PEER_CREATEメッセージを返すmockを作成
+        // PeerCreateメッセージを返すmockを作成
         let ctx = service_creator::create_context();
-        let message = ReturnMessage::PEER_CREATE(CreatePeerSuccessMessage {
-            result: true,
-            command: "PEER_CREATE".to_string(),
-            params: PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308")
-                .unwrap(),
-        });
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        let content = ResponseMessageContent::new(peer_info);
+        use usecase::peer::create::PeerCreateResponseMessage;
+        let message = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(content));
         let ret_message = message.clone();
         ctx.expect().return_const(ret_message);
 
@@ -237,7 +240,7 @@ mod test_run_event {
 
         // 戻ってきたhashには、token_2: tx_2のペアが入っているはず
         assert_eq!(result_return.len(), 0);
-        // channelからはPEER_CREATEメッセージのJSON文字列が入っているはず
+        // channelからはPeerCreateメッセージのJSON文字列が入っているはず
         let expected = serde_json::to_string(&message).unwrap();
         assert_eq!(result_channel.unwrap(), expected);
 
@@ -263,7 +266,7 @@ mod test_run_event {
 
         // ERRORメッセージを返すmockを作成
         let ctx = service_creator::create_context();
-        let message = ReturnMessage::ERROR(ErrorMessage {
+        let message = ResponseMessage::ERROR(ErrorMessage {
             result: false,
             command: "PEER_CREATE".to_string(),
             error_message: "error".to_string(),

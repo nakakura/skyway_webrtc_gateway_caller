@@ -6,7 +6,7 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ReturnMessage, Service};
+use crate::application::usecase::service::{ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
 
@@ -29,9 +29,9 @@ pub(crate) struct DeleteService {
 }
 
 impl DeleteService {
-    async fn execute_internal(&self, params: Value) -> Result<ReturnMessage, error::Error> {
+    async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
-        Ok(ReturnMessage::DATA_DELETE(DeleteDataSuccessMessage {
+        Ok(ResponseMessage::DATA_DELETE(DeleteDataSuccessMessage {
             result: true,
             command: DELETE_DATA_COMMAND.to_string(),
             params: param,
@@ -45,7 +45,7 @@ impl Service for DeleteService {
         return DELETE_DATA_COMMAND;
     }
 
-    async fn execute(&self, params: Value) -> ReturnMessage {
+    async fn execute(&self, params: Value) -> ResponseMessage {
         let param = self.execute_internal(params).await;
         self.create_return_message(param)
     }
@@ -75,7 +75,7 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ReturnMessage::DATA_DELETE(DeleteDataSuccessMessage {
+        let expected = ResponseMessage::DATA_DELETE(DeleteDataSuccessMessage {
             result: true,
             command: DELETE_DATA_COMMAND.to_string(),
             params: DataId::try_create(data_id_str).unwrap(),
@@ -121,7 +121,7 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ReturnMessage::ERROR(ErrorMessage {
+        let expected = ResponseMessage::ERROR(ErrorMessage {
             result: false,
             command: DELETE_DATA_COMMAND.to_string(),
             error_message:

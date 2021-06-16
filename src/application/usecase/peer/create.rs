@@ -8,19 +8,19 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ReturnMessage, Service};
+use crate::application::usecase::service::{
+    ErrorMessageRefactor, ResponseMessage, ResponseMessageContent, Service,
+};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::create_service;
 use crate::domain::peer::value_object::PeerInfo;
 
-pub(crate) const CREATE_PEER_COMMAND: &'static str = "PEER_CREATE";
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
-pub struct CreatePeerSuccessMessage {
-    pub result: bool, // should be true
-    pub command: String,
-    pub params: PeerInfo,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum PeerCreateResponseMessage {
+    Success(ResponseMessageContent<PeerInfo>),
+    Error(ErrorMessageRefactor),
 }
 
 // Serviceの具象Struct
@@ -33,26 +33,33 @@ pub(crate) struct CreateService {
 }
 
 impl CreateService {
-    async fn execute_internal(&self, params: Value) -> Result<ReturnMessage, error::Error> {
+    async fn execute_internal(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = create_service::try_create(&self.repository, params).await?;
-        let message_obj = CreatePeerSuccessMessage {
-            result: true,
-            command: CREATE_PEER_COMMAND.into(),
-            params: peer_info.clone(),
-        };
-        Ok(ReturnMessage::PEER_CREATE(message_obj))
+        let content = ResponseMessageContent::new(peer_info);
+        Ok(ResponseMessage::PeerCreate(
+            PeerCreateResponseMessage::Success(content),
+        ))
     }
 }
 
 #[async_trait]
 impl Service for CreateService {
     fn command(&self) -> &'static str {
-        return CREATE_PEER_COMMAND;
+        return "";
     }
 
-    async fn execute(&self, params: Value) -> ReturnMessage {
+    async fn execute(&self, params: Value) -> ResponseMessage {
         let result = self.execute_internal(params).await;
-        self.create_return_message(result)
+
+        match result {
+            Ok(message) => message,
+            Err(e) => {
+                let message = format!("{:?}", e);
+                ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(
+                    ErrorMessageRefactor::new(message),
+                ))
+            }
+        }
     }
 }
 
@@ -66,6 +73,7 @@ mod test_create_peer {
     use crate::di::PeerCreateServiceContainer;
 
     use super::*;
+    use std::net::Shutdown::Read;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -88,12 +96,8 @@ mod test_create_peer {
         // 正常終了するケースとして値を生成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let message_obj = CreatePeerSuccessMessage {
-            result: true,
-            command: CREATE_PEER_COMMAND.into(),
-            params: peer_info.clone(),
-        };
-        let expected = ReturnMessage::PEER_CREATE(message_obj);
+        let message_obj = ResponseMessageContent::new(peer_info.clone());
+        let expected = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(message_obj));
 
         // 正しいPeerInfoを返す正常系動作
         let ret_peer_info = peer_info.clone();
@@ -127,11 +131,9 @@ mod test_create_peer {
         }"#;
         let message = serde_json::from_str::<Value>(message).unwrap();
 
-        let expected = ReturnMessage::ERROR(ErrorMessage {
-            result: false,
-            command: CREATE_PEER_COMMAND.into(),
-            error_message: format!("{:?}", error::Error::create_local_error("error")),
-        });
+        let expected =
+            ErrorMessageRefactor::new(format!("{:?}", error::Error::create_local_error("error")));
+        let expected = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(expected));
 
         // Peerの生成に失敗するケース
         let ctx = create_service::try_create_context();

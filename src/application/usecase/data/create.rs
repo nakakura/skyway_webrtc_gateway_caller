@@ -6,7 +6,7 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ReturnMessage, Service};
+use crate::application::usecase::service::{ResponseMessage, Service};
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
@@ -30,9 +30,9 @@ pub(crate) struct CreateService {
 }
 
 impl CreateService {
-    async fn execute_internal(&self, _params: Value) -> Result<ReturnMessage, error::Error> {
+    async fn execute_internal(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
-        Ok(ReturnMessage::DATA_CREATE(CreateDataSuccessMessage {
+        Ok(ResponseMessage::DATA_CREATE(CreateDataSuccessMessage {
             result: true,
             command: CREATE_DATA_COMMAND.to_string(),
             params: param,
@@ -46,7 +46,7 @@ impl Service for CreateService {
         return CREATE_DATA_COMMAND;
     }
 
-    async fn execute(&self, params: Value) -> ReturnMessage {
+    async fn execute(&self, params: Value) -> ResponseMessage {
         let param = self.execute_internal(params).await;
         self.create_return_message(param)
     }
@@ -80,7 +80,7 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected = ReturnMessage::DATA_CREATE(CreateDataSuccessMessage {
+        let expected = ResponseMessage::DATA_CREATE(CreateDataSuccessMessage {
             result: true,
             command: CREATE_DATA_COMMAND.to_string(),
             params: data_id.clone(),
@@ -112,7 +112,7 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ReturnMessage::ERROR(ErrorMessage {
+        let expected = ResponseMessage::ERROR(ErrorMessage {
             result: false,
             command: CREATE_DATA_COMMAND.to_string(),
             error_message: format!("{:?}", err),

@@ -147,7 +147,7 @@ async fn test_create_peer() {
         );
 
         // call create peer api
-        let (tx, rx) = tokio::sync::oneshot::channel::<ReturnMessage>();
+        let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
         let body = serde_json::from_str::<ServiceParams>(&body).unwrap();
         let _ = message_tx.send((tx, body)).await;
         let result = rx.await;
@@ -155,11 +155,12 @@ async fn test_create_peer() {
         // serverが呼ばれたかチェックする
         mock_create_peer.assert();
 
+        use rust_module::PeerCreateResponseMessage;
         match result {
-            // PEER_CREATEが帰ってきていればpeer_infoを取り出す
-            Ok(ReturnMessage::PEER_CREATE(message)) => {
+            // PeerCreateが帰ってきていればpeer_infoを取り出す
+            Ok(ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(message))) => {
                 assert!(true);
-                message.params
+                message.result
             }
             // それ以外のケースはバグが発生しているので、テストを失敗にする
             _ => {
@@ -171,7 +172,7 @@ async fn test_create_peer() {
 
     // 期待値の生成
     // 1回目のevent listenerが取得するはずのCONNECT
-    let expected_connect = ReturnMessage::PEER_EVENT(PeerEventMessage {
+    let expected_connect = ResponseMessage::PEER_EVENT(PeerEventMessage {
         result: true,
         command: "PEER_EVENT".into(),
         params: PeerEventEnum::CONNECTION(PeerConnectionEvent {
@@ -185,7 +186,7 @@ async fn test_create_peer() {
         }),
     });
     // 2回目のevent listenerが取得するはずのCLOSE
-    let expected_close = ReturnMessage::PEER_EVENT(PeerEventMessage {
+    let expected_close = ResponseMessage::PEER_EVENT(PeerEventMessage {
         result: true,
         command: "PEER_EVENT".into(),
         params: PeerEventEnum::CLOSE(PeerCloseEvent {

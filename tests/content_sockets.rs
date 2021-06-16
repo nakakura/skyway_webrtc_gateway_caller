@@ -43,7 +43,7 @@ async fn test_create_data() {
     let (message_tx, _event_rx) = run(&mockito::server_url()).await;
 
     // 操作の結果を受け取るためのチャンネル
-    let (tx, rx) = tokio::sync::oneshot::channel::<ReturnMessage>();
+    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     // 操作指示を生成
     let message = create_data_message();
     let body = serde_json::from_str::<ServiceParams>(&message);
@@ -74,7 +74,7 @@ async fn test_delete_data() {
     let (message_tx, _event_rx) = run(&mockito::server_url()).await;
 
     // 操作の結果を受け取るためのチャンネル
-    let (tx, rx) = tokio::sync::oneshot::channel::<ReturnMessage>();
+    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     // 操作指示を生成
     let message = delete_data_message(data_id);
     let body = serde_json::from_str::<ServiceParams>(&message);

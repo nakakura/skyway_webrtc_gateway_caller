@@ -21,14 +21,16 @@ async fn test_create_peer() {
     );
 
     // call create peer api
-    let (tx, rx) = tokio::sync::oneshot::channel::<ReturnMessage>();
+    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let body = serde_json::from_str::<ServiceParams>(&message).unwrap();
     let _ = message_tx.send((tx, body)).await;
     let result = rx.await;
 
+    println!("{:?}", result);
+    use rust_module::PeerCreateResponseMessage;
     match result {
-        // PEER_CREATEが帰ってきていればpeer_infoを取り出す
-        Ok(ReturnMessage::ERROR(_)) => {
+        // PeerCreateが帰ってきていればpeer_infoを取り出す
+        Ok(ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(_))) => {
             assert!(true);
         }
         // それ以外のケースはバグが発生しているので、テストを失敗にする
