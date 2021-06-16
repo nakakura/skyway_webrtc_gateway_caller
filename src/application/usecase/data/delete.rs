@@ -6,7 +6,7 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ErrorMessageRefactor, ResponseMessage, Service};
+use crate::application::usecase::service::{ErrorMessage, ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
 use crate::ResponseMessageContent;
@@ -15,7 +15,7 @@ use crate::ResponseMessageContent;
 #[serde(untagged)]
 pub enum DataDeleteResponseMessage {
     Success(ResponseMessageContent<DataId>),
-    Error(ErrorMessageRefactor),
+    Error(ErrorMessage),
 }
 
 // Serviceの具象Struct
@@ -30,9 +30,7 @@ pub(crate) struct DeleteService {
 #[async_trait]
 impl Service for DeleteService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(ErrorMessageRefactor::new(
-            message,
-        )))
+        ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(ErrorMessage::new(message)))
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
@@ -111,12 +109,11 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(
-            ErrorMessageRefactor::new(
+        let expected =
+            ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(ErrorMessage::new(
                 "SerdeError { error: Error(\"missing field `data_id`\", line: 0, column: 0) }"
                     .to_string(),
-            ),
-        ));
+            )));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

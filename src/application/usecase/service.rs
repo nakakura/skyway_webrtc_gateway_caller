@@ -6,8 +6,6 @@ use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
-use crate::application::usecase::ErrorMessage;
-
 #[cfg(test)]
 use mockall::automock;
 
@@ -112,12 +110,12 @@ mod deserialize_str {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ErrorMessageRefactor {
+pub struct ErrorMessage {
     is_success: bool,
     pub result: String,
 }
 
-impl ErrorMessageRefactor {
+impl ErrorMessage {
     pub fn new(result: String) -> Self {
         Self {
             is_success: false,
@@ -160,7 +158,6 @@ pub enum ResponseMessage {
     DataConnect(super::data::connect::DataConnectResponseMessage),
     #[serde(rename = "DATA_DISCONNECT")]
     DataDisconnect(super::data::disconnect::DataDisconnectResponseMessage),
-    ERROR(ErrorMessage),
 }
 
 #[cfg(test)]
@@ -186,25 +183,6 @@ mod serialize_enum {
         //evaluate
         assert_eq!(message.as_str(), expected);
     }
-
-    #[test]
-    fn error_message() {
-        let expected = "{\"result\":false,\"command\":\"PEER_CREATE\",\"error_message\":\"error\"}";
-
-        // create a param
-        let obj = ErrorMessage {
-            result: false,
-            command: "PEER_CREATE".into(),
-            error_message: "error".to_string(),
-        };
-        let ret_message = ResponseMessage::ERROR(obj);
-
-        // serialize
-        let message = serde_json::to_string(&ret_message).unwrap();
-
-        //evaluate
-        assert_eq!(message.as_str(), expected);
-    }
 }
 
 // WebRTC Gatewayのイベントを監視する
@@ -215,20 +193,4 @@ mod serialize_enum {
 #[async_trait]
 pub(crate) trait EventListener: Interface {
     async fn execute(&self, event_tx: Sender<ResponseMessage>, params: Value) -> ResponseMessage;
-    fn create_return_message(
-        &self,
-        result: Result<ResponseMessage, error::Error>,
-    ) -> ResponseMessage {
-        match result {
-            Ok(message) => message,
-            Err(e) => {
-                let message = format!("{:?}", e);
-                ResponseMessage::ERROR(ErrorMessage {
-                    result: false,
-                    command: "".into(),
-                    error_message: message,
-                })
-            }
-        }
-    }
 }

@@ -10,7 +10,7 @@ use skyway_webrtc_gateway_api::error;
 use mockall_double::double;
 
 use crate::application::usecase::service::{
-    ErrorMessageRefactor, ResponseMessage, ResponseMessageContent, Service,
+    ErrorMessage, ResponseMessage, ResponseMessageContent, Service,
 };
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
@@ -21,7 +21,7 @@ use crate::domain::peer::value_object::PeerInfo;
 #[serde(untagged)]
 pub enum PeerCreateResponseMessage {
     Success(ResponseMessageContent<PeerInfo>),
-    Error(ErrorMessageRefactor),
+    Error(ErrorMessage),
 }
 
 // Serviceの具象Struct
@@ -36,9 +36,7 @@ pub(crate) struct CreateService {
 #[async_trait]
 impl Service for CreateService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(ErrorMessageRefactor::new(
-            message,
-        )))
+        ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(ErrorMessage::new(message)))
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
@@ -117,7 +115,7 @@ mod test_create_peer {
         let message = serde_json::from_str::<Value>(message).unwrap();
 
         let expected =
-            ErrorMessageRefactor::new(format!("{:?}", error::Error::create_local_error("error")));
+            ErrorMessage::new(format!("{:?}", error::Error::create_local_error("error")));
         let expected = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(expected));
 
         // Peerの生成に失敗するケース

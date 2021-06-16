@@ -142,13 +142,12 @@ mod test_run_event {
     use once_cell::sync::Lazy;
 
     use crate::application::router::run_event;
-    use crate::application::usecase::ErrorMessage;
-    use crate::{PeerInfo, ResponseMessage};
+    use crate::{PeerEventResponseMessage, PeerInfo, ResponseMessage};
 
     #[cfg_attr(test, double)]
     use super::service_creator;
     use super::*;
-    use crate::application::usecase::service::ResponseMessageContent;
+    use crate::application::usecase::service::{ErrorMessage, ResponseMessageContent};
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -268,11 +267,9 @@ mod test_run_event {
 
         // ERRORメッセージを返すmockを作成
         let ctx = service_creator::create_context();
-        let message = ResponseMessage::ERROR(ErrorMessage {
-            result: false,
-            command: "PEER_CREATE".to_string(),
-            error_message: "error".to_string(),
-        });
+        let message = ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
+            ErrorMessage::new("error".to_string()),
+        ));
         let ret_message = message.clone();
         ctx.expect().return_const(ret_message);
 

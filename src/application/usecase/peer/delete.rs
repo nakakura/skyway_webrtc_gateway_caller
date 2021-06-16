@@ -7,7 +7,7 @@ use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::{
-    ErrorMessageRefactor, ResponseMessage, ResponseMessageContent, Service,
+    ErrorMessage, ResponseMessage, ResponseMessageContent, Service,
 };
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
@@ -21,7 +21,7 @@ use mockall_double::double;
 #[serde(untagged)]
 pub enum PeerDeleteResponseMessage {
     Success(ResponseMessageContent<PeerInfo>),
-    Error(ErrorMessageRefactor),
+    Error(ErrorMessage),
 }
 
 // Serviceの具象Struct
@@ -36,9 +36,7 @@ pub(crate) struct DeleteService {
 #[async_trait]
 impl Service for DeleteService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(ErrorMessageRefactor::new(
-            message,
-        )))
+        ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(ErrorMessage::new(message)))
     }
 
     async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
@@ -103,7 +101,7 @@ mod test_delete_peer {
 
         // 正解の値を作成
         let expected = ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(
-            ErrorMessageRefactor::new(format!("{:?}", error::Error::create_local_error("error"))),
+            ErrorMessage::new(format!("{:?}", error::Error::create_local_error("error"))),
         ));
 
         // Peerの生成に失敗するケース

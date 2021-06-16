@@ -6,7 +6,7 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ErrorMessageRefactor, ResponseMessage, Service};
+use crate::application::usecase::service::{ErrorMessage, ResponseMessage, Service};
 use crate::domain::data::service::DataApi;
 use crate::ResponseMessageContent;
 use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
@@ -15,7 +15,7 @@ use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 #[serde(untagged)]
 pub enum DataDisconnectResponseMessage {
     Success(ResponseMessageContent<DataConnectionIdWrapper>),
-    Error(ErrorMessageRefactor),
+    Error(ErrorMessage),
 }
 
 // Serviceの具象Struct
@@ -30,9 +30,9 @@ pub(crate) struct DisconnectService {
 #[async_trait]
 impl Service for DisconnectService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataDisconnect(DataDisconnectResponseMessage::Error(
-            ErrorMessageRefactor::new(message),
-        ))
+        ResponseMessage::DataDisconnect(DataDisconnectResponseMessage::Error(ErrorMessage::new(
+            message,
+        )))
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
@@ -109,7 +109,7 @@ mod test_create_data {
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
         let expected = ResponseMessage::DataDisconnect(DataDisconnectResponseMessage::Error(
-            ErrorMessageRefactor::new(format!("{:?}", err)),
+            ErrorMessage::new(format!("{:?}", err)),
         ));
 
         // socketの生成に成功する場合のMockを作成
