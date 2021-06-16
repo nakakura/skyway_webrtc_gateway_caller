@@ -42,10 +42,6 @@ impl EventService {
 
 #[async_trait]
 impl EventListener for EventService {
-    fn command(&self) -> &'static str {
-        return "";
-    }
-
     async fn execute(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
@@ -76,11 +72,9 @@ impl EventListener for EventService {
             // event_txへの送信がエラーなら終了する
             if let Err(e) = result {
                 let message = format!("{:?}", e);
-                return ResponseMessage::ERROR(ErrorMessage {
-                    result: false,
-                    command: self.command().into(),
-                    error_message: message,
-                });
+                return ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
+                    ErrorMessageRefactor::new(message),
+                ));
             }
 
             // close eventを受け取っていたら終了する

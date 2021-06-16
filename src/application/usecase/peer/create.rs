@@ -44,10 +44,6 @@ impl CreateService {
 
 #[async_trait]
 impl Service for CreateService {
-    fn command(&self) -> &'static str {
-        return "";
-    }
-
     async fn execute(&self, params: Value) -> ResponseMessage {
         let result = self.execute_internal(params).await;
 

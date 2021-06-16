@@ -17,7 +17,6 @@ use crate::PeerInfo;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
-    fn command(&self) -> &'static str;
     async fn execute(&self, params: Value) -> ResponseMessage;
     fn create_return_message(
         &self,
@@ -29,7 +28,7 @@ pub(crate) trait Service: Interface {
                 let message = format!("{:?}", e);
                 ResponseMessage::ERROR(ErrorMessage {
                     result: false,
-                    command: self.command().into(),
+                    command: "hoge".into(),
                     error_message: message,
                 })
             }
@@ -217,7 +216,6 @@ mod serialize_enum {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait EventListener: Interface {
-    fn command(&self) -> &'static str;
     async fn execute(&self, event_tx: Sender<ResponseMessage>, params: Value) -> ResponseMessage;
     fn create_return_message(
         &self,
@@ -229,7 +227,7 @@ pub(crate) trait EventListener: Interface {
                 let message = format!("{:?}", e);
                 ResponseMessage::ERROR(ErrorMessage {
                     result: false,
-                    command: self.command().into(),
+                    command: "".into(),
                     error_message: message,
                 })
             }

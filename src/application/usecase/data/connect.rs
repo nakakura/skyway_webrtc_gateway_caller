@@ -39,10 +39,6 @@ impl ConnectService {
 
 #[async_trait]
 impl Service for ConnectService {
-    fn command(&self) -> &'static str {
-        return "";
-    }
-
     async fn execute(&self, params: Value) -> ResponseMessage {
         let result = self.execute_internal(params).await;
         match result {

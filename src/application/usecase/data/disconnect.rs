@@ -39,10 +39,6 @@ impl DisconnectService {
 
 #[async_trait]
 impl Service for DisconnectService {
-    fn command(&self) -> &'static str {
-        return "";
-    }
-
     async fn execute(&self, params: Value) -> ResponseMessage {
         let result = self.execute_internal(params).await;
         match result {
