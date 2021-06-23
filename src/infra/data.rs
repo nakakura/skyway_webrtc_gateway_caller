@@ -1,12 +1,17 @@
 use async_trait::async_trait;
+use serde::Deserialize;
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::data;
+use skyway_webrtc_gateway_api::data::RedirectDataParams;
 use skyway_webrtc_gateway_api::error;
+use skyway_webrtc_gateway_api::prelude::PhantomId;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
-use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId, DataIdWrapper};
+use crate::domain::data::value_object::{
+    DataConnectionId, DataConnectionIdWrapper, DataId, DataIdWrapper,
+};
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
@@ -19,7 +24,7 @@ impl Default for DataApiImpl {
     }
 }
 
-// FIXME: シンプルなのでテストはしていない
+// FIXME: シンプルなので単体テストはしていない。結合試験のみ
 #[async_trait]
 impl DataApi for DataApiImpl {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error> {
@@ -42,6 +47,29 @@ impl DataApi for DataApiImpl {
             .await
             .map(|id| DataConnectionIdWrapper {
                 data_connection_id: id,
+            })
+    }
+
+    async fn redirect(&self, params: Value) -> Result<DataIdWrapper, error::Error> {
+        #[derive(Deserialize)]
+        struct RedirectParams {
+            pub data_connection_id: DataConnectionId,
+            pub feed_params: Option<DataIdWrapper>,
+            pub redirect_params: Option<SocketInfo<PhantomId>>,
+        }
+        let params = serde_json::from_value::<RedirectParams>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+
+        let redirect_data_params = RedirectDataParams {
+            feed_params: params.feed_params,
+            redirect_params: params.redirect_params,
+        };
+        let data_connection_id = params.data_connection_id;
+
+        data::redirect(&data_connection_id, &redirect_data_params)
+            .await
+            .map(|redirect| DataIdWrapper {
+                data_id: redirect.data_id,
             })
     }
 

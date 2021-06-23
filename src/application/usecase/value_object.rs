@@ -89,6 +89,8 @@ pub enum ResponseMessage {
     DataConnect(super::data::connect::DataConnectResponseMessage),
     #[serde(rename = "DATA_DISCONNECT")]
     DataDisconnect(super::data::disconnect::DataDisconnectResponseMessage),
+    #[serde(rename = "DATA_REDIRECT")]
+    DataRedirect(super::data::redirect::DataRedirectResponseMessage),
 }
 
 #[cfg(test)]

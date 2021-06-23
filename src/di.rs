@@ -58,6 +58,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) DataRedirectServiceContainer {
+        components = [data::redirect::RedirectService, DataApiImpl],
+        providers = []
+    }
+}
+
 //========== Util ==========
 module! {
     pub(crate) ApplicationStateContainer {
