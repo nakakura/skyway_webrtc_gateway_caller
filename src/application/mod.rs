@@ -6,7 +6,8 @@ use mockall::automock;
 use mockall_double::double;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::application::usecase::service::ServiceParams;
+use usecase::value_object::ServiceParams;
+
 use crate::domain::peer::value_object::Token;
 
 // TODO: まだtestでしか使っていない
@@ -30,7 +31,11 @@ pub(crate) mod service_creator {
     #[allow(unused_imports)]
     use crate::application::usecase::service::execute_service;
     #[allow(unused_imports)]
-    use crate::application::usecase::service::{ResponseMessage, Service, ServiceParams};
+    use crate::application::usecase::service::Service;
+    #[allow(unused_imports)]
+    use crate::application::usecase::value_object::ResponseMessage;
+    #[allow(unused_imports)]
+    use crate::application::usecase::value_object::ServiceParams;
 
     // TODO: まだtestでしか使っていない
     #[allow(dead_code)]
@@ -92,7 +97,7 @@ pub(crate) mod router {
     use mockall_double::double;
 
     #[allow(unused_imports)]
-    use crate::application::usecase::service::ResponseMessage;
+    use crate::application::usecase::value_object::ResponseMessage;
     use crate::domain::peer::value_object::PeerInfo;
 
     #[allow(unused_imports)]
@@ -142,12 +147,14 @@ mod test_run_event {
     use once_cell::sync::Lazy;
 
     use crate::application::router::run_event;
-    use crate::{PeerEventResponseMessage, PeerInfo, ResponseMessage};
+    use crate::application::usecase::value_object::{
+        ErrorMessage, ResponseMessage, ResponseMessageBody,
+    };
+    use crate::{PeerEventResponseMessage, PeerInfo};
 
     #[cfg_attr(test, double)]
     use super::service_creator;
     use super::*;
-    use crate::application::usecase::service::{ErrorMessage, ResponseMessageContent};
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -201,7 +208,7 @@ mod test_run_event {
         let ctx = service_creator::create_context();
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let content = ResponseMessageContent::new(peer_info);
+        let content = ResponseMessageBody::new(peer_info);
         use usecase::peer::create::PeerCreateResponseMessage;
         let message = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(content));
         let ret_message = message.clone();

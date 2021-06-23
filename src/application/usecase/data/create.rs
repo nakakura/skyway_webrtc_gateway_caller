@@ -6,16 +6,18 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ErrorMessage, ResponseMessage, Service};
+use crate::application::usecase::service::Service;
+use crate::application::usecase::value_object::{
+    ErrorMessage, ResponseMessage, ResponseMessageBody,
+};
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
-use crate::ResponseMessageContent;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum DataCreateResponseMessage {
-    Success(ResponseMessageContent<SocketInfo<DataId>>),
+    Success(ResponseMessageBody<SocketInfo<DataId>>),
     Error(ErrorMessage),
 }
 
@@ -38,7 +40,7 @@ impl Service for CreateService {
 
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
-        let content = ResponseMessageContent::new(param);
+        let content = ResponseMessageBody::new(param);
         Ok(ResponseMessage::DataCreate(
             DataCreateResponseMessage::Success(content),
         ))
@@ -73,7 +75,7 @@ mod test_create_data {
         )
         .unwrap();
         let expected = ResponseMessage::DataCreate(DataCreateResponseMessage::Success(
-            ResponseMessageContent::new(data_id.clone()),
+            ResponseMessageBody::new(data_id.clone()),
         ));
 
         // socketの生成に成功する場合のMockを作成

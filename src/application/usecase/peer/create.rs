@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+#[cfg(test)]
+use mockall_double::double;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-#[cfg(test)]
-use mockall_double::double;
-
-use crate::application::usecase::service::{
-    ErrorMessage, ResponseMessage, ResponseMessageContent, Service,
+use crate::application::usecase::service::Service;
+use crate::application::usecase::value_object::{
+    ErrorMessage, ResponseMessage, ResponseMessageBody,
 };
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
@@ -20,7 +20,7 @@ use crate::domain::peer::value_object::PeerInfo;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum PeerCreateResponseMessage {
-    Success(ResponseMessageContent<PeerInfo>),
+    Success(ResponseMessageBody<PeerInfo>),
     Error(ErrorMessage),
 }
 
@@ -41,7 +41,7 @@ impl Service for CreateService {
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = create_service::try_create(&self.repository, params).await?;
-        let content = ResponseMessageContent::new(peer_info);
+        let content = ResponseMessageBody::new(peer_info);
         Ok(ResponseMessage::PeerCreate(
             PeerCreateResponseMessage::Success(content),
         ))
@@ -54,8 +54,9 @@ mod test_create_peer {
 
     use once_cell::sync::Lazy;
 
-    use super::*;
     use crate::di::PeerCreateServiceContainer;
+
+    use super::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -78,7 +79,7 @@ mod test_create_peer {
         // 正常終了するケースとして値を生成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let message_obj = ResponseMessageContent::new(peer_info.clone());
+        let message_obj = ResponseMessageBody::new(peer_info.clone());
         let expected = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(message_obj));
 
         // 正しいPeerInfoを返す正常系動作

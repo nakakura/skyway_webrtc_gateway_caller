@@ -4,17 +4,18 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
+use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ErrorMessage, ResponseMessage, Service};
+use crate::application::usecase::service::Service;
+use crate::application::usecase::value_object::ResponseMessageBody;
+use crate::application::usecase::value_object::{ErrorMessage, ResponseMessage};
 use crate::domain::data::service::DataApi;
-use crate::ResponseMessageContent;
-use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum DataConnectResponseMessage {
-    Success(ResponseMessageContent<DataConnectionIdWrapper>),
+    Success(ResponseMessageBody<DataConnectionIdWrapper>),
     Error(ErrorMessage),
 }
 
@@ -37,7 +38,7 @@ impl Service for ConnectService {
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
-        let content = ResponseMessageContent::new(param);
+        let content = ResponseMessageBody::new(param);
         Ok(ResponseMessage::DataConnect(
             DataConnectResponseMessage::Success(content),
         ))
@@ -51,10 +52,11 @@ mod test_create_data {
     use once_cell::sync::Lazy;
     use skyway_webrtc_gateway_api::error;
 
-    use super::*;
     use crate::di::DataConnectServiceContainer;
     use crate::domain::data::service::MockDataApi;
     use crate::domain::data::value_object::{DataConnectionId, DataConnectionIdWrapper};
+
+    use super::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

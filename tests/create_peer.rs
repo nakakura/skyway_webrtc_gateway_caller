@@ -1,10 +1,11 @@
 use std::sync::Mutex;
 
 use mockito::mock;
-use rust_module::*;
-
 use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
 use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
+
+use rust_module::prelude::*;
+use rust_module::*;
 
 fn create_params() -> (PeerId, Token) {
     let peer_id = PeerId::new("hoge");
@@ -174,7 +175,7 @@ async fn test_create_peer() {
     // 1回目のevent listenerが取得するはずのCONNECT
     use rust_module::PeerEventResponseMessage;
     let expected_connect = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-        ResponseMessageContent::new(PeerEventEnum::CONNECTION(PeerConnectionEvent {
+        ResponseMessageBody::new(PeerEventEnum::CONNECTION(PeerConnectionEvent {
             params: peer_info.clone(),
             data_params: DataConnectionIdWrapper {
                 data_connection_id: DataConnectionId::try_create(
@@ -187,7 +188,7 @@ async fn test_create_peer() {
 
     // 2回目のevent listenerが取得するはずのCLOSE
     let expected_close = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-        ResponseMessageContent::new(PeerEventEnum::CLOSE(PeerCloseEvent {
+        ResponseMessageBody::new(PeerEventEnum::CLOSE(PeerCloseEvent {
             params: peer_info.clone(),
         })),
     ));

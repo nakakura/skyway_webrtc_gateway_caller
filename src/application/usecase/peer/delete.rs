@@ -6,8 +6,9 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{
-    ErrorMessage, ResponseMessage, ResponseMessageContent, Service,
+use crate::application::usecase::service::Service;
+use crate::application::usecase::value_object::{
+    ErrorMessage, ResponseMessage, ResponseMessageBody,
 };
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
@@ -20,7 +21,7 @@ use mockall_double::double;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum PeerDeleteResponseMessage {
-    Success(ResponseMessageContent<PeerInfo>),
+    Success(ResponseMessageBody<PeerInfo>),
     Error(ErrorMessage),
 }
 
@@ -41,7 +42,7 @@ impl Service for DeleteService {
 
     async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = delete_service::try_delete(&self.repository, message).await?;
-        let content = ResponseMessageContent::new(peer_info);
+        let content = ResponseMessageBody::new(peer_info);
         Ok(ResponseMessage::PeerDelete(
             PeerDeleteResponseMessage::Success(content),
         ))
@@ -68,7 +69,7 @@ mod test_delete_peer {
         // 正解の値を作成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let content = ResponseMessageContent::new(peer_info.clone());
+        let content = ResponseMessageBody::new(peer_info.clone());
         let expected = ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Success(content));
 
         // Peerの生成に成功するケース

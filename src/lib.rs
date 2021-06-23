@@ -4,15 +4,16 @@ use tokio_stream::wrappers::ReceiverStream;
 
 pub use application::usecase::peer::create::PeerCreateResponseMessage;
 pub use application::usecase::peer::event::PeerEventResponseMessage;
-pub use application::usecase::service::ResponseMessage;
-pub use application::usecase::service::ResponseMessageContent;
-pub use application::usecase::service::ServiceParams;
+pub use application::usecase::value_object::ResponseMessage;
+pub use application::usecase::value_object::ResponseMessageBody;
+pub use application::usecase::value_object::ServiceParams;
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
 
 pub(crate) mod application;
 pub(crate) mod di;
 pub(crate) mod domain;
 pub(crate) mod infra;
+pub mod prelude;
 
 // ROS Serviceは2つ準備する
 // 操作を行うためのskyway_control serviceと、イベントを受信するためのskyway_event serviceである

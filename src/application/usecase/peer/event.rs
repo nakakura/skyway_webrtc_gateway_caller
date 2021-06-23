@@ -7,8 +7,9 @@ use shaku::*;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc;
 
-use crate::application::usecase::service::{
-    ErrorMessage, EventListener, ResponseMessage, ResponseMessageContent,
+use crate::application::usecase::service::EventListener;
+use crate::application::usecase::value_object::{
+    ErrorMessage, ResponseMessage, ResponseMessageBody,
 };
 use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
@@ -17,7 +18,7 @@ use crate::domain::utility::ApplicationState;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum PeerEventResponseMessage {
-    Success(ResponseMessageContent<PeerEventEnum>),
+    Success(ResponseMessageBody<PeerEventEnum>),
     Error(ErrorMessage),
 }
 
@@ -34,7 +35,7 @@ impl EventService {
     async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let event = self.api.event(message).await?;
         Ok(ResponseMessage::PeerEvent(
-            PeerEventResponseMessage::Success(ResponseMessageContent::new(event)),
+            PeerEventResponseMessage::Success(ResponseMessageBody::new(event)),
         ))
     }
 }
@@ -96,9 +97,10 @@ mod test_peer_event {
     use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
     use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
 
-    use super::*;
     use crate::di::PeerEventServiceContainer;
     use crate::domain::peer::value_object::{MockPeer, PeerInfo};
+
+    use super::*;
 
     #[tokio::test]
     async fn connect_and_close() {
@@ -120,10 +122,10 @@ mod test_peer_event {
 
         // 期待値の生成
         let expected_connect = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-            ResponseMessageContent::new(connect_event.clone()),
+            ResponseMessageBody::new(connect_event.clone()),
         ));
         let expected_close = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-            ResponseMessageContent::new(close_event.clone()),
+            ResponseMessageBody::new(close_event.clone()),
         ));
 
         // 1回目はCONNECT、2回目はCLOSEイベントを返すMockを作る

@@ -6,15 +6,17 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
-use crate::application::usecase::service::{ErrorMessage, ResponseMessage, Service};
+use crate::application::usecase::service::Service;
+use crate::application::usecase::value_object::{
+    ErrorMessage, ResponseMessage, ResponseMessageBody,
+};
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
-use crate::ResponseMessageContent;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum DataDeleteResponseMessage {
-    Success(ResponseMessageContent<DataId>),
+    Success(ResponseMessageBody<DataId>),
     Error(ErrorMessage),
 }
 
@@ -36,7 +38,7 @@ impl Service for DeleteService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
         Ok(ResponseMessage::DataDelete(
-            DataDeleteResponseMessage::Success(ResponseMessageContent::new(param)),
+            DataDeleteResponseMessage::Success(ResponseMessageBody::new(param)),
         ))
     }
 }
@@ -65,7 +67,7 @@ mod test_create_data {
 
         // 期待値を生成
         let expected = ResponseMessage::DataDelete(DataDeleteResponseMessage::Success(
-            ResponseMessageContent::new(DataId::try_create(data_id_str).unwrap()),
+            ResponseMessageBody::new(DataId::try_create(data_id_str).unwrap()),
         ));
 
         // socketの生成に成功する場合のMockを作成
