@@ -8,9 +8,7 @@ use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::{
-    ErrorMessage, ResponseMessage, ResponseMessageBody,
-};
+use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
 use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
 use crate::domain::utility::ApplicationState;
@@ -19,7 +17,7 @@ use crate::domain::utility::ApplicationState;
 #[serde(untagged)]
 pub enum PeerEventResponseMessage {
     Success(ResponseMessageBody<PeerEventEnum>),
-    Error(ErrorMessage),
+    Error(ResponseMessageBody<String>),
 }
 
 // Serviceの具象Struct
@@ -57,9 +55,9 @@ impl EventListener for EventService {
                 Ok(message) => message,
                 Err(e) => {
                     let message = format!("{:?}", e);
-                    ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(ErrorMessage::new(
-                        message,
-                    )))
+                    ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
+                        ResponseMessageBody::new(message),
+                    ))
                 }
             };
             // send event
@@ -73,7 +71,7 @@ impl EventListener for EventService {
             if let Err(e) = result {
                 let message = format!("{:?}", e);
                 return ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
-                    ErrorMessage::new(message),
+                    ResponseMessageBody::new(message),
                 ));
             }
 
@@ -184,7 +182,8 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 期待値の生成
-        let err = ErrorMessage::new(format!("{:?}", error::Error::create_local_error("error")));
+        let err =
+            ResponseMessageBody::new(format!("{:?}", error::Error::create_local_error("error")));
         let expected = ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(err));
 
         // CLOSEイベントを返すMockを作る

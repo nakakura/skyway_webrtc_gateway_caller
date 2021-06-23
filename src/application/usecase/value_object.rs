@@ -116,21 +116,6 @@ mod response_message_serialize {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ErrorMessage {
-    is_success: bool,
-    pub result: String,
-}
-
-impl ErrorMessage {
-    pub fn new(result: String) -> Self {
-        Self {
-            is_success: false,
-            result,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ResponseMessageBody<T: Serialize + PartialEq> {
     is_success: bool,
     pub result: T,

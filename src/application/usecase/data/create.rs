@@ -7,9 +7,7 @@ use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{
-    ErrorMessage, ResponseMessage, ResponseMessageBody,
-};
+use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::DataId;
@@ -18,7 +16,7 @@ use crate::domain::data::value_object::DataId;
 #[serde(untagged)]
 pub enum DataCreateResponseMessage {
     Success(ResponseMessageBody<SocketInfo<DataId>>),
-    Error(ErrorMessage),
+    Error(ResponseMessageBody<String>),
 }
 
 // Serviceの具象Struct
@@ -35,7 +33,9 @@ impl CreateService {}
 #[async_trait]
 impl Service for CreateService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataCreate(DataCreateResponseMessage::Error(ErrorMessage::new(message)))
+        ResponseMessage::DataCreate(DataCreateResponseMessage::Error(ResponseMessageBody::new(
+            message,
+        )))
     }
 
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
@@ -109,7 +109,7 @@ mod test_create_data {
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
         let expected = ResponseMessage::DataCreate(DataCreateResponseMessage::Error(
-            ErrorMessage::new(format!("{:?}", err)),
+            ResponseMessageBody::new(format!("{:?}", err)),
         ));
 
         // socketの生成に成功する場合のMockを作成

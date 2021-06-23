@@ -8,15 +8,14 @@ use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessageBody;
-use crate::application::usecase::value_object::{ErrorMessage, ResponseMessage};
+use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
 use crate::domain::data::service::DataApi;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum DataConnectResponseMessage {
     Success(ResponseMessageBody<DataConnectionIdWrapper>),
-    Error(ErrorMessage),
+    Error(ResponseMessageBody<String>),
 }
 
 // Serviceの具象Struct
@@ -31,7 +30,7 @@ pub(crate) struct ConnectService {
 #[async_trait]
 impl Service for ConnectService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataConnect(DataConnectResponseMessage::Error(ErrorMessage::new(
+        ResponseMessage::DataConnect(DataConnectResponseMessage::Error(ResponseMessageBody::new(
             message,
         )))
     }
@@ -126,7 +125,7 @@ mod test_create_data {
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
         let expected = ResponseMessage::DataConnect(DataConnectResponseMessage::Error(
-            ErrorMessage::new(format!("{:?}", err)),
+            ResponseMessageBody::new(format!("{:?}", err)),
         ));
 
         // socketの生成に成功する場合のMockを作成

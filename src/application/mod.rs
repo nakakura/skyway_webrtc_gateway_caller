@@ -147,9 +147,7 @@ mod test_run_event {
     use once_cell::sync::Lazy;
 
     use crate::application::router::run_event;
-    use crate::application::usecase::value_object::{
-        ErrorMessage, ResponseMessage, ResponseMessageBody,
-    };
+    use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
     use crate::{PeerEventResponseMessage, PeerInfo};
 
     #[cfg_attr(test, double)]
@@ -275,7 +273,7 @@ mod test_run_event {
         // ERRORメッセージを返すmockを作成
         let ctx = service_creator::create_context();
         let message = ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
-            ErrorMessage::new("error".to_string()),
+            ResponseMessageBody::new("error".to_string()),
         ));
         let ret_message = message.clone();
         ctx.expect().return_const(ret_message);
