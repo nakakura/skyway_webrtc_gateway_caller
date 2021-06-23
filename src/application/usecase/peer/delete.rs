@@ -1,27 +1,19 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::delete_service;
-use crate::domain::peer::value_object::PeerInfo;
+use crate::prelude::ResponseMessageBodyEnum;
 
 #[cfg(test)]
 use mockall_double::double;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum PeerDeleteResponseMessage {
-    Success(ResponseMessageBody<PeerInfo>),
-    Error(ResponseMessageBody<String>),
-}
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -35,16 +27,13 @@ pub(crate) struct DeleteService {
 #[async_trait]
 impl Service for DeleteService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(ResponseMessageBody::new(
-            message,
-        )))
+        ResponseMessage::Error(message)
     }
 
     async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = delete_service::try_delete(&self.repository, message).await?;
-        let content = ResponseMessageBody::new(peer_info);
-        Ok(ResponseMessage::PeerDelete(
-            PeerDeleteResponseMessage::Success(content),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::PeerDelete(peer_info),
         ))
     }
 }
@@ -57,6 +46,8 @@ mod test_delete_peer {
 
     use super::*;
     use crate::di::PeerDeleteServiceContainer;
+    use crate::domain::peer::value_object::PeerInfo;
+    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -69,8 +60,8 @@ mod test_delete_peer {
         // 正解の値を作成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let content = ResponseMessageBody::new(peer_info.clone());
-        let expected = ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Success(content));
+        let expected =
+            ResponseMessage::Success(ResponseMessageBodyEnum::PeerDelete(peer_info.clone()));
 
         // Peerの生成に成功するケース
         let ret_peer_info = peer_info.clone();
@@ -101,9 +92,8 @@ mod test_delete_peer {
         let _lock = LOCKER.lock();
 
         // 正解の値を作成
-        let expected = ResponseMessage::PeerDelete(PeerDeleteResponseMessage::Error(
-            ResponseMessageBody::new(format!("{:?}", error::Error::create_local_error("error"))),
-        ));
+        let expected =
+            ResponseMessage::Error(format!("{:?}", error::Error::create_local_error("error")));
 
         // Peerの生成に失敗するケース
         let ctx = delete_service::try_delete_context();

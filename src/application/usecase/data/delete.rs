@@ -1,22 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::data::service::DataApi;
-use crate::domain::data::value_object::DataId;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum DataDeleteResponseMessage {
-    Success(ResponseMessageBody<DataId>),
-    Error(ResponseMessageBody<String>),
-}
+use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -30,15 +22,13 @@ pub(crate) struct DeleteService {
 #[async_trait]
 impl Service for DeleteService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(ResponseMessageBody::new(
-            message,
-        )))
+        ResponseMessage::Error(message)
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
-        Ok(ResponseMessage::DataDelete(
-            DataDeleteResponseMessage::Success(ResponseMessageBody::new(param)),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::DataDelete(param),
         ))
     }
 }
@@ -48,12 +38,15 @@ mod test_create_data {
     use std::sync::Mutex;
 
     use once_cell::sync::Lazy;
+    use serde::Deserialize;
     use skyway_webrtc_gateway_api::error;
 
     use super::*;
     use crate::di::DataDeleteServiceContainer;
     use crate::domain::common::value_object::SerializableId;
     use crate::domain::data::service::MockDataApi;
+    use crate::domain::data::value_object::DataId;
+    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -66,8 +59,8 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ResponseMessage::DataDelete(DataDeleteResponseMessage::Success(
-            ResponseMessageBody::new(DataId::try_create(data_id_str).unwrap()),
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::DataDelete(
+            DataId::try_create(data_id_str).unwrap(),
         ));
 
         // socketの生成に成功する場合のMockを作成
@@ -111,12 +104,10 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ResponseMessage::DataDelete(DataDeleteResponseMessage::Error(
-            ResponseMessageBody::new(
-                "SerdeError { error: Error(\"missing field `data_id`\", line: 0, column: 0) }"
-                    .to_string(),
-            ),
-        ));
+        let expected = ResponseMessage::Error(
+            "SerdeError { error: Error(\"missing field `data_id`\", line: 0, column: 0) }"
+                .to_string(),
+        );
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

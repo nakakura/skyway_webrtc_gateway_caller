@@ -2,11 +2,8 @@ use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
-pub use application::usecase::peer::create::PeerCreateResponseMessage;
-pub use application::usecase::peer::event::PeerEventResponseMessage;
-pub use application::usecase::value_object::ResponseMessage;
-pub use application::usecase::value_object::ResponseMessageBody;
-pub use application::usecase::value_object::ServiceParams;
+use crate::prelude::ResponseMessageBodyEnum;
+pub use application::usecase::value_object::{ResponseMessage, ServiceParams};
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
 
 pub(crate) mod application;
@@ -95,10 +92,10 @@ async fn skyway_control_service_observe(
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
                 // 適宜event_txへsendされる
-                if let ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(params)) =
+                if let ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(params)) =
                     result
                 {
-                    tokio::spawn(event_observe(params.result, event_tx.clone()));
+                    tokio::spawn(event_observe(params, event_tx.clone()));
                 }
 
                 event_tx

@@ -156,12 +156,11 @@ async fn test_create_peer() {
         // serverが呼ばれたかチェックする
         mock_create_peer.assert();
 
-        use rust_module::PeerCreateResponseMessage;
         match result {
             // PeerCreateが帰ってきていればpeer_infoを取り出す
-            Ok(ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(message))) => {
+            Ok(ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(peer_info))) => {
                 assert!(true);
-                message.result
+                peer_info
             }
             // それ以外のケースはバグが発生しているので、テストを失敗にする
             _ => {
@@ -173,9 +172,8 @@ async fn test_create_peer() {
 
     // 期待値の生成
     // 1回目のevent listenerが取得するはずのCONNECT
-    use rust_module::PeerEventResponseMessage;
-    let expected_connect = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-        ResponseMessageBody::new(PeerEventEnum::CONNECTION(PeerConnectionEvent {
+    let expected_connect = ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(
+        PeerEventEnum::CONNECTION(PeerConnectionEvent {
             params: peer_info.clone(),
             data_params: DataConnectionIdWrapper {
                 data_connection_id: DataConnectionId::try_create(
@@ -183,14 +181,14 @@ async fn test_create_peer() {
                 )
                 .unwrap(),
             },
-        })),
+        }),
     ));
 
     // 2回目のevent listenerが取得するはずのCLOSE
-    let expected_close = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-        ResponseMessageBody::new(PeerEventEnum::CLOSE(PeerCloseEvent {
+    let expected_close = ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(
+        PeerEventEnum::CLOSE(PeerCloseEvent {
             params: peer_info.clone(),
-        })),
+        }),
     ));
 
     // serverが呼ばれたかチェックする

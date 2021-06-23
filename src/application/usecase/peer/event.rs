@@ -1,24 +1,17 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
 use crate::domain::utility::ApplicationState;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum PeerEventResponseMessage {
-    Success(ResponseMessageBody<PeerEventEnum>),
-    Error(ResponseMessageBody<String>),
-}
+use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -32,8 +25,8 @@ pub(crate) struct EventService {
 impl EventService {
     async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let event = self.api.event(message).await?;
-        Ok(ResponseMessage::PeerEvent(
-            PeerEventResponseMessage::Success(ResponseMessageBody::new(event)),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::PeerEvent(event),
         ))
     }
 }
@@ -55,9 +48,7 @@ impl EventListener for EventService {
                 Ok(message) => message,
                 Err(e) => {
                     let message = format!("{:?}", e);
-                    ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
-                        ResponseMessageBody::new(message),
-                    ))
+                    ResponseMessage::Error(message)
                 }
             };
             // send event
@@ -70,17 +61,15 @@ impl EventListener for EventService {
             // event_txへの送信がエラーなら終了する
             if let Err(e) = result {
                 let message = format!("{:?}", e);
-                return ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(
-                    ResponseMessageBody::new(message),
-                ));
+                return ResponseMessage::Error(message);
             }
 
             // close eventを受け取っていたら終了する
-            if let ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
+            if let ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(
                 ref peer_event_message,
             )) = message
             {
-                if let PeerEventEnum::CLOSE(_) = &peer_event_message.result {
+                if let PeerEventEnum::CLOSE(_) = &peer_event_message {
                     return message;
                 }
             }
@@ -119,12 +108,10 @@ mod test_peer_event {
         });
 
         // 期待値の生成
-        let expected_connect = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-            ResponseMessageBody::new(connect_event.clone()),
-        ));
-        let expected_close = ResponseMessage::PeerEvent(PeerEventResponseMessage::Success(
-            ResponseMessageBody::new(close_event.clone()),
-        ));
+        let expected_connect =
+            ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(connect_event.clone()));
+        let expected_close =
+            ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(close_event.clone()));
 
         // 1回目はCONNECT、2回目はCLOSEイベントを返すMockを作る
         let mut counter = 0u8;
@@ -182,9 +169,8 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 期待値の生成
-        let err =
-            ResponseMessageBody::new(format!("{:?}", error::Error::create_local_error("error")));
-        let expected = ResponseMessage::PeerEvent(PeerEventResponseMessage::Error(err));
+        let err = format!("{:?}", error::Error::create_local_error("error"));
+        let expected = ResponseMessage::Error(err);
 
         // CLOSEイベントを返すMockを作る
         let mut mock = MockPeer::default();

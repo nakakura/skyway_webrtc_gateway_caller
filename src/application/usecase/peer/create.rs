@@ -3,24 +3,16 @@ use std::sync::Arc;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall_double::double;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::create_service;
-use crate::domain::peer::value_object::PeerInfo;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum PeerCreateResponseMessage {
-    Success(ResponseMessageBody<PeerInfo>),
-    Error(ResponseMessageBody<String>),
-}
+use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -34,16 +26,13 @@ pub(crate) struct CreateService {
 #[async_trait]
 impl Service for CreateService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(ResponseMessageBody::new(
-            message,
-        )))
+        ResponseMessage::Error(message)
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = create_service::try_create(&self.repository, params).await?;
-        let content = ResponseMessageBody::new(peer_info);
-        Ok(ResponseMessage::PeerCreate(
-            PeerCreateResponseMessage::Success(content),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::PeerCreate(peer_info),
         ))
     }
 }
@@ -54,9 +43,9 @@ mod test_create_peer {
 
     use once_cell::sync::Lazy;
 
-    use crate::di::PeerCreateServiceContainer;
-
     use super::*;
+    use crate::di::PeerCreateServiceContainer;
+    use crate::domain::peer::value_object::PeerInfo;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -79,8 +68,8 @@ mod test_create_peer {
         // 正常終了するケースとして値を生成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let message_obj = ResponseMessageBody::new(peer_info.clone());
-        let expected = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(message_obj));
+        let expected =
+            ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(peer_info.clone()));
 
         // 正しいPeerInfoを返す正常系動作
         let ret_peer_info = peer_info.clone();
@@ -115,9 +104,8 @@ mod test_create_peer {
         }"#;
         let message = serde_json::from_str::<Value>(message).unwrap();
 
-        let expected =
-            ResponseMessageBody::new(format!("{:?}", error::Error::create_local_error("error")));
-        let expected = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(expected));
+        let expected = format!("{:?}", error::Error::create_local_error("error"));
+        let expected = ResponseMessage::Error(expected);
 
         // Peerの生成に失敗するケース
         let ctx = create_service::try_create_context();

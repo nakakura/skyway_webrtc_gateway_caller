@@ -1,23 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
-use crate::domain::common::value_object::SocketInfo;
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::data::service::DataApi;
-use crate::domain::data::value_object::DataId;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum DataCreateResponseMessage {
-    Success(ResponseMessageBody<SocketInfo<DataId>>),
-    Error(ResponseMessageBody<String>),
-}
+use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -33,16 +24,13 @@ impl CreateService {}
 #[async_trait]
 impl Service for CreateService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataCreate(DataCreateResponseMessage::Error(ResponseMessageBody::new(
-            message,
-        )))
+        ResponseMessage::Error(message)
     }
 
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
-        let content = ResponseMessageBody::new(param);
-        Ok(ResponseMessage::DataCreate(
-            DataCreateResponseMessage::Success(content),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::DataCreate(param),
         ))
     }
 }
@@ -57,7 +45,10 @@ mod test_create_data {
     use super::*;
     use crate::di::DataCreateServiceContainer;
     use crate::domain::common::value_object::SerializableSocket;
+    use crate::domain::common::value_object::SocketInfo;
     use crate::domain::data::service::MockDataApi;
+    use crate::domain::data::value_object::DataId;
+    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -74,9 +65,8 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected = ResponseMessage::DataCreate(DataCreateResponseMessage::Success(
-            ResponseMessageBody::new(data_id.clone()),
-        ));
+        let expected =
+            ResponseMessage::Success(ResponseMessageBodyEnum::DataCreate(data_id.clone()));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
@@ -108,9 +98,7 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::DataCreate(DataCreateResponseMessage::Error(
-            ResponseMessageBody::new(format!("{:?}", err)),
-        ));
+        let expected = ResponseMessage::Error(format!("{:?}", err));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

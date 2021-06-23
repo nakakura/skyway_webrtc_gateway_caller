@@ -1,22 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::data::service::DataApi;
-use crate::domain::data::value_object::DataIdWrapper;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum DataRedirectResponseMessage {
-    Success(ResponseMessageBody<DataIdWrapper>),
-    Error(ResponseMessageBody<String>),
-}
+use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -32,16 +24,13 @@ impl RedirectService {}
 #[async_trait]
 impl Service for RedirectService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataRedirect(DataRedirectResponseMessage::Error(
-            ResponseMessageBody::new(message),
-        ))
+        ResponseMessage::Error(message)
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.redirect(params).await?;
-        let content = ResponseMessageBody::new(param);
-        Ok(ResponseMessage::DataRedirect(
-            DataRedirectResponseMessage::Success(content),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::DataRedirect(param),
         ))
     }
 }
@@ -57,7 +46,8 @@ mod test_redirect_data {
     use crate::di::DataRedirectServiceContainer;
     use crate::domain::common::value_object::SerializableId;
     use crate::domain::data::service::MockDataApi;
-    use crate::domain::data::value_object::DataId;
+    use crate::domain::data::value_object::{DataId, DataIdWrapper};
+    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -69,11 +59,10 @@ mod test_redirect_data {
 
         // 期待値を生成
         let data_id = DataId::try_create("da-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = ResponseMessage::DataRedirect(DataRedirectResponseMessage::Success(
-            ResponseMessageBody::new(DataIdWrapper {
+        let expected =
+            ResponseMessage::Success(ResponseMessageBodyEnum::DataRedirect(DataIdWrapper {
                 data_id: data_id.clone(),
-            }),
-        ));
+            }));
 
         // API Callのためのパラメータを生成
         let parameter = r#"
@@ -119,9 +108,7 @@ mod test_redirect_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::DataRedirect(DataRedirectResponseMessage::Error(
-            ResponseMessageBody::new(format!("{:?}", err)),
-        ));
+        let expected = ResponseMessage::Error(format!("{:?}", err));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

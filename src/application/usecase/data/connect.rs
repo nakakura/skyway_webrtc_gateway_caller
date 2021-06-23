@@ -1,22 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
-use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
 use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
+use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::data::service::DataApi;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum DataConnectResponseMessage {
-    Success(ResponseMessageBody<DataConnectionIdWrapper>),
-    Error(ResponseMessageBody<String>),
-}
+use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -30,16 +22,13 @@ pub(crate) struct ConnectService {
 #[async_trait]
 impl Service for ConnectService {
     fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::DataConnect(DataConnectResponseMessage::Error(ResponseMessageBody::new(
-            message,
-        )))
+        ResponseMessage::Error(message)
     }
 
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
-        let content = ResponseMessageBody::new(param);
-        Ok(ResponseMessage::DataConnect(
-            DataConnectResponseMessage::Success(content),
+        Ok(ResponseMessage::Success(
+            ResponseMessageBodyEnum::DataConnect(param),
         ))
     }
 }
@@ -124,9 +113,7 @@ mod test_create_data {
 
         // 期待値を生成
         let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::DataConnect(DataConnectResponseMessage::Error(
-            ResponseMessageBody::new(format!("{:?}", err)),
-        ));
+        let expected = ResponseMessage::Error(format!("{:?}", err));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

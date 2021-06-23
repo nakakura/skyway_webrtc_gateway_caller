@@ -26,11 +26,9 @@ async fn test_create_peer() {
     let _ = message_tx.send((tx, body)).await;
     let result = rx.await;
 
-    println!("{:?}", result);
-    use rust_module::PeerCreateResponseMessage;
     match result {
-        // PeerCreateが帰ってきていればpeer_infoを取り出す
-        Ok(ResponseMessage::PeerCreate(PeerCreateResponseMessage::Error(_))) => {
+        // Errorが帰ってくるはず
+        Ok(ResponseMessage::Error(_)) => {
             assert!(true);
         }
         // それ以外のケースはバグが発生しているので、テストを失敗にする

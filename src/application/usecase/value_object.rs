@@ -1,5 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
+
+use crate::domain::common::value_object::SocketInfo;
+use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId, DataIdWrapper};
+use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで受け取る
@@ -70,64 +75,72 @@ mod service_params_deserialize {
     }
 }
 
-// JSONでクライアントから受け取るメッセージ
-// JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
+pub enum ResponseMessageBodyEnum {
+    PeerCreate(PeerInfo),
+    PeerDelete(PeerInfo),
+    PeerEvent(PeerEventEnum),
+    DataCreate(SocketInfo<DataId>),
+    DataConnect(DataConnectionIdWrapper),
+    DataDelete(DataId),
+    DataDisconnect(DataConnectionIdWrapper),
+    DataRedirect(DataIdWrapper),
+}
+
+// JSONでクライアントから受け取るメッセージ
+// JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
 pub enum ResponseMessage {
-    #[serde(rename = "PEER_CREATE")]
-    PeerCreate(super::peer::create::PeerCreateResponseMessage),
-    #[serde(rename = "PEER_DELETE")]
-    PeerDelete(super::peer::delete::PeerDeleteResponseMessage),
-    #[serde(rename = "PEER_EVENT")]
-    PeerEvent(super::peer::event::PeerEventResponseMessage),
-    #[serde(rename = "DATA_CREATE")]
-    DataCreate(super::data::create::DataCreateResponseMessage),
-    #[serde(rename = "DATA_DELETE")]
-    DataDelete(super::data::delete::DataDeleteResponseMessage),
-    #[serde(rename = "DATA_CONNECT")]
-    DataConnect(super::data::connect::DataConnectResponseMessage),
-    #[serde(rename = "DATA_DISCONNECT")]
-    DataDisconnect(super::data::disconnect::DataDisconnectResponseMessage),
-    #[serde(rename = "DATA_REDIRECT")]
-    DataRedirect(super::data::redirect::DataRedirectResponseMessage),
+    Success(ResponseMessageBodyEnum),
+    Error(String),
+}
+
+impl Serialize for ResponseMessage {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Person", 2)?;
+        match self {
+            ResponseMessage::Success(value) => {
+                state.serialize_field("is_success", &true)?;
+                state.serialize_field("result", &value)?;
+            }
+            ResponseMessage::Error(value) => {
+                state.serialize_field("is_success", &false)?;
+                state.serialize_field("result", &value)?;
+            }
+        }
+        state.end()
+    }
 }
 
 #[cfg(test)]
 mod response_message_serialize {
+    use serde_json::Value;
+
+    use crate::application::usecase::value_object::ResponseMessage;
     use crate::domain::peer::value_object::PeerInfo;
+    use crate::prelude::ResponseMessageBodyEnum;
 
     #[test]
     fn create_message() {
-        let expected = "{\"is_success\":true,\"result\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\"}}";
+        let expected = serde_json::from_str::<Value>("{\"is_success\":true,\"result\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\"}}");
 
         // create a param
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let content = ResponseMessageBody::new(peer_info);
-        use crate::application::usecase::peer::create::PeerCreateResponseMessage;
-        use crate::application::usecase::value_object::{ResponseMessage, ResponseMessageBody};
-        let ret_message = ResponseMessage::PeerCreate(PeerCreateResponseMessage::Success(content));
+        let ret_message = ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(peer_info));
 
         // serialize
         let message = serde_json::to_string(&ret_message).unwrap();
 
         //evaluate
-        assert_eq!(message.as_str(), expected);
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ResponseMessageBody<T: Serialize + PartialEq> {
-    is_success: bool,
-    pub result: T,
-}
-
-impl<T: Serialize + PartialEq> ResponseMessageBody<T> {
-    pub fn new(result: T) -> Self {
-        Self {
-            is_success: true,
-            result,
-        }
+        assert_eq!(
+            expected.unwrap(),
+            serde_json::from_str::<Value>(&message).unwrap(),
+        );
     }
 }
