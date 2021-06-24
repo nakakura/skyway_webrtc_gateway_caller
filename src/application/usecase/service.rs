@@ -13,10 +13,7 @@ pub(crate) async fn execute_service(service: &dyn Service, params: Value) -> Res
 
     match result {
         Ok(message) => message,
-        Err(e) => {
-            let message = format!("{:?}", e);
-            service.create_error_message(message)
-        }
+        Err(e) => ResponseMessage::Error(serde_json::to_string(&e).expect("create error failed")),
     }
 }
 
@@ -27,7 +24,6 @@ pub(crate) async fn execute_service(service: &dyn Service, params: Value) -> Res
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
-    fn create_error_message(&self, message: String) -> ResponseMessage;
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error>;
 }
 

@@ -26,10 +26,6 @@ pub(crate) struct DeleteService {
 
 #[async_trait]
 impl Service for DeleteService {
-    fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::Error(message)
-    }
-
     async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = delete_service::try_delete(&self.repository, message).await?;
         Ok(ResponseMessage::Success(
@@ -92,8 +88,8 @@ mod test_delete_peer {
         let _lock = LOCKER.lock();
 
         // 正解の値を作成
-        let expected =
-            ResponseMessage::Error(format!("{:?}", error::Error::create_local_error("error")));
+        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
+        let expected = ResponseMessage::Error(expected);
 
         // Peerの生成に失敗するケース
         let ctx = delete_service::try_delete_context();

@@ -21,10 +21,6 @@ pub(crate) struct DeleteService {
 
 #[async_trait]
 impl Service for DeleteService {
-    fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::Error(message)
-    }
-
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
         Ok(ResponseMessage::Success(
@@ -105,8 +101,7 @@ mod test_create_data {
 
         // 期待値を生成
         let expected = ResponseMessage::Error(
-            "SerdeError { error: Error(\"missing field `data_id`\", line: 0, column: 0) }"
-                .to_string(),
+            "{\"reason\":\"JsonError\",\"message\":\"missing field `data_id`\"}".into(),
         );
 
         // socketの生成に成功する場合のMockを作成

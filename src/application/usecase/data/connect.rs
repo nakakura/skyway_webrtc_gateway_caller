@@ -21,10 +21,6 @@ pub(crate) struct ConnectService {
 
 #[async_trait]
 impl Service for ConnectService {
-    fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::Error(message)
-    }
-
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
         Ok(ResponseMessage::Success(
@@ -112,13 +108,13 @@ mod test_create_data {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let err = error::Error::create_local_error("create error");
-        let expected = ResponseMessage::Error(format!("{:?}", err));
+        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
+        let expected = ResponseMessage::Error(expected);
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
         mock.expect_connect()
-            .returning(move |_| Err(error::Error::create_local_error("create error")));
+            .returning(move |_| Err(error::Error::create_local_error("error")));
 
         // Mockを埋め込んだServiceを生成
         let module = DataConnectServiceContainer::builder()

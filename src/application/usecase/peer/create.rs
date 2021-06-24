@@ -25,10 +25,6 @@ pub(crate) struct CreateService {
 
 #[async_trait]
 impl Service for CreateService {
-    fn create_error_message(&self, message: String) -> ResponseMessage {
-        ResponseMessage::Error(message)
-    }
-
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = create_service::try_create(&self.repository, params).await?;
         Ok(ResponseMessage::Success(
@@ -104,7 +100,7 @@ mod test_create_peer {
         }"#;
         let message = serde_json::from_str::<Value>(message).unwrap();
 
-        let expected = format!("{:?}", error::Error::create_local_error("error"));
+        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
         let expected = ResponseMessage::Error(expected);
 
         // Peerの生成に失敗するケース
