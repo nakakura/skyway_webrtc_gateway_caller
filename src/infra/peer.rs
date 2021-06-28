@@ -71,19 +71,7 @@ impl PeerRepository for PeerRepositoryImpl {
     async fn erase(&self, peer_info: &PeerInfo) -> Result<(), error::Error> {
         // WebRTC Gatewayに削除指示を出す
         let _ = self.api.close(peer_info).await?;
-        // 削除完了を確認
-        loop {
-            let event = self.api.event(peer_info.clone()).await?;
-            match event {
-                PeerEventEnum::TIMEOUT => continue,
-                PeerEventEnum::CLOSE(_) => return Ok(()),
-                _ => {
-                    return Err(error::Error::LocalError(
-                        "Receive an event other than close".into(),
-                    ))
-                }
-            }
-        }
+        Ok(())
     }
 }
 
@@ -282,7 +270,7 @@ mod test_create {
 
 #[cfg(test)]
 mod test_close {
-    use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerOpenEvent};
+    use skyway_webrtc_gateway_api::peer::PeerCloseEvent;
 
     use super::*;
     use crate::di::PeerDeleteServiceContainer;
@@ -383,70 +371,6 @@ mod test_close {
         // evaluate
         if let Err(error::Error::LocalError(e)) = result {
             assert_eq!(e.as_str(), "error");
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn event_api_failed() {
-        // create params
-        let peer_info = create_peer_info();
-
-        // create mock
-        let mut mock = MockPeerRepositoryApi::default();
-        // set up close method
-        mock.expect_close().return_once(move |_| Ok(()));
-        // set up event method
-        mock.expect_event()
-            .return_once(move |_| Err(error::Error::create_local_error("error")));
-
-        // create target obj
-        let module = PeerDeleteServiceContainer::builder()
-            .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
-            .build();
-        let repository: &dyn PeerRepository = module.resolve_ref();
-
-        // execute
-        let result = repository.erase(&peer_info).await;
-
-        // evaluate
-        if let Err(error::Error::LocalError(e)) = result {
-            assert_eq!(e.as_str(), "error");
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn recv_wrong_event() {
-        // create params
-        let peer_info = create_peer_info();
-
-        // create mock
-        let mut mock = MockPeerRepositoryApi::default();
-        // set up close method
-        mock.expect_close().return_once(move |_| Ok(()));
-        // set up event method
-        let ret_peer_info = peer_info.clone();
-        mock.expect_event().return_once(move |_| {
-            Ok(PeerEventEnum::OPEN(PeerOpenEvent {
-                params: ret_peer_info,
-            }))
-        });
-
-        // create target obj
-        let module = PeerDeleteServiceContainer::builder()
-            .with_component_override::<dyn PeerRepositoryApi>(Box::new(mock))
-            .build();
-        let repository: &dyn PeerRepository = module.resolve_ref();
-
-        // execute
-        let result = repository.erase(&peer_info).await;
-
-        // evaluate
-        if let Err(error::Error::LocalError(e)) = result {
-            assert_eq!(e.as_str(), "Receive an event other than close");
         } else {
             unreachable!();
         }
