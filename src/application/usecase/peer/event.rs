@@ -42,6 +42,7 @@ impl EventListener for EventService {
         let state: &dyn ApplicationState = module.resolve_ref();
 
         while state.is_running() {
+            println!("state is running");
             let result = self.execute_internal(params.clone()).await;
             let flag = result.is_err();
             let message = match result {
