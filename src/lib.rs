@@ -1,7 +1,9 @@
 use futures::stream::StreamExt;
+use shaku::HasComponent;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
+use crate::application::usecase::service::EventListener;
 use crate::prelude::ResponseMessageBodyEnum;
 pub use application::usecase::value_object::{ResponseMessage, ServiceParams};
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
@@ -92,29 +94,32 @@ async fn skyway_control_service_observe(
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
                 // 適宜event_txへsendされる
-                if let ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(params)) =
-                    result
-                {
-                    tokio::spawn(event_observe(params, event_tx.clone()));
+                match result {
+                    ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(params)) => {
+                        let tx = event_tx.clone();
+                        tokio::spawn(async move {
+                            use crate::di::PeerEventServiceContainer;
+                            let module = PeerEventServiceContainer::builder().build();
+                            let event_service: &dyn EventListener = module.resolve_ref();
+                            let value = serde_json::to_value(&params).unwrap();
+                            event_service.execute(tx, value).await;
+                        });
+                    }
+                    ResponseMessage::Success(ResponseMessageBodyEnum::DataConnect(params)) => {
+                        let tx = event_tx.clone();
+                        tokio::spawn(async move {
+                            use crate::di::DataEventServiceContainer;
+                            let module = DataEventServiceContainer::builder().build();
+                            let event_service: &dyn EventListener = module.resolve_ref();
+                            let value = serde_json::to_value(&params).unwrap();
+                            event_service.execute(tx, value).await;
+                        });
+                    }
+                    _ => {}
                 }
 
                 event_tx
             },
         )
         .await;
-}
-
-async fn event_observe(peer_info: PeerInfo, event_tx: mpsc::Sender<ResponseMessage>) {
-    use shaku::HasComponent;
-
-    use crate::application::usecase::service::EventListener;
-    use crate::di::PeerEventServiceContainer;
-
-    // Event監視のためのServiceを生成
-    let module = PeerEventServiceContainer::builder().build();
-    let event_service: &dyn EventListener = module.resolve_ref();
-
-    // peer_infoは必ずto_valueに成功するのでunwrapでよい
-    let value = serde_json::to_value(&peer_info).unwrap();
-    event_service.execute(event_tx, value).await;
 }

@@ -22,7 +22,13 @@ async fn main() {
 
     let data_connection_id =
         data::connect(&message_tx, &peer_info, data_socket.get_id().unwrap()).await;
+    println!("{:?}", data_connection_id);
 
+    //tokio::spawn(data::event(message_tx.clone(), data_connection_id));
+
+    while let Some(ResponseMessage::Success(event)) = event_rx.recv().await {
+        println!("{:?}", event);
+    }
     /*
     // 終了処理
     // socketの開放
