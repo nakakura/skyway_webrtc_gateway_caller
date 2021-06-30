@@ -39,6 +39,9 @@ impl EventListener for EventService {
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
+                Ok(DataConnectionEventEnum::TIMEOUT) => {
+                    // TIMEOUTはユーザに通知する必要がない
+                }
                 Ok(event) => {
                     let message =
                         ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(event.clone()));
