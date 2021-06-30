@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId, DataIdWrapper};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
+use crate::prelude::DataConnectionEventEnum;
 
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで受け取る
@@ -86,6 +87,7 @@ pub enum ResponseMessageBodyEnum {
     DataDelete(DataId),
     DataDisconnect(DataConnectionIdWrapper),
     DataRedirect(DataIdWrapper),
+    DataEvent(DataConnectionEventEnum),
 }
 
 // JSONでクライアントから受け取るメッセージ

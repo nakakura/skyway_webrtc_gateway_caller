@@ -65,6 +65,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) DataEventServiceContainer {
+        components = [data::event::EventService, DataApiImpl],
+        providers = []
+    }
+}
+
 //========== Util ==========
 module! {
     pub(crate) ApplicationStateContainer {
