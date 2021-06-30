@@ -14,13 +14,14 @@ async fn main() {
     let (message_tx, mut event_rx) = run("http://localhost:8000").await;
 
     // peer objectを作成
-    let peer_info = peer::create_peer(&message_tx, api_key, "caller").await;
+    let peer_info = peer::create_peer(&message_tx, api_key, "data_caller").await;
 
     // data socketの開放
     // エンドユーザプログラムはこのポートにデータを流し込む
     let data_socket = data::create_data(&message_tx).await;
 
-    data::connect(&message_tx, &peer_info, data_socket.get_id().unwrap()).await;
+    let data_connection_id =
+        data::connect(&message_tx, &peer_info, data_socket.get_id().unwrap()).await;
 
     /*
     // 終了処理

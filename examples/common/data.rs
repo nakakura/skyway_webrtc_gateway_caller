@@ -52,9 +52,9 @@ pub(crate) async fn connect(
     message_tx: &mpsc::Sender<ControlMessage>,
     peer_info: &PeerInfo,
     data_id: DataId,
-) {
+) -> DataConnectionId {
     // create parameter
-    let target_id = PeerId::new("target_id");
+    let target_id = PeerId::new("data_callee");
     let data_id = DataIdWrapper { data_id: data_id };
     let query = ConnectQuery {
         peer_id: peer_info.peer_id(),
@@ -83,10 +83,7 @@ pub(crate) async fn connect(
     match rx.await {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::DataConnect(
             connection_id_wrapper,
-        ))) => {
-            println!("{:?}", connection_id_wrapper);
-            data_id;
-        }
+        ))) => connection_id_wrapper.data_connection_id,
         _ => {
             panic!("data socket close failed")
         }
