@@ -6,10 +6,18 @@ use crate::domain::utility::ApplicationState;
 // DIコンテナからのみオブジェクトを生成できる
 #[derive(Component)]
 #[shaku(interface = ApplicationState)]
-pub(crate) struct ApplicationStateImpl;
+pub(crate) struct ApplicationStateAlwaysTrueImpl;
 
-impl ApplicationState for ApplicationStateImpl {
+impl ApplicationState for ApplicationStateAlwaysTrueImpl {
     fn is_running(&self) -> bool {
         true
+    }
+}
+
+pub(crate) struct ApplicationStateAlwaysFalseImpl;
+
+impl ApplicationState for ApplicationStateAlwaysFalseImpl {
+    fn is_running(&self) -> bool {
+        false
     }
 }

@@ -3,12 +3,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
-use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::ResponseMessage;
-use crate::di::ApplicationStateContainer;
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
 use crate::domain::utility::ApplicationState;
 use crate::prelude::ResponseMessageBodyEnum;
@@ -20,15 +18,8 @@ use crate::prelude::ResponseMessageBodyEnum;
 pub(crate) struct EventService {
     #[shaku(inject)]
     api: Arc<dyn Peer>,
-}
-
-impl EventService {
-    async fn execute_internal(&self, message: Value) -> Result<ResponseMessage, error::Error> {
-        let event = self.api.event(message).await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::PeerEvent(event),
-        ))
-    }
+    #[shaku(inject)]
+    state: Arc<dyn ApplicationState>,
 }
 
 #[async_trait]
@@ -38,54 +29,43 @@ impl EventListener for EventService {
         event_tx: mpsc::Sender<ResponseMessage>,
         params: Value,
     ) -> ResponseMessage {
-        let module = ApplicationStateContainer::builder().build();
-        let state: &dyn ApplicationState = module.resolve_ref();
-
-        while state.is_running() {
-            let result = self.execute_internal(params.clone()).await;
-            let flag = result.is_err();
-            let message = match result {
-                Ok(message) => message,
-                Err(e) => {
-                    let message = format!("{:?}", e);
-                    ResponseMessage::Error(message)
+        while self.state.is_running() {
+            let event = self.api.event(params.clone()).await;
+            match event {
+                Ok(PeerEventEnum::CLOSE(ref _event)) => {
+                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(
+                        event.unwrap().clone(),
+                    ));
+                    let _ = event_tx.send(message.clone()).await;
+                    return message;
                 }
-            };
-            // send event
-            let result = event_tx.send(message.clone()).await;
-
-            // APIからerrorを受け取っていたら終了する
-            if flag {
-                return message;
-            }
-            // event_txへの送信がエラーなら終了する
-            if let Err(e) = result {
-                let message = format!("{:?}", e);
-                return ResponseMessage::Error(message);
-            }
-
-            // close eventを受け取っていたら終了する
-            if let ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(
-                ref peer_event_message,
-            )) = message
-            {
-                if let PeerEventEnum::CLOSE(_) = &peer_event_message {
+                Ok(event) => {
+                    let message =
+                        ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(event));
+                    let _ = event_tx.send(message.clone()).await;
+                }
+                Err(e) => {
+                    let message = serde_json::to_string(&e).unwrap();
+                    let message = ResponseMessage::Error(message);
+                    let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
             }
         }
 
-        unreachable!();
+        ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::TIMEOUT))
     }
 }
 
 #[cfg(test)]
 mod test_peer_event {
     use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
+    use skyway_webrtc_gateway_api::error;
     use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
 
     use crate::di::PeerEventServiceContainer;
     use crate::domain::peer::value_object::{MockPeer, PeerInfo};
+    use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
 
     use super::*;
 
@@ -137,7 +117,8 @@ mod test_peer_event {
             .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
             .await;
 
-        // evaluate
+        // event_serviceはループを抜けるときに最後のEVENTを返す
+        // CLOSE Eventで抜けた場合はCLOSE Eventが帰ってくる
         assert_eq!(return_result, expected_close);
 
         // eventが通知されていることを確認
@@ -169,7 +150,7 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 期待値の生成
-        let err = format!("{:?}", error::Error::create_local_error("error"));
+        let err = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
         let expected = ResponseMessage::Error(err);
 
         // CLOSEイベントを返すMockを作る
@@ -189,7 +170,8 @@ mod test_peer_event {
             .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
             .await;
 
-        // evaluate
+        // event_serviceはループを抜けるときに最後のEVENTを返す
+        // ERRORが発生してループを抜けたErrorが帰ってくる
         assert_eq!(result, expected);
 
         // eventが通知されていることを確認
@@ -200,5 +182,44 @@ mod test_peer_event {
         // ERRORのあとは狩猟済みなのでイベントは来ない
         let result = event_rx.recv().await;
         assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn loop_exit() {
+        // create parameter
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+
+        // 期待値の生成
+        let expected =
+            ResponseMessage::Success(ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::TIMEOUT));
+
+        // CLOSEイベントを返すMockを作る
+        let mut mock = MockPeer::default();
+        mock.expect_event()
+            .return_once(move |_| Err(error::Error::create_local_error("error")));
+
+        // Mockを埋め込んだEventServiceを生成
+        let module = PeerEventServiceContainer::builder()
+            .with_component_override::<dyn Peer>(Box::new(mock))
+            .with_component_override::<dyn ApplicationState>(Box::new(
+                ApplicationStateAlwaysFalseImpl {},
+            ))
+            .build();
+        let event_service: &dyn EventListener = module.resolve_ref();
+
+        // execute
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+
+        // event_serviceはループを抜けるときに最後のEVENTを返す
+        // Application Stateがfalseを返すことによってループを抜けた場合は、TIMEOUTが帰ってくる
+        let result = event_service
+            .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
+            .await;
+        assert_eq!(result, expected);
+
+        // event発生前にApplicationStateによりloopを抜けている
+        let result = event_rx.recv().await;
+        assert_eq!(result, None);
     }
 }

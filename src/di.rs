@@ -5,7 +5,7 @@ use crate::application::usecase::peer;
 use crate::domain::peer::value_object::PeerImpl;
 use crate::infra::data::DataApiImpl;
 use crate::infra::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
-use crate::infra::utility::ApplicationStateImpl;
+use crate::infra::utility::ApplicationStateAlwaysTrueImpl;
 
 //========== Peer Service ==========
 module! {
@@ -24,7 +24,7 @@ module! {
 
 module! {
     pub(crate) PeerEventServiceContainer {
-        components = [peer::event::EventService, PeerImpl, PeerApiImpl],
+        components = [peer::event::EventService, PeerImpl, PeerApiImpl, ApplicationStateAlwaysTrueImpl],
         providers = []
     }
 }
@@ -67,15 +67,7 @@ module! {
 
 module! {
     pub(crate) DataEventServiceContainer {
-        components = [data::event::EventService, DataApiImpl],
-        providers = []
-    }
-}
-
-//========== Util ==========
-module! {
-    pub(crate) ApplicationStateContainer {
-        components = [ApplicationStateImpl],
+        components = [data::event::EventService, DataApiImpl, ApplicationStateAlwaysTrueImpl],
         providers = []
     }
 }
