@@ -1,9 +1,11 @@
 use shaku::*;
 
 use crate::application::usecase::data;
+use crate::application::usecase::media;
 use crate::application::usecase::peer;
 use crate::domain::peer::value_object::PeerImpl;
 use crate::infra::data::DataApiImpl;
+use crate::infra::media::MediaApiImpl;
 use crate::infra::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
 use crate::infra::utility::ApplicationStateAlwaysTrueImpl;
 
@@ -68,6 +70,14 @@ module! {
 module! {
     pub(crate) DataEventServiceContainer {
         components = [data::event::EventService, DataApiImpl, ApplicationStateAlwaysTrueImpl],
+        providers = []
+    }
+}
+
+//========== Media Service ==========
+module! {
+    pub(crate) MediaCreateServiceContainer {
+        components = [media::create_media::CreateMediaService, MediaApiImpl],
         providers = []
     }
 }

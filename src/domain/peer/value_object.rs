@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
+
+use crate::error;
 
 #[cfg(test)]
 use mockall::automock;
@@ -23,12 +24,14 @@ pub struct CreatePeerParams {
     pub turn: bool,
 }
 
+// FIXME: Value Objectではない
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait PeerApi: Interface {
     async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error>;
 }
 
+// FIXME: Value Objectではない
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Peer: Interface {

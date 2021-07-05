@@ -6,6 +6,7 @@ use super::ControlMessage;
 // SkyWayはCreate Peerしたあとサーバ側で承認が出るまで待たないと、PeerObjectの生成が成功したかどうかわからない
 // WebRTC Gatewayの処理としては、Peer Eventとして結果が受け取れるようになっているが、
 // PEER_CREATE APIの処理中にこのイベントのチェックまでやっているので、ユーザはイベントの監視をする必要がない
+#[allow(dead_code)]
 pub async fn create_peer(
     message_tx: &mpsc::Sender<ControlMessage>,
     api_key: String,
@@ -41,6 +42,7 @@ pub async fn create_peer(
     }
 }
 
+#[allow(dead_code)]
 pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &PeerInfo) {
     println!("start deleting {:?}", peer_info);
     // create control message

@@ -4,6 +4,7 @@ use tokio::sync::mpsc;
 
 use super::ControlMessage;
 
+#[allow(dead_code)]
 pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInfo<DataId> {
     let body_json = r#"{
         "command": "DATA_CREATE",
@@ -23,6 +24,7 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInf
     }
 }
 
+#[allow(dead_code)]
 pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: DataId) -> DataId {
     let body_json = format!(
         r#"{{
@@ -45,6 +47,7 @@ pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: Dat
     }
 }
 
+#[allow(dead_code)]
 pub async fn connect(
     message_tx: &mpsc::Sender<ControlMessage>,
     query: ConnectQuery,
@@ -81,6 +84,7 @@ pub struct RedirectParams {
     pub redirect_params: Option<SocketInfo<PhantomId>>,
 }
 
+#[allow(dead_code)]
 pub async fn redirect(
     message_tx: &mpsc::Sender<ControlMessage>,
     params: RedirectParams,

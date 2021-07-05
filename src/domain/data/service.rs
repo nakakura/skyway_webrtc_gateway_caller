@@ -1,10 +1,10 @@
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::Interface;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionEventEnum, DataConnectionIdWrapper, DataId};
+use crate::error;
 
 #[cfg(test)]
 use mockall::automock;

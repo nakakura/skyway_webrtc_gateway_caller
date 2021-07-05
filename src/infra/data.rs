@@ -1,4 +1,3 @@
-use crate::error;
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::Value;
@@ -12,6 +11,7 @@ use crate::domain::data::service::DataApi;
 use crate::domain::data::value_object::{
     DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper, DataId, DataIdWrapper,
 };
+use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]

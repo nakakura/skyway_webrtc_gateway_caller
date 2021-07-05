@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
+use crate::domain::media::value_object::MediaId;
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
 
@@ -27,6 +28,8 @@ pub enum ServiceParams {
     DataRedirect { params: Value },
     #[serde(rename = "DATA_DISCONNECT")]
     DataDisconnect { params: Value },
+    #[serde(rename = "MEDIA_CREATE_MEDIA")]
+    MediaCreate { params: Value },
 }
 
 #[cfg(test)]
@@ -89,6 +92,7 @@ pub enum ResponseMessageBodyEnum {
     DataDisconnect(DataConnectionIdWrapper),
     DataRedirect(DataConnectionIdWrapper),
     DataEvent(DataConnectionEventEnum),
+    MediaCreate(SocketInfo<MediaId>),
 }
 
 // JSONでクライアントから受け取るメッセージ
