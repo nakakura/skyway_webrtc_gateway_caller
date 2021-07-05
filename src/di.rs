@@ -81,3 +81,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaContentDeleteServiceContainer {
+        components = [media::delete_media::DeleteMediaService, MediaApiImpl],
+        providers = []
+    }
+}

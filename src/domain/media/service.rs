@@ -13,4 +13,5 @@ use mockall::automock;
 #[async_trait]
 pub(crate) trait MediaApi: Interface {
     async fn create_media(&self, is_video: Value) -> Result<SocketInfo<MediaId>, error::Error>;
+    async fn delete_media(&self, media_id: Value) -> Result<MediaId, error::Error>;
 }
