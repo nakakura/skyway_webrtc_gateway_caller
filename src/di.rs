@@ -76,7 +76,7 @@ module! {
 
 //========== Media Service ==========
 module! {
-    pub(crate) MediaCreateServiceContainer {
+    pub(crate) MediaContentCreateServiceContainer {
         components = [media::create_media::CreateMediaService, MediaApiImpl],
         providers = []
     }

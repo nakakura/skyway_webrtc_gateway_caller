@@ -28,9 +28,8 @@ pub enum ServiceParams {
     DataRedirect { params: Value },
     #[serde(rename = "DATA_DISCONNECT")]
     DataDisconnect { params: Value },
-    // FIXME: rename to MEDIA_CONTENT_CREATE
-    #[serde(rename = "MEDIA_CREATE_MEDIA")]
-    MediaCreate { params: Value },
+    #[serde(rename = "MEDIA_CONTENT_CREATE")]
+    MediaContentCreate { params: Value },
     #[serde(rename = "MEDIA_CONTENT_DELETE")]
     MediaContentDelete { params: Value },
 }
@@ -95,7 +94,7 @@ pub enum ResponseMessageBodyEnum {
     DataDisconnect(DataConnectionIdWrapper),
     DataRedirect(DataConnectionIdWrapper),
     DataEvent(DataConnectionEventEnum),
-    MediaCreate(SocketInfo<MediaId>),
+    MediaContentCreate(SocketInfo<MediaId>),
     MediaContentDelete(MediaId),
 }
 

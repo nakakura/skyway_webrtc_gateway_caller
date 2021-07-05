@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
@@ -8,6 +7,7 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::media::service::MediaApi;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -24,7 +24,7 @@ impl Service for CreateMediaService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create_media(params).await?;
         Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::MediaCreate(param),
+            ResponseMessageBodyEnum::MediaContentCreate(param),
         ))
     }
 }
@@ -37,7 +37,7 @@ mod test_create_media {
     use once_cell::sync::Lazy;
 
     use super::*;
-    use crate::di::MediaCreateServiceContainer;
+    use crate::di::MediaContentCreateServiceContainer;
     use crate::domain::common::value_object::SerializableSocket;
     use crate::domain::common::value_object::SocketInfo;
     use crate::domain::media::service::MockMediaApi;
@@ -59,8 +59,9 @@ mod test_create_media {
             10000,
         )
         .unwrap();
-        let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaCreate(media_id.clone()));
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::MediaContentCreate(
+            media_id.clone(),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
@@ -69,7 +70,7 @@ mod test_create_media {
         });
 
         // Mockを埋め込んだEventServiceを生成
-        let module = MediaCreateServiceContainer::builder()
+        let module = MediaContentCreateServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
         let create_service: &dyn Service = module.resolve_ref();
@@ -100,7 +101,7 @@ mod test_create_media {
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
         // Mockを埋め込んだEventServiceを生成
-        let module = MediaCreateServiceContainer::builder()
+        let module = MediaContentCreateServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
         let create_service: &dyn Service = module.resolve_ref();
