@@ -31,10 +31,9 @@ pub enum ServiceParams {
 
 #[cfg(test)]
 mod service_params_deserialize {
-    use skyway_webrtc_gateway_api::peer::PeerInfo;
-
     use crate::application::usecase::value_object::ServiceParams;
     use crate::domain::peer::value_object::CreatePeerParams;
+    use crate::prelude::PeerInfo;
 
     #[test]
     fn create_message() {

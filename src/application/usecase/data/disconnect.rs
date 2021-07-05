@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
-use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::ResponseMessage;
@@ -33,8 +33,8 @@ impl Service for DisconnectService {
 mod test_create_data {
     use std::sync::Mutex;
 
+    use crate::error;
     use once_cell::sync::Lazy;
-    use skyway_webrtc_gateway_api::error;
 
     use crate::di::DataDisconnectServiceContainer;
     use crate::domain::data::service::MockDataApi;

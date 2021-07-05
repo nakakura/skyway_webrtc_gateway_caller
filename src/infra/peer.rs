@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use crate::error;
 use async_trait::async_trait;
 use shaku::*;
-use skyway_webrtc_gateway_api::error;
 use skyway_webrtc_gateway_api::peer;
 
 use crate::domain::peer::repository::{PeerRepository, PeerRepositoryApi};

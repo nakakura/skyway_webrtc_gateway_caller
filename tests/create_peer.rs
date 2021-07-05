@@ -1,9 +1,6 @@
 use std::sync::Mutex;
 
 use mockito::mock;
-use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
-use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
-
 use rust_module::prelude::*;
 use rust_module::*;
 

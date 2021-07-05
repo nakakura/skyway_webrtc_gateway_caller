@@ -1,9 +1,9 @@
+use crate::error;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::automock;
 use serde_json::Value;
 use shaku::Interface;
-use skyway_webrtc_gateway_api::error;
 use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::value_object::ResponseMessage;

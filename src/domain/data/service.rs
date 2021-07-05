@@ -1,7 +1,7 @@
+use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::Interface;
-use skyway_webrtc_gateway_api::error;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionEventEnum, DataConnectionIdWrapper, DataId};

@@ -66,8 +66,8 @@ impl EventListener for EventService {
 mod test_data_event {
     use std::sync::Mutex;
 
+    use crate::error;
     use once_cell::sync::Lazy;
-    use skyway_webrtc_gateway_api::error;
 
     use super::*;
     use crate::di::DataEventServiceContainer;

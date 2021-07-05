@@ -62,12 +62,10 @@ impl EventListener for EventService {
 
 #[cfg(test)]
 mod test_peer_event {
-    use skyway_webrtc_gateway_api::data::{DataConnectionId, DataConnectionIdWrapper};
-    use skyway_webrtc_gateway_api::error;
-    use skyway_webrtc_gateway_api::peer::{PeerCloseEvent, PeerConnectionEvent};
-
     use crate::di::PeerEventServiceContainer;
-    use crate::domain::peer::value_object::{MockPeer, PeerInfo};
+    use crate::domain::data::value_object::*;
+    use crate::domain::peer::value_object::*;
+    use crate::error;
     use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
 
     use super::*;

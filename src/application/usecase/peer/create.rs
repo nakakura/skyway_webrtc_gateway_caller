@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
+use crate::error;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall_double::double;
 use serde_json::Value;
 use shaku::*;
-use skyway_webrtc_gateway_api::error;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::ResponseMessage;

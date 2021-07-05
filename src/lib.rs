@@ -11,6 +11,7 @@ pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
 pub(crate) mod application;
 pub(crate) mod di;
 pub(crate) mod domain;
+pub mod error;
 pub(crate) mod infra;
 pub mod prelude;
 

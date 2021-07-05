@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use skyway_webrtc_gateway_api::error;
+use crate::error;
 
 use super::value_object::{CreatePeerParams, PeerInfo};
 use crate::domain::peer::repository::PeerRepository;

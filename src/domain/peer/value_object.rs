@@ -1,18 +1,19 @@
 use std::sync::Arc;
 
+use crate::error;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
-use skyway_webrtc_gateway_api::error;
 
 #[cfg(test)]
 use mockall::automock;
 
-pub use skyway_webrtc_gateway_api::peer::PeerEventEnum;
-pub use skyway_webrtc_gateway_api::prelude::PeerId;
-pub use skyway_webrtc_gateway_api::prelude::PeerInfo;
-pub use skyway_webrtc_gateway_api::prelude::Token;
+pub use skyway_webrtc_gateway_api::peer::{
+    PeerCallEvent, PeerCloseEvent, PeerConnectionEvent, PeerErrorEvent, PeerEventEnum,
+    PeerOpenEvent,
+};
+pub use skyway_webrtc_gateway_api::prelude::{PeerId, PeerInfo, Token};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Eq, Ord, Hash)]
 pub struct CreatePeerParams {

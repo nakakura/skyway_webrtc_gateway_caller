@@ -1,6 +1,6 @@
+use crate::error;
 use async_trait::async_trait;
 use shaku::Interface;
-use skyway_webrtc_gateway_api::error;
 
 #[cfg(test)]
 use mockall::automock;
