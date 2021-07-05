@@ -50,21 +50,8 @@ pub(crate) async fn delete_data(
 
 pub(crate) async fn connect(
     message_tx: &mpsc::Sender<ControlMessage>,
-    peer_info: &PeerInfo,
-    data_id: DataId,
+    query: ConnectQuery,
 ) -> DataConnectionId {
-    // create parameter
-    let target_id = PeerId::new("data_callee");
-    let data_id = DataIdWrapper { data_id: data_id };
-    let query = ConnectQuery {
-        peer_id: peer_info.peer_id(),
-        token: peer_info.token(),
-        options: None,
-        target_id: target_id,
-        params: Some(data_id.clone()),
-        redirect_params: None,
-    };
-
     // create message body
     #[derive(Serialize)]
     struct ConnectMessage {
