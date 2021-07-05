@@ -1,6 +1,6 @@
-pub(crate) mod data;
-pub(crate) mod peer;
-pub(crate) mod terminal;
+pub mod data;
+pub mod peer;
+pub mod terminal;
 
 use rust_module::prelude::*;
 use tokio::sync::oneshot;

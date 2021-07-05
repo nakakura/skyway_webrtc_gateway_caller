@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::domain::common::value_object::SocketInfo;
-use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId, DataIdWrapper};
+use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
 
@@ -23,6 +23,8 @@ pub enum ServiceParams {
     DataDelete { params: Value },
     #[serde(rename = "DATA_CONNECT")]
     DataConnect { params: Value },
+    #[serde(rename = "DATA_REDIRECT")]
+    DataRedirect { params: Value },
     #[serde(rename = "DATA_DISCONNECT")]
     DataDisconnect { params: Value },
 }
@@ -86,7 +88,7 @@ pub enum ResponseMessageBodyEnum {
     DataConnect(DataConnectionIdWrapper),
     DataDelete(DataId),
     DataDisconnect(DataConnectionIdWrapper),
-    DataRedirect(DataIdWrapper),
+    DataRedirect(DataConnectionIdWrapper),
     DataEvent(DataConnectionEventEnum),
 }
 

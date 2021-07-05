@@ -40,10 +40,8 @@ mod test_redirect_data {
 
     use super::*;
     use crate::di::DataRedirectServiceContainer;
-    use crate::domain::common::value_object::SerializableId;
     use crate::domain::data::service::MockDataApi;
-    use crate::domain::data::value_object::{DataId, DataIdWrapper};
-    use crate::prelude::ResponseMessageBodyEnum;
+    use crate::prelude::{DataConnectionId, DataConnectionIdWrapper, ResponseMessageBodyEnum};
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -54,11 +52,14 @@ mod test_redirect_data {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let data_id = DataId::try_create("da-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::DataRedirect(DataIdWrapper {
-                data_id: data_id.clone(),
-            }));
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::DataRedirect(
+            DataConnectionIdWrapper {
+                data_connection_id: DataConnectionId::try_create(
+                    "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
+                )
+                .unwrap(),
+            },
+        ));
 
         // API Callのためのパラメータを生成
         let parameter = r#"
@@ -77,8 +78,11 @@ mod test_redirect_data {
         // redirectに成功する場合のMockを作成
         let mut mock = MockDataApi::default();
         mock.expect_redirect().returning(move |_| {
-            return Ok(DataIdWrapper {
-                data_id: data_id.clone(),
+            return Ok(DataConnectionIdWrapper {
+                data_connection_id: DataConnectionId::try_create(
+                    "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
+                )
+                .unwrap(),
             }
             .clone());
         });

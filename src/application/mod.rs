@@ -59,6 +59,11 @@ pub(crate) mod service_creator {
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, params).await
             }
+            ServiceParams::DataRedirect { params } => {
+                let module = DataRedirectServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                execute_service(service, params).await
+            }
             _ => {
                 unreachable!()
             }

@@ -4,9 +4,7 @@ use shaku::Interface;
 use skyway_webrtc_gateway_api::error;
 
 use crate::domain::common::value_object::SocketInfo;
-use crate::domain::data::value_object::{
-    DataConnectionEventEnum, DataConnectionIdWrapper, DataId, DataIdWrapper,
-};
+use crate::domain::data::value_object::{DataConnectionEventEnum, DataConnectionIdWrapper, DataId};
 
 #[cfg(test)]
 use mockall::automock;
@@ -18,6 +16,6 @@ pub(crate) trait DataApi: Interface {
     async fn delete(&self, data_id: Value) -> Result<DataId, error::Error>;
     async fn connect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
     async fn disconnect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
-    async fn redirect(&self, params: Value) -> Result<DataIdWrapper, error::Error>;
+    async fn redirect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
     async fn event(&self, params: Value) -> Result<DataConnectionEventEnum, error::Error>;
 }

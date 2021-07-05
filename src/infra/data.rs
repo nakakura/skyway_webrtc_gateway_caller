@@ -58,7 +58,7 @@ impl DataApi for DataApiImpl {
         Ok(DataConnectionIdWrapper { data_connection_id })
     }
 
-    async fn redirect(&self, params: Value) -> Result<DataIdWrapper, error::Error> {
+    async fn redirect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error> {
         #[derive(Deserialize)]
         struct RedirectParams {
             pub data_connection_id: DataConnectionId,
@@ -76,9 +76,7 @@ impl DataApi for DataApiImpl {
 
         data::redirect(&data_connection_id, &redirect_data_params)
             .await
-            .map(|redirect| DataIdWrapper {
-                data_id: redirect.data_id,
-            })
+            .map(|_redirect| DataConnectionIdWrapper { data_connection_id })
     }
 
     async fn event(&self, params: Value) -> Result<DataConnectionEventEnum, error::Error> {
