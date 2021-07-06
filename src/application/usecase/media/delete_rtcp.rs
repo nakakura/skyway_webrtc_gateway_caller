@@ -8,6 +8,7 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::media::service::MediaApi;
+use crate::domain::media::value_object::RtcpIdWrapper;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -24,7 +25,7 @@ impl Service for DeleteRtcpService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete_rtcp(params).await?;
         Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::MediaRtcpDelete(param),
+            ResponseMessageBodyEnum::MediaRtcpDelete(RtcpIdWrapper { rtcp_id: param }),
         ))
     }
 }
@@ -53,7 +54,9 @@ mod test_delete_media {
         // 期待値を生成
         let rtcp_id = RtcpId::try_create("rc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
         let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaRtcpDelete(rtcp_id.clone()));
+            ResponseMessage::Success(ResponseMessageBodyEnum::MediaRtcpDelete(RtcpIdWrapper {
+                rtcp_id: rtcp_id.clone(),
+            }));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();

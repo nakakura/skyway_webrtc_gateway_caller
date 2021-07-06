@@ -9,3 +9,8 @@ pub use skyway_webrtc_gateway_api::media::{
 pub struct MediaIdWrapper {
     pub media_id: MediaId,
 }
+
+#[derive(Serialize, Deserialize, PartialOrd, PartialEq, Debug, Clone)]
+pub struct RtcpIdWrapper {
+    pub rtcp_id: RtcpId,
+}
