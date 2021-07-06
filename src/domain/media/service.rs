@@ -1,13 +1,12 @@
 use async_trait::async_trait;
+#[cfg(test)]
+use mockall::automock;
 use serde_json::Value;
 use shaku::Interface;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::media::value_object::{MediaConnectionIdWrapper, MediaId, RtcpId};
 use crate::error;
-
-#[cfg(test)]
-use mockall::automock;
 
 #[cfg_attr(test, automock)]
 #[async_trait]

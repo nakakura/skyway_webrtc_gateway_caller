@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
@@ -8,6 +7,8 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::ResponseMessage;
 use crate::domain::media::service::MediaApi;
+use crate::domain::media::value_object::MediaIdWrapper;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -24,7 +25,7 @@ impl Service for DeleteMediaService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete_media(params).await?;
         Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::MediaContentDelete(param),
+            ResponseMessageBodyEnum::MediaContentDelete(MediaIdWrapper { media_id: param }),
         ))
     }
 }
@@ -35,13 +36,14 @@ mod test_delete_media {
 
     use once_cell::sync::Lazy;
 
-    use super::*;
     use crate::di::MediaContentDeleteServiceContainer;
     use crate::domain::common::value_object::SerializableId;
     use crate::domain::media::service::MockMediaApi;
     use crate::domain::media::value_object::MediaId;
     use crate::error;
     use crate::prelude::ResponseMessageBodyEnum;
+
+    use super::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -54,7 +56,9 @@ mod test_delete_media {
         // 期待値を生成
         let media_id = MediaId::try_create("vi-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
         let expected = ResponseMessage::Success(ResponseMessageBodyEnum::MediaContentDelete(
-            media_id.clone(),
+            MediaIdWrapper {
+                media_id: media_id.clone(),
+            },
         ));
 
         // socketの生成に成功する場合のMockを作成

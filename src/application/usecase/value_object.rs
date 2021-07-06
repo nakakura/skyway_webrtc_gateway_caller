@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
+use crate::domain::media::value_object::MediaIdWrapper;
 use crate::domain::media::value_object::{MediaConnectionIdWrapper, MediaId};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
@@ -100,8 +101,9 @@ pub enum ResponseMessageBodyEnum {
     DataRedirect(DataConnectionIdWrapper),
     DataEvent(DataConnectionEventEnum),
     MediaContentCreate(SocketInfo<MediaId>),
-    MediaContentDelete(MediaId),
+    MediaContentDelete(MediaIdWrapper),
     MediaRtcpCreate(SocketInfo<RtcpId>),
+    // FIXME: RtcpIdWrapper
     MediaRtcpDelete(RtcpId),
     MediaCall(MediaConnectionIdWrapper),
 }
