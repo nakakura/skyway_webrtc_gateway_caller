@@ -4,7 +4,10 @@ use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
 use crate::domain::media::service::MediaApi;
-use crate::domain::media::value_object::{CallQuery, MediaConnectionIdWrapper, MediaId, RtcpId};
+use crate::domain::media::value_object::{
+    AnswerQuery, AnswerResponse, AnswerResponseParams, CallQuery, MediaConnectionId,
+    MediaConnectionIdWrapper, MediaId, RtcpId,
+};
 use crate::error;
 use crate::prelude::SocketInfo;
 
@@ -50,6 +53,23 @@ impl MediaApi for MediaApiImpl {
         let call_query = serde_json::from_value::<CallQuery>(call_query)
             .map_err(|e| error::Error::SerdeError { error: e })?;
         let result = media::call(&call_query).await?;
+        Ok(result.params)
+    }
+
+    async fn answer(&self, answer_query: Value) -> Result<AnswerResponseParams, error::Error> {
+        use serde::Deserialize;
+        #[derive(Deserialize)]
+        struct AnswerParameters {
+            media_connection_id: MediaConnectionId,
+            answer_query: AnswerQuery,
+        }
+        let answer_parameters = serde_json::from_value::<AnswerParameters>(answer_query)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+        let result: AnswerResponse = media::answer(
+            &answer_parameters.media_connection_id,
+            &answer_parameters.answer_query,
+        )
+        .await?;
         Ok(result.params)
     }
 }

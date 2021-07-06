@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
-use crate::domain::media::value_object::{MediaConnectionIdWrapper, MediaId};
+use crate::domain::media::value_object::{AnswerResponseParams, MediaConnectionIdWrapper, MediaId};
 use crate::domain::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
@@ -38,6 +38,8 @@ pub enum ServiceParams {
     MediaRtcpCreate { params: Option<Value> },
     #[serde(rename = "MEDIA_CALL")]
     MediaCall { params: Value },
+    #[serde(rename = "MEDIA_ANSWER")]
+    MediaAnswer { params: Value },
 }
 
 #[cfg(test)]
@@ -105,6 +107,7 @@ pub enum ResponseMessageBodyEnum {
     MediaRtcpCreate(SocketInfo<RtcpId>),
     MediaRtcpDelete(RtcpIdWrapper),
     MediaCall(MediaConnectionIdWrapper),
+    MediaAnswer(AnswerResponseParams),
 }
 
 // JSONでクライアントから受け取るメッセージ

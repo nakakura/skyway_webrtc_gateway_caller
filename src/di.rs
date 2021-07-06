@@ -109,3 +109,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaAnswerServiceContainer {
+        components = [media::answer::AnswerService, MediaApiImpl],
+        providers = []
+    }
+}

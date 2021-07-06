@@ -5,7 +5,9 @@ use serde_json::Value;
 use shaku::Interface;
 
 use crate::domain::common::value_object::SocketInfo;
-use crate::domain::media::value_object::{MediaConnectionIdWrapper, MediaId, RtcpId};
+use crate::domain::media::value_object::{
+    AnswerResponseParams, MediaConnectionIdWrapper, MediaId, RtcpId,
+};
 use crate::error;
 
 #[cfg_attr(test, automock)]
@@ -16,4 +18,5 @@ pub(crate) trait MediaApi: Interface {
     async fn create_rtcp(&self) -> Result<SocketInfo<RtcpId>, error::Error>;
     async fn delete_rtcp(&self, rtcp_id: Value) -> Result<RtcpId, error::Error>;
     async fn call(&self, call_query: Value) -> Result<MediaConnectionIdWrapper, error::Error>;
+    async fn answer(&self, answer_query: Value) -> Result<AnswerResponseParams, error::Error>;
 }
