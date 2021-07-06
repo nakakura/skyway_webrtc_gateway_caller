@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
-use crate::domain::media::value_object::MediaId;
+use crate::domain::media::value_object::{MediaConnectionIdWrapper, MediaId};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
 use skyway_webrtc_gateway_api::media::RtcpId;
@@ -35,6 +35,8 @@ pub enum ServiceParams {
     MediaContentDelete { params: Value },
     #[serde(rename = "MEDIA_RTCP_CREATE")]
     MediaRtcpCreate { params: Option<Value> },
+    #[serde(rename = "MEDIA_CALL")]
+    MediaCall { params: Value },
 }
 
 #[cfg(test)]
@@ -101,6 +103,7 @@ pub enum ResponseMessageBodyEnum {
     MediaContentDelete(MediaId),
     MediaRtcpCreate(SocketInfo<RtcpId>),
     MediaRtcpDelete(RtcpId),
+    MediaCall(MediaConnectionIdWrapper),
 }
 
 // JSONでクライアントから受け取るメッセージ

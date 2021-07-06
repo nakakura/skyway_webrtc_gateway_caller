@@ -102,3 +102,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaCallServiceContainer {
+        components = [media::call::CallService, MediaApiImpl],
+        providers = []
+    }
+}
