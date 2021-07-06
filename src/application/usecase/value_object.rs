@@ -100,6 +100,7 @@ pub enum ResponseMessageBodyEnum {
     MediaContentCreate(SocketInfo<MediaId>),
     MediaContentDelete(MediaId),
     MediaRtcpCreate(SocketInfo<RtcpId>),
+    MediaRtcpDelete(RtcpId),
 }
 
 // JSONでクライアントから受け取るメッセージ

@@ -95,3 +95,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaRtcpDeleteServiceContainer {
+        components = [media::delete_rtcp::DeleteRtcpService, MediaApiImpl],
+        providers = []
+    }
+}

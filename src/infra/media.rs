@@ -38,4 +38,11 @@ impl MediaApi for MediaApiImpl {
     async fn create_rtcp(&self) -> Result<SocketInfo<RtcpId>, error::Error> {
         media::open_rtcp_socket().await
     }
+
+    async fn delete_rtcp(&self, rtcp_id: Value) -> Result<RtcpId, error::Error> {
+        let rtcp_id = serde_json::from_value::<RtcpId>(rtcp_id)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+        let _ = media::delete_rtcp(&rtcp_id).await?;
+        Ok(rtcp_id)
+    }
 }
