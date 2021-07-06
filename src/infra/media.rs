@@ -4,7 +4,7 @@ use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
 use crate::domain::media::service::MediaApi;
-use crate::domain::media::value_object::MediaId;
+use crate::domain::media::value_object::{MediaId, RtcpId};
 use crate::error;
 use crate::prelude::SocketInfo;
 
@@ -33,5 +33,9 @@ impl MediaApi for MediaApiImpl {
             serde_json::from_value(media_id).map_err(|e| error::Error::SerdeError { error: e })?;
         let _ = media::delete_media(&media_id).await?;
         Ok(media_id)
+    }
+
+    async fn create_rtcp(&self) -> Result<SocketInfo<RtcpId>, error::Error> {
+        media::open_rtcp_socket().await
     }
 }

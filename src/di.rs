@@ -88,3 +88,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaRtcpCreateServiceContainer {
+        components = [media::create_rtcp::CreateRtcpService, MediaApiImpl],
+        providers = []
+    }
+}

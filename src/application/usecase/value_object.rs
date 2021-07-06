@@ -7,6 +7,7 @@ use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
 use crate::domain::media::value_object::MediaId;
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
+use skyway_webrtc_gateway_api::media::RtcpId;
 
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで受け取る
@@ -32,6 +33,8 @@ pub enum ServiceParams {
     MediaContentCreate { params: Value },
     #[serde(rename = "MEDIA_CONTENT_DELETE")]
     MediaContentDelete { params: Value },
+    #[serde(rename = "MEDIA_RTCP_CREATE")]
+    MediaRtcpCreate { params: Option<Value> },
 }
 
 #[cfg(test)]
@@ -96,6 +99,7 @@ pub enum ResponseMessageBodyEnum {
     DataEvent(DataConnectionEventEnum),
     MediaContentCreate(SocketInfo<MediaId>),
     MediaContentDelete(MediaId),
+    MediaRtcpCreate(SocketInfo<RtcpId>),
 }
 
 // JSONでクライアントから受け取るメッセージ
