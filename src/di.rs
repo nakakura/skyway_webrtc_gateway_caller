@@ -116,3 +116,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaEventServiceContainer {
+        components = [media::event::EventService, MediaApiImpl, ApplicationStateAlwaysTrueImpl],
+        providers = []
+    }
+}

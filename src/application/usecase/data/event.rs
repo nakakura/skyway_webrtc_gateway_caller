@@ -66,18 +66,20 @@ impl EventListener for EventService {
 mod test_data_event {
     use std::sync::Mutex;
 
-    use crate::error;
     use once_cell::sync::Lazy;
 
     use super::*;
     use crate::di::DataEventServiceContainer;
     use crate::domain::data::service::MockDataApi;
+    use crate::error;
     use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
     use crate::prelude::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
+    // Eventの監視ループを抜けるタイミングは3つあり、3つともテストする
+    // CLOSE Eventを受信してループを抜ける場合
     #[tokio::test]
     async fn connect_and_close() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
@@ -147,6 +149,7 @@ mod test_data_event {
         );
     }
 
+    // Error Eventを受信してループを抜ける場合
     #[tokio::test]
     async fn recv_error() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
@@ -192,6 +195,7 @@ mod test_data_event {
         );
     }
 
+    // loopの継続判定がfalseになって抜ける場合
     #[tokio::test]
     async fn loop_exit() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
