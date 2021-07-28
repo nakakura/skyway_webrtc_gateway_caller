@@ -6,7 +6,8 @@ use shaku::Interface;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::media::value_object::{
-    AnswerResponseParams, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId, RtcpId,
+    AnswerResponseParams, AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper,
+    MediaId, RtcpId,
 };
 use crate::error;
 
@@ -18,7 +19,7 @@ pub(crate) trait MediaApi: Interface {
     async fn create_rtcp(&self) -> Result<SocketInfo<RtcpId>, error::Error>;
     async fn delete_rtcp(&self, rtcp_id: Value) -> Result<RtcpId, error::Error>;
     async fn call(&self, call_query: Value) -> Result<MediaConnectionIdWrapper, error::Error>;
-    async fn answer(&self, answer_query: Value) -> Result<AnswerResponseParams, error::Error>;
+    async fn answer(&self, answer_query: Value) -> Result<AnswerResult, error::Error>;
     async fn event(
         &self,
         media_connection_id: Value,

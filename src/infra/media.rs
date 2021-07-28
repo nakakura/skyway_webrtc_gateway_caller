@@ -5,11 +5,11 @@ use skyway_webrtc_gateway_api::media;
 
 use crate::domain::media::service::MediaApi;
 use crate::domain::media::value_object::{
-    AnswerQuery, AnswerResponse, AnswerResponseParams, CallQuery, MediaConnectionEventEnum,
-    MediaConnectionId, MediaConnectionIdWrapper, MediaId, RtcpId,
+    AnswerQuery, AnswerResponse, AnswerResponseParams, AnswerResult, CallQuery,
+    MediaConnectionEventEnum, MediaConnectionId, MediaConnectionIdWrapper, MediaId, RtcpId,
 };
 use crate::error;
-use crate::prelude::SocketInfo;
+use crate::prelude::{PhantomId, RedirectParameters, SocketInfo};
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
@@ -56,9 +56,9 @@ impl MediaApi for MediaApiImpl {
         Ok(result.params)
     }
 
-    async fn answer(&self, answer_query: Value) -> Result<AnswerResponseParams, error::Error> {
+    async fn answer(&self, answer_query: Value) -> Result<AnswerResult, error::Error> {
         use serde::Deserialize;
-        #[derive(Deserialize)]
+        #[derive(Debug, Deserialize)]
         struct AnswerParameters {
             media_connection_id: MediaConnectionId,
             answer_query: AnswerQuery,
@@ -70,7 +70,13 @@ impl MediaApi for MediaApiImpl {
             &answer_parameters.answer_query,
         )
         .await?;
-        Ok(result.params)
+
+        let answer_result = AnswerResult {
+            media_connection_id: answer_parameters.media_connection_id,
+            send_sockets: Some(result.params.clone()),
+            recv_sockets: answer_parameters.answer_query.redirect_params,
+        };
+        Ok(answer_result)
     }
 
     async fn event(

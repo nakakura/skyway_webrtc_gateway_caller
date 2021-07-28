@@ -126,6 +126,16 @@ async fn skyway_control_service_observe(
                             event_service.execute(tx, value).await;
                         });
                     }
+                    ResponseMessage::Success(ResponseMessageBodyEnum::MediaAnswer(params)) => {
+                        let tx = event_tx.clone();
+                        tokio::spawn(async move {
+                            use crate::di::MediaEventServiceContainer;
+                            let module = MediaEventServiceContainer::builder().build();
+                            let event_service: &dyn EventListener = module.resolve_ref();
+                            let value = serde_json::to_value(&params.media_connection_id).unwrap();
+                            event_service.execute(tx, value).await;
+                        });
+                    }
                     _ => {}
                 }
 

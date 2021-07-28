@@ -44,7 +44,6 @@ pub async fn create_peer(
 
 #[allow(dead_code)]
 pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &PeerInfo) {
-    println!("start deleting {:?}", peer_info);
     // create control message
     let message = format!(
         r#"{{

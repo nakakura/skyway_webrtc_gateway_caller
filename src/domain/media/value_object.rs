@@ -14,3 +14,10 @@ pub struct MediaIdWrapper {
 pub struct RtcpIdWrapper {
     pub rtcp_id: RtcpId,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AnswerResult {
+    pub media_connection_id: MediaConnectionId,
+    pub send_sockets: Option<AnswerResponseParams>,
+    pub recv_sockets: Option<RedirectParameters>,
+}

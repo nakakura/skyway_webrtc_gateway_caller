@@ -4,98 +4,9 @@ use rust_module::prelude::*;
 use rust_module::run;
 use tokio::sync::mpsc;
 
+use common::media;
 use common::peer;
 use common::terminal;
-use common::ControlMessage;
-
-#[allow(dead_code)]
-pub async fn create_media(
-    message_tx: &mpsc::Sender<ControlMessage>,
-    is_video: bool,
-) -> SocketInfo<MediaId> {
-    let body_json = format!(
-        r#"{{
-            "command": "MEDIA_CONTENT_CREATE",
-            "params": {}
-        }}"#,
-        is_video
-    );
-    let body = serde_json::from_str::<ServiceParams>(&body_json);
-    // 処理を開始
-
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body.unwrap())).await;
-    match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaContentCreate(socket))) => socket,
-        message => {
-            panic!("data socket open failed{:?}", message);
-        }
-    }
-}
-
-#[allow(dead_code)]
-pub async fn create_rtcp(
-    message_tx: &mpsc::Sender<ControlMessage>,
-    is_video: bool,
-) -> SocketInfo<RtcpId> {
-    let body_json = format!(
-        r#"{{
-            "command": "MEDIA_RTCP_CREATE",
-            "params": {}
-        }}"#,
-        is_video
-    );
-    let body = serde_json::from_str::<ServiceParams>(&body_json);
-    // 処理を開始
-
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body.unwrap())).await;
-    match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaRtcpCreate(socket))) => socket,
-        message => {
-            panic!("data socket open failed{:?}", message);
-        }
-    }
-}
-
-pub async fn answer(
-    message_tx: &mpsc::Sender<ControlMessage>,
-    media_connection_id: MediaConnectionId,
-    answer_query: AnswerQuery,
-) -> AnswerResponseParams {
-    use serde::Serialize;
-
-    #[derive(Serialize)]
-    struct AnswerParameter {
-        command: String,
-        params: InternalParams,
-    }
-
-    #[derive(Serialize)]
-    struct InternalParams {
-        media_connection_id: MediaConnectionId,
-        answer_query: AnswerQuery,
-    }
-
-    let param = AnswerParameter {
-        command: "MEDIA_ANSWER".into(),
-        params: InternalParams {
-            media_connection_id,
-            answer_query,
-        },
-    };
-    let json_message = serde_json::to_string(&param).unwrap();
-    let body = serde_json::from_str::<ServiceParams>(&json_message);
-
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body.unwrap())).await;
-    match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaAnswer(response))) => response,
-        message => {
-            panic!("data socket open failed{:?}", message);
-        }
-    }
-}
 
 #[tokio::main]
 async fn main() {
@@ -109,11 +20,11 @@ async fn main() {
 
     // media socketの開放
     // video送信用ポート
-    let media_socket_video = create_media(&message_tx, true).await;
+    let media_socket_video = media::create_media(&message_tx, true).await;
     // audio送信用ポート
-    let media_socket_audio = create_media(&message_tx, false).await;
+    let media_socket_audio = media::create_media(&message_tx, false).await;
     // rtcp送信用ポート
-    let rtcp_socket = create_rtcp(&message_tx, true).await;
+    let rtcp_socket = media::create_rtcp(&message_tx, true).await;
 
     // terminalの読み込み
     let (terminal_tx, mut terminal_rx) = mpsc::channel::<String>(10);
@@ -142,12 +53,13 @@ async fn main() {
                 }
                 ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::CALL(call_event)) => {
                     let media_connection_id = call_event.call_params.media_connection_id;
+                    println!("{:?}", media_connection_id);
                     let answer_params = AnswerQuery {
                         constraints: Constraints {
-                            video: false,
-                            videoReceiveEnabled: None,
-                            audio: false,
-                            audioReceiveEnabled: None,
+                            video: true,
+                            videoReceiveEnabled: Some(true),
+                            audio: true,
+                            audioReceiveEnabled: Some(true),
                             video_params: Some(MediaParams {
                                 band_width: 1500,
                                 codec: "H264".to_string(),
@@ -166,15 +78,36 @@ async fn main() {
                             }),
                             metadata: None,
                         },
-                        redirect_params: None,
+                        redirect_params: Some(RedirectParameters {
+                            video: Some(
+                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3000)
+                                    .unwrap(),
+                            ),
+                            video_rtcp: Some(
+                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3001)
+                                    .unwrap(),
+                            ),
+                            audio: Some(
+                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3002)
+                                    .unwrap(),
+                            ),
+                            audio_rtcp: Some(
+                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3003)
+                                    .unwrap(),
+                            ),
+                        }),
                     };
 
-                    let result = answer(&message_tx, media_connection_id, answer_params).await;
+                    let result =
+                        media::answer(&message_tx, media_connection_id, answer_params).await;
                     println!("result {:?}", result);
                 }
                 ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::CLOSE(close_event)) => {
                     println!("{:?} has been deleted. \nExiting Program", close_event);
                     break;
+                }
+                ResponseMessageBodyEnum::MediaEvent(event) => {
+                    println!("media event \n {:?}", event);
                 }
                 message => {
                     panic!("{:?}", message);
