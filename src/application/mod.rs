@@ -25,6 +25,7 @@ pub(crate) mod service_creator {
     use crate::application::usecase::value_object::ResponseMessage;
     #[allow(unused_imports)]
     use crate::application::usecase::value_object::ServiceParams;
+    use serde_json::Value;
 
     // TODO: まだtestでしか使っていない
     #[allow(dead_code)]
@@ -61,6 +62,21 @@ pub(crate) mod service_creator {
             }
             ServiceParams::DataRedirect { params } => {
                 let module = DataRedirectServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                execute_service(service, params).await
+            }
+            ServiceParams::MediaContentCreate { params } => {
+                let module = MediaContentCreateServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                execute_service(service, params).await
+            }
+            ServiceParams::MediaRtcpCreate { params: _ } => {
+                let module = MediaRtcpCreateServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                execute_service(service, Value::Null).await
+            }
+            ServiceParams::MediaAnswer { params } => {
+                let module = MediaAnswerServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, params).await
             }

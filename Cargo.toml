@@ -34,3 +34,8 @@ path = "examples/data_caller.rs"
 [[example]]
 name = "data_callee"
 path = "examples/data_callee.rs"
+
+[[example]]
+name = "media_callee"
+path = "examples/meida_callee.rs"
+
