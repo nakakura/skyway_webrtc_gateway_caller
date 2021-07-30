@@ -37,11 +37,10 @@ mod test_answer {
 
     use super::*;
     use crate::di::MediaAnswerServiceContainer;
-    use crate::domain::common::value_object::SerializableId;
     use crate::domain::media::service::MockMediaApi;
-    use crate::domain::media::value_object::{AnswerResponseParams, MediaId};
+    use crate::domain::media::value_object::AnswerResult;
     use crate::error;
-    use crate::prelude::ResponseMessageBodyEnum;
+    use crate::prelude::{MediaConnectionId, ResponseMessageBodyEnum};
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -52,11 +51,12 @@ mod test_answer {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let video_id = MediaId::try_create("vi-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let audio_id = MediaId::try_create("au-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let params = AnswerResponseParams {
-            video_id: Some(video_id.clone()),
-            audio_id: Some(audio_id.clone()),
+        let media_connection_id =
+            MediaConnectionId::try_create("mc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
+        let params = AnswerResult {
+            media_connection_id,
+            send_sockets: None,
+            recv_sockets: None,
         };
         let expected =
             ResponseMessage::Success(ResponseMessageBodyEnum::MediaAnswer(params.clone()));

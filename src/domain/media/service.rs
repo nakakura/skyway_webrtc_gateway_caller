@@ -6,8 +6,7 @@ use shaku::Interface;
 
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::media::value_object::{
-    AnswerResponseParams, AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper,
-    MediaId, RtcpId,
+    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId, RtcpId,
 };
 use crate::error;
 

@@ -5,11 +5,11 @@ use skyway_webrtc_gateway_api::media;
 
 use crate::domain::media::service::MediaApi;
 use crate::domain::media::value_object::{
-    AnswerQuery, AnswerResponse, AnswerResponseParams, AnswerResult, CallQuery,
-    MediaConnectionEventEnum, MediaConnectionId, MediaConnectionIdWrapper, MediaId, RtcpId,
+    AnswerQuery, AnswerResponse, AnswerResult, CallQuery, MediaConnectionEventEnum,
+    MediaConnectionId, MediaConnectionIdWrapper, MediaId, RtcpId,
 };
 use crate::error;
-use crate::prelude::{PhantomId, RedirectParameters, SocketInfo};
+use crate::prelude::SocketInfo;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]

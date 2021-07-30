@@ -5,7 +5,7 @@ use serde_json::Value;
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
 use crate::domain::media::value_object::{
-    AnswerResponseParams, AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId,
+    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId,
 };
 use crate::domain::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};

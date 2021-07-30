@@ -18,6 +18,9 @@ pub(crate) enum EventEnum {
 pub(crate) mod service_creator {
     // 何故かwarningが出るのでマクロを入れる
     #[allow(unused_imports)]
+    use serde_json::Value;
+
+    #[allow(unused_imports)]
     use crate::application::usecase::service::execute_service;
     #[allow(unused_imports)]
     use crate::application::usecase::service::Service;
@@ -25,7 +28,6 @@ pub(crate) mod service_creator {
     use crate::application::usecase::value_object::ResponseMessage;
     #[allow(unused_imports)]
     use crate::application::usecase::value_object::ServiceParams;
-    use serde_json::Value;
 
     // TODO: まだtestでしか使っていない
     #[allow(dead_code)]
