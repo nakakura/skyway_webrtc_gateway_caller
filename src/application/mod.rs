@@ -36,6 +36,7 @@ pub(crate) mod service_creator {
 
         use crate::di::*;
 
+        /// FIXME: 同じ内容の重複
         match params {
             ServiceParams::PeerCreate { params } => {
                 let module = PeerCreateServiceContainer::builder().build();
@@ -76,6 +77,11 @@ pub(crate) mod service_creator {
                 let module = MediaRtcpCreateServiceContainer::builder().build();
                 let service: &dyn Service = module.resolve_ref();
                 execute_service(service, Value::Null).await
+            }
+            ServiceParams::MediaCall { params } => {
+                let module = MediaCallServiceContainer::builder().build();
+                let service: &dyn Service = module.resolve_ref();
+                execute_service(service, params).await
             }
             ServiceParams::MediaAnswer { params } => {
                 let module = MediaAnswerServiceContainer::builder().build();

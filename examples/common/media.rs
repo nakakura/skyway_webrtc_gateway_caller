@@ -54,6 +54,40 @@ pub async fn create_rtcp(
 }
 
 #[allow(dead_code)]
+pub async fn call(
+    message_tx: &mpsc::Sender<ControlMessage>,
+    query: CallQuery,
+) -> MediaConnectionId {
+    use serde::Serialize;
+
+    #[derive(Serialize)]
+    struct Parameter {
+        command: String,
+        params: CallQuery,
+    }
+
+    let paramter = Parameter {
+        command: "MEDIA_CALL".into(),
+        params: query,
+    };
+
+    let json_message = serde_json::to_string(&paramter).unwrap();
+    println!("{:?}", json_message);
+    let body = serde_json::from_str::<ServiceParams>(&json_message);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    let _ = message_tx.send((tx, body.unwrap())).await;
+    match rx.await {
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaCall(response))) => {
+            response.media_connection_id
+        }
+        message => {
+            panic!("data socket open failed{:?}", message);
+        }
+    }
+}
+
+#[allow(dead_code)]
 pub async fn answer(
     message_tx: &mpsc::Sender<ControlMessage>,
     media_connection_id: MediaConnectionId,
