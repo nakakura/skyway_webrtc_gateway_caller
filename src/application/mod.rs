@@ -3,17 +3,6 @@ pub(crate) mod usecase;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::domain::peer::value_object::Token;
-use usecase::value_object::ServiceParams;
-
-// TODO: まだtestでしか使っていない
-#[allow(dead_code)]
-#[derive(Debug, PartialEq)]
-pub(crate) enum EventEnum {
-    System(Token),
-    Json(ServiceParams),
-}
-
 #[cfg_attr(test, automock)]
 pub(crate) mod service_creator {
     // 何故かwarningが出るのでマクロを入れる
@@ -29,14 +18,12 @@ pub(crate) mod service_creator {
     #[allow(unused_imports)]
     use crate::application::usecase::value_object::ServiceParams;
 
-    // TODO: まだtestでしか使っていない
-    #[allow(dead_code)]
     pub(crate) async fn create(params: ServiceParams) -> ResponseMessage {
         use shaku::HasComponent;
 
         use crate::di::*;
 
-        /// FIXME: 同じ内容の重複
+        // FIXME: 同じ内容の重複
         match params {
             ServiceParams::PeerCreate { params } => {
                 let module = PeerCreateServiceContainer::builder().build();
@@ -92,24 +79,5 @@ pub(crate) mod service_creator {
                 unreachable!()
             }
         }
-    }
-}
-
-#[cfg_attr(test, automock)]
-pub(crate) mod event {
-    use tokio::sync::mpsc;
-
-    use crate::application::EventEnum;
-    use crate::domain::peer::value_object::PeerInfo;
-
-    // TODO: 実装
-    // peer eventを監視し続ける
-    // peer objectがcloseしたら(CLOSE eventを受け取ったら)終了して、fuse_txにEventEnum::Systemを通知
-    #[allow(dead_code)]
-    pub(crate) async fn event(
-        _peer_info: PeerInfo,
-        _event_tx: mpsc::Sender<String>,
-        _fuse_tx: mpsc::Sender<EventEnum>,
-    ) {
     }
 }

@@ -95,7 +95,7 @@ async fn skyway_control_service_observe(
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
                 // 適宜event_txへsendされる
-                /// FIXME: too long
+                // FIXME: too long
                 match result {
                     ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(params)) => {
                         let tx = event_tx.clone();
