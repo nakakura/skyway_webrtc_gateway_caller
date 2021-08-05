@@ -72,8 +72,8 @@ pub async fn run(
 
 // skyway_control serviceからのメッセージ(ServiceParams)を監視し続ける
 // これは保持するReceiverが結びついているSenderが破棄されるまで続ける
-// crate全体を通して、Stateはこの関数内のfoldのみが保持する。
-// Stateとして、各PeerIdに対応するMediaConnectionId, DataConnectionIDなどを保持する
+// crate全体を通して、Stateが必要な場合はこの関数内のfoldのみが保持する。
+// 現時点で保持しているのは、event listenerへメッセージを送るためのSenderのみである
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
 async fn skyway_control_service_observe(
@@ -83,7 +83,6 @@ async fn skyway_control_service_observe(
     let receiver = ReceiverStream::new(receiver);
     receiver
         .fold(
-            // TODO: ここで必要な状態を保持するHashMapも保持する。StateはこのHashMapのみに留める
             event_tx,
             |event_tx, (message_response_tx, message)| async move {
                 // application層のメソッドにメッセージを渡す
