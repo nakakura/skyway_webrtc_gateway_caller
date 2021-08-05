@@ -74,7 +74,7 @@ mod test_create_peer {
 
         // Mockを埋め込んだEventServiceを生成
         let module = PeerCreateServiceContainer::builder().build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result =
@@ -110,7 +110,7 @@ mod test_create_peer {
 
         // Mockを埋め込んだEventServiceを生成
         let module = PeerCreateServiceContainer::builder().build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result =

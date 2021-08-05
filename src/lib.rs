@@ -89,7 +89,7 @@ async fn skyway_control_service_observe(
                 // application層のメソッドにメッセージを渡す
                 // 内部で適切に各Serviceに振り分けて結果のみ返してもらう
                 // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ResponseMessage::ERROR)のでそのままPresentation層へ渡す
-                let result = application::service_creator::create(message).await;
+                let result = application::run(message).await;
                 let _ = message_response_tx.send(result.clone());
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する

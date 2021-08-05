@@ -1,14 +1,17 @@
-use crate::error;
+use std::sync::Arc;
+
 use async_trait::async_trait;
-#[cfg(test)]
-use mockall::automock;
 use serde_json::Value;
 use shaku::Interface;
 use tokio::sync::mpsc::Sender;
 
 use crate::application::usecase::value_object::ResponseMessage;
+use crate::error;
 
-pub(crate) async fn execute_service(service: &dyn Service, params: Value) -> ResponseMessage {
+#[cfg(test)]
+use mockall::automock;
+
+pub(crate) async fn execute_service(service: Arc<dyn Service>, params: Value) -> ResponseMessage {
     let result = service.execute(params).await;
 
     match result {

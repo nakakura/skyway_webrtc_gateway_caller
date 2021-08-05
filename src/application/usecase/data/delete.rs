@@ -75,7 +75,7 @@ mod test_create_data {
         let module = DataDeleteServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let delete_service: &dyn Service = module.resolve_ref();
+        let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let message = format!(
@@ -121,7 +121,7 @@ mod test_create_data {
         let module = DataDeleteServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let delete_service: &dyn Service = module.resolve_ref();
+        let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let message = format!(

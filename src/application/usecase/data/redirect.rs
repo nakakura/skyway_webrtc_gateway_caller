@@ -91,7 +91,7 @@ mod test_redirect_data {
         let module = DataRedirectServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result =
@@ -119,7 +119,7 @@ mod test_redirect_data {
         let module = DataRedirectServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(

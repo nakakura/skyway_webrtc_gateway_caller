@@ -67,7 +67,7 @@ mod test_create_data {
         let module = DataDisconnectServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let disconnect_service: &dyn Service = module.resolve_ref();
+        let disconnect_service: Arc<dyn Service> = module.resolve();
 
         // 引数を生成
         let message = format!(
@@ -105,7 +105,7 @@ mod test_create_data {
         let module = DataDisconnectServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let connect_service: &dyn Service = module.resolve_ref();
+        let connect_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(

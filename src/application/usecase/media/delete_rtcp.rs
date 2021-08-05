@@ -68,7 +68,7 @@ mod test_delete_media {
         let module = MediaRtcpDeleteServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(
@@ -99,7 +99,7 @@ mod test_delete_media {
         let module = MediaRtcpDeleteServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(

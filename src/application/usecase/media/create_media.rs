@@ -73,7 +73,7 @@ mod test_create_media {
         let module = MediaContentCreateServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(
@@ -104,7 +104,7 @@ mod test_create_media {
         let module = MediaContentCreateServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: &dyn Service = module.resolve_ref();
+        let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(

@@ -66,7 +66,7 @@ mod test_delete_peer {
 
         // Mockを埋め込んだEventServiceを生成
         let module = PeerDeleteServiceContainer::builder().build();
-        let delete_service: &dyn Service = module.resolve_ref();
+        let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(
@@ -98,7 +98,7 @@ mod test_delete_peer {
 
         // Mockを埋め込んだEventServiceを生成
         let module = PeerDeleteServiceContainer::builder().build();
-        let delete_service: &dyn Service = module.resolve_ref();
+        let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let result = crate::application::usecase::service::execute_service(
