@@ -76,14 +76,21 @@ async fn main() {
             audio: false,
             audioReceiveEnabled: None,
             video_params: Some(MediaParams {
-                band_width: 0,
+                band_width: 1500,
                 codec: "H264".to_string(),
                 media_id: media_socket_video.get_id().unwrap(),
                 rtcp_id: Some(rtcp_socket.get_id().unwrap()),
                 payload_type: None,
                 sampling_rate: None,
             }),
-            audio_params: None,
+            audio_params: Some(MediaParams {
+                band_width:1500,
+                codec: "OPUS".to_string(),
+                media_id: media_socket_audio.get_id().unwrap(),
+                rtcp_id: None,
+                payload_type: None,
+                sampling_rate: None
+            }),
             metadata: None,
         }),
         redirect_params: None,
