@@ -1,10 +1,7 @@
 use futures::stream::StreamExt;
-use shaku::HasComponent;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
-use crate::application::usecase::service::EventListener;
-use crate::prelude::ResponseMessageBodyEnum;
 pub use application::usecase::value_object::{ResponseMessage, ServiceParams};
 pub use domain::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
 
@@ -94,59 +91,15 @@ async fn skyway_control_service_observe(
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
                 // 適宜event_txへsendされる
-                // FIXME: too long
-                match result {
-                    ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(params)) => {
+                if let ResponseMessage::Success(message) = result {
+                    if let Some((value, service)) =
+                        application::usecase::value_object::event_factory(message)
+                    {
                         let tx = event_tx.clone();
                         tokio::spawn(async move {
-                            use crate::di::PeerEventServiceContainer;
-                            let module = PeerEventServiceContainer::builder().build();
-                            let event_service: &dyn EventListener = module.resolve_ref();
-                            let value = serde_json::to_value(&params).unwrap();
-                            event_service.execute(tx, value).await;
+                            service.execute(tx, value).await;
                         });
                     }
-                    ResponseMessage::Success(ResponseMessageBodyEnum::DataConnect(params)) => {
-                        let tx = event_tx.clone();
-                        tokio::spawn(async move {
-                            use crate::di::DataEventServiceContainer;
-                            let module = DataEventServiceContainer::builder().build();
-                            let event_service: &dyn EventListener = module.resolve_ref();
-                            let value = serde_json::to_value(&params).unwrap();
-                            event_service.execute(tx, value).await;
-                        });
-                    }
-                    ResponseMessage::Success(ResponseMessageBodyEnum::DataRedirect(params)) => {
-                        let tx = event_tx.clone();
-                        tokio::spawn(async move {
-                            use crate::di::DataEventServiceContainer;
-                            let module = DataEventServiceContainer::builder().build();
-                            let event_service: &dyn EventListener = module.resolve_ref();
-                            let value = serde_json::to_value(&params).unwrap();
-                            event_service.execute(tx, value).await;
-                        });
-                    }
-                    ResponseMessage::Success(ResponseMessageBodyEnum::MediaCall(params)) => {
-                        let tx = event_tx.clone();
-                        tokio::spawn(async move {
-                            use crate::di::MediaEventServiceContainer;
-                            let module = MediaEventServiceContainer::builder().build();
-                            let event_service: &dyn EventListener = module.resolve_ref();
-                            let value = serde_json::to_value(&params.media_connection_id).unwrap();
-                            event_service.execute(tx, value).await;
-                        });
-                    }
-                    ResponseMessage::Success(ResponseMessageBodyEnum::MediaAnswer(params)) => {
-                        let tx = event_tx.clone();
-                        tokio::spawn(async move {
-                            use crate::di::MediaEventServiceContainer;
-                            let module = MediaEventServiceContainer::builder().build();
-                            let event_service: &dyn EventListener = module.resolve_ref();
-                            let value = serde_json::to_value(&params.media_connection_id).unwrap();
-                            event_service.execute(tx, value).await;
-                        });
-                    }
-                    _ => {}
                 }
 
                 event_tx

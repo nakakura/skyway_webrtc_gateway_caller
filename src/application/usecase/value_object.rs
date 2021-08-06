@@ -1,7 +1,12 @@
+use std::sync::Arc;
+
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
+use shaku::HasComponent;
+use skyway_webrtc_gateway_api::media::RtcpId;
 
+use crate::application::usecase::service::{EventListener, Service};
 use crate::domain::common::value_object::SocketInfo;
 use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
 use crate::domain::media::value_object::{
@@ -10,7 +15,6 @@ use crate::domain::media::value_object::{
 use crate::domain::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
-use skyway_webrtc_gateway_api::media::RtcpId;
 
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで受け取る
@@ -92,6 +96,65 @@ mod service_params_deserialize {
     }
 }
 
+// FIXME: no test
+pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>) {
+    use crate::di::*;
+
+    match params {
+        ServiceParams::PeerCreate { params } => {
+            let module = PeerCreateServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::PeerDelete { params } => {
+            let module = PeerDeleteServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::DataCreate { params } => {
+            let module = DataCreateServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::DataDelete { params } => {
+            let module = DataDeleteServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::DataConnect { params } => {
+            let module = DataConnectServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::DataRedirect { params } => {
+            let module = DataRedirectServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::MediaContentCreate { params } => {
+            let module = MediaContentCreateServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::MediaRtcpCreate { params: _ } => {
+            let module = MediaRtcpCreateServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (Value::Null, service)
+        }
+        ServiceParams::MediaCall { params } => {
+            let module = MediaCallServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        ServiceParams::MediaAnswer { params } => {
+            let module = MediaAnswerServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        _ => unreachable!(),
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum ResponseMessageBodyEnum {
@@ -167,5 +230,44 @@ mod response_message_serialize {
             expected.unwrap(),
             serde_json::from_str::<Value>(&message).unwrap(),
         );
+    }
+}
+
+// FIXME: no test
+pub(crate) fn event_factory(
+    message: ResponseMessageBodyEnum,
+) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+    use crate::di::*;
+
+    fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
+        param: V,
+        component: T,
+    ) -> (Value, Arc<dyn EventListener>) {
+        let value = serde_json::to_value(&param).unwrap();
+        (value, component.resolve())
+    }
+
+    match message {
+        ResponseMessageBodyEnum::PeerCreate(params) => {
+            let component = PeerEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        ResponseMessageBodyEnum::DataConnect(params) => {
+            let component = DataEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        ResponseMessageBodyEnum::DataRedirect(params) => {
+            let component = DataEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        ResponseMessageBodyEnum::MediaCall(params) => {
+            let component = MediaEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        ResponseMessageBodyEnum::MediaAnswer(params) => {
+            let component = MediaEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        _ => None,
     }
 }
