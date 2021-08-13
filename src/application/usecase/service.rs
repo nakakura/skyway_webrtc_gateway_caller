@@ -12,8 +12,11 @@ use crate::error;
 use mockall::automock;
 
 pub(crate) async fn execute_service(service: Arc<dyn Service>, params: Value) -> ResponseMessage {
+    // UseCaseの実行
     let result = service.execute(params).await;
 
+    // 結果をResponseMessageとして返す。
+    // エラーが生じた場合も、エラーを生成するという正常動作と捉え、メッセージを返す
     match result {
         Ok(message) => message,
         Err(e) => ResponseMessage::Error(serde_json::to_string(&e).expect("create error failed")),
