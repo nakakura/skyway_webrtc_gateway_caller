@@ -17,7 +17,9 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInf
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::DataCreate(socket))) => socket,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Create(socket),
+        ))) => socket,
         _ => {
             panic!("data socket open failed")
         }
@@ -40,7 +42,9 @@ pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: Dat
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::DataDelete(data_id))) => data_id,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id }),
+        ))) => data_id,
         _ => {
             panic!("data socket close failed")
         }
@@ -68,8 +72,8 @@ pub async fn connect(
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body)).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::DataConnect(
-            connection_id_wrapper,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Connect(connection_id_wrapper),
         ))) => connection_id_wrapper.data_connection_id,
         _ => {
             panic!("data socket close failed")
@@ -104,8 +108,8 @@ pub async fn redirect(
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body)).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::DataRedirect(
-            connection_id_wrapper,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Redirect(connection_id_wrapper),
         ))) => connection_id_wrapper.data_connection_id,
         _ => {
             panic!("data redirect failed")

@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -23,9 +23,9 @@ pub(crate) struct ConnectService {
 impl Service for ConnectService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.connect(params).await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::DataConnect(param),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Connect(param),
+        )))
     }
 }
 
@@ -99,7 +99,7 @@ mod test_create_data {
             crate::application::usecase::service::execute_service(connect_service, message).await;
 
         // evaluate
-        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"is_success\":true,\"result\":{\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
+        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"CONNECT\",\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
     }
 
     #[tokio::test]

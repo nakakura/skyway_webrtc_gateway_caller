@@ -5,7 +5,7 @@ use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::media::service::MediaApi;
 use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
@@ -23,9 +23,9 @@ pub(crate) struct CreateRtcpService {
 impl Service for CreateRtcpService {
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create_rtcp().await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::MediaRtcpCreate(param),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::RtcpCreate(param),
+        )))
     }
 }
 
@@ -58,8 +58,9 @@ mod test_create_rtcp {
             10000,
         )
         .unwrap();
-        let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaRtcpCreate(rtcp_id.clone()));
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::RtcpCreate(rtcp_id.clone()),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();

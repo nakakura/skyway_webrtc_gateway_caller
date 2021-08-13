@@ -14,7 +14,7 @@ use crate::domain::media::value_object::{
 };
 use crate::domain::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
-use crate::prelude::DataConnectionEventEnum;
+use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
 
 #[allow(non_camel_case_types)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -205,24 +205,61 @@ pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(untagged)]
+#[serde(tag = "command")]
+pub enum PeerResponseMessageBodyEnum {
+    #[serde(rename = "CREATE")]
+    Create(PeerInfo),
+    #[serde(rename = "DELETE")]
+    Delete(PeerInfo),
+    #[serde(rename = "EVENT")]
+    Event(PeerEventEnum),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "command")]
+pub enum DataResponseMessageBodyEnum {
+    #[serde(rename = "CREATE")]
+    Create(SocketInfo<DataId>),
+    #[serde(rename = "CONNECT")]
+    Connect(DataConnectionIdWrapper),
+    #[serde(rename = "DELETE")]
+    Delete(DataIdWrapper),
+    #[serde(rename = "DISCONNECT")]
+    Disconnect(DataConnectionIdWrapper),
+    #[serde(rename = "REDIRECT")]
+    Redirect(DataConnectionIdWrapper),
+    #[serde(rename = "EVENT")]
+    Event(DataConnectionEventEnum),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "command")]
+pub enum MediaResponseMessageBodyEnum {
+    #[serde(rename = "CONTENT_CREATE")]
+    ContentCreate(SocketInfo<MediaId>),
+    #[serde(rename = "CONTENT_DELETE")]
+    ContentDelete(MediaIdWrapper),
+    #[serde(rename = "RTCP_CREATE")]
+    RtcpCreate(SocketInfo<RtcpId>),
+    #[serde(rename = "RTCP_DELETE")]
+    RtcpDelete(RtcpIdWrapper),
+    #[serde(rename = "CALL")]
+    Call(MediaConnectionIdWrapper),
+    #[serde(rename = "ANSWER")]
+    Answer(AnswerResult),
+    #[serde(rename = "EVENT")]
+    Event(MediaConnectionEventEnum),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type")]
 pub enum ResponseMessageBodyEnum {
-    PeerCreate(PeerInfo),
-    PeerDelete(PeerInfo),
-    PeerEvent(PeerEventEnum),
-    DataCreate(SocketInfo<DataId>),
-    DataConnect(DataConnectionIdWrapper),
-    DataDelete(DataId),
-    DataDisconnect(DataConnectionIdWrapper),
-    DataRedirect(DataConnectionIdWrapper),
-    DataEvent(DataConnectionEventEnum),
-    MediaContentCreate(SocketInfo<MediaId>),
-    MediaContentDelete(MediaIdWrapper),
-    MediaRtcpCreate(SocketInfo<RtcpId>),
-    MediaRtcpDelete(RtcpIdWrapper),
-    MediaCall(MediaConnectionIdWrapper),
-    MediaAnswer(AnswerResult),
-    MediaEvent(MediaConnectionEventEnum),
+    #[serde(rename = "PEER")]
+    Peer(PeerResponseMessageBodyEnum),
+    #[serde(rename = "DATA")]
+    Data(DataResponseMessageBodyEnum),
+    #[serde(rename = "MEDIA")]
+    Media(MediaResponseMessageBodyEnum),
 }
 
 // JSONでクライアントから受け取るメッセージ
@@ -258,18 +295,20 @@ impl Serialize for ResponseMessage {
 mod response_message_serialize {
     use serde_json::Value;
 
-    use crate::application::usecase::value_object::ResponseMessage;
+    use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
     use crate::domain::peer::value_object::PeerInfo;
     use crate::prelude::ResponseMessageBodyEnum;
 
     #[test]
     fn create_message() {
-        let expected = serde_json::from_str::<Value>("{\"is_success\":true,\"result\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\"}}");
+        let expected = serde_json::from_str::<Value>("{\"is_success\":true,\"result\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\", \"type\": \"PEER\", \"command\": \"CREATE\"}}");
 
         // create a param
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let ret_message = ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(peer_info));
+        let ret_message = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Create(peer_info),
+        ));
 
         // serialize
         let message = serde_json::to_string(&ret_message).unwrap();
@@ -279,6 +318,18 @@ mod response_message_serialize {
             expected.unwrap(),
             serde_json::from_str::<Value>(&message).unwrap(),
         );
+    }
+}
+
+fn peer_event_factory(
+    params: PeerResponseMessageBodyEnum,
+) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+    match params {
+        PeerResponseMessageBodyEnum::Create(params) => {
+            let component = PeerEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        _ => None,
     }
 }
 
@@ -297,26 +348,28 @@ pub(crate) fn event_factory(
     }
 
     match message {
-        ResponseMessageBodyEnum::PeerCreate(params) => {
-            let component = PeerEventServiceContainer::builder().build();
-            Some(value(params, component))
-        }
-        ResponseMessageBodyEnum::DataConnect(params) => {
-            let component = DataEventServiceContainer::builder().build();
-            Some(value(params, component))
-        }
-        ResponseMessageBodyEnum::DataRedirect(params) => {
-            let component = DataEventServiceContainer::builder().build();
-            Some(value(params, component))
-        }
-        ResponseMessageBodyEnum::MediaCall(params) => {
-            let component = MediaEventServiceContainer::builder().build();
-            Some(value(params, component))
-        }
-        ResponseMessageBodyEnum::MediaAnswer(params) => {
-            let component = MediaEventServiceContainer::builder().build();
-            Some(value(params, component))
-        }
-        _ => None,
+        ResponseMessageBodyEnum::Peer(params) => peer_event_factory(params),
+        ResponseMessageBodyEnum::Data(params) => match params {
+            DataResponseMessageBodyEnum::Connect(params) => {
+                let component = DataEventServiceContainer::builder().build();
+                Some(value(params, component))
+            }
+            DataResponseMessageBodyEnum::Redirect(params) => {
+                let component = DataEventServiceContainer::builder().build();
+                Some(value(params, component))
+            }
+            _ => None,
+        },
+        ResponseMessageBodyEnum::Media(params) => match params {
+            MediaResponseMessageBodyEnum::Call(params) => {
+                let component = MediaEventServiceContainer::builder().build();
+                Some(value(params, component))
+            }
+            MediaResponseMessageBodyEnum::Answer(params) => {
+                let component = MediaEventServiceContainer::builder().build();
+                Some(value(params, component))
+            }
+            _ => None,
+        },
     }
 }

@@ -48,10 +48,14 @@ async fn main() {
     let event_fut = async {
         while let Some(ResponseMessage::Success(event)) = event_rx.recv().await {
             match event {
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::ERROR(error_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::ERROR(error_event),
+                )) => {
                     eprintln!("error recv: {:?}", error_event);
                 }
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::CALL(call_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::CALL(call_event),
+                )) => {
                     let media_connection_id = call_event.call_params.media_connection_id;
                     println!("{:?}", media_connection_id);
                     let answer_params = AnswerQuery {
@@ -102,11 +106,13 @@ async fn main() {
                         media::answer(&message_tx, media_connection_id, answer_params).await;
                     println!("result {:?}", result);
                 }
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::CLOSE(close_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::CLOSE(close_event),
+                )) => {
                     println!("{:?} has been deleted. \nExiting Program", close_event);
                     break;
                 }
-                ResponseMessageBodyEnum::MediaEvent(event) => {
+                ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
                     println!("media event \n {:?}", event);
                 }
                 message => {

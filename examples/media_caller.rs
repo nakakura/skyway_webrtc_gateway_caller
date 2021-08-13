@@ -41,14 +41,18 @@ async fn main() {
     let event_fut = async {
         while let Some(ResponseMessage::Success(event)) = event_rx.recv().await {
             match event {
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::ERROR(error_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::ERROR(error_event),
+                )) => {
                     eprintln!("error recv: {:?}", error_event);
                 }
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::CLOSE(close_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::CLOSE(close_event),
+                )) => {
                     println!("{:?} has been deleted. \nExiting Program", close_event);
                     break;
                 }
-                ResponseMessageBodyEnum::MediaEvent(event) => {
+                ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
                     println!("media event \n {:?}", event);
                 }
                 message => {
@@ -84,12 +88,12 @@ async fn main() {
                 sampling_rate: None,
             }),
             audio_params: Some(MediaParams {
-                band_width:1500,
+                band_width: 1500,
                 codec: "OPUS".to_string(),
                 media_id: media_socket_audio.get_id().unwrap(),
                 rtcp_id: None,
                 payload_type: None,
-                sampling_rate: None
+                sampling_rate: None,
             }),
             metadata: None,
         }),

@@ -6,7 +6,7 @@ use shaku::*;
 use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::media::service::MediaApi;
 use crate::domain::media::value_object::MediaConnectionEventEnum;
 use crate::domain::utility::ApplicationState;
@@ -34,8 +34,8 @@ impl EventListener for EventService {
             let event = self.api.event(params.clone()).await;
             match event {
                 Ok(MediaConnectionEventEnum::CLOSE(ref _media_connection_id)) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(
-                        event.unwrap().clone(),
+                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+                        MediaResponseMessageBodyEnum::Event(event.unwrap().clone()),
                     ));
                     let _ = event_tx.send(message.clone()).await;
                     return message;
@@ -44,8 +44,9 @@ impl EventListener for EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message =
-                        ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(event));
+                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+                        MediaResponseMessageBodyEnum::Event(event),
+                    ));
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
@@ -57,8 +58,8 @@ impl EventListener for EventService {
             }
         }
 
-        ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(
-            MediaConnectionEventEnum::TIMEOUT,
+        ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT),
         ))
     }
 }
@@ -124,8 +125,10 @@ mod test_delete_media {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(
-                MediaConnectionEventEnum::CLOSE(media_connection_id.clone())
+            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
+                    media_connection_id.clone()
+                ))
             ))
         );
 
@@ -134,8 +137,10 @@ mod test_delete_media {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(
-                MediaConnectionEventEnum::READY(media_connection_id.clone())
+            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
+                    media_connection_id.clone()
+                ))
             ))
         );
 
@@ -143,8 +148,10 @@ mod test_delete_media {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(
-                MediaConnectionEventEnum::CLOSE(media_connection_id.clone())
+            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
+                    media_connection_id.clone()
+                ))
             ))
         );
     }
@@ -233,8 +240,8 @@ mod test_delete_media {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::MediaEvent(
-                MediaConnectionEventEnum::TIMEOUT
+            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
             ))
         );
 

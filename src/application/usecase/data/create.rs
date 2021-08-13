@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -25,9 +25,9 @@ impl CreateService {}
 impl Service for CreateService {
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::DataCreate(param),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Create(param),
+        )))
     }
 }
 
@@ -61,8 +61,9 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::DataCreate(data_id.clone()));
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Create(data_id.clone()),
+        ));
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

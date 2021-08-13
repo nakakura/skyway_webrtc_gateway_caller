@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -25,9 +25,9 @@ impl RedirectService {}
 impl Service for RedirectService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.redirect(params).await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::DataRedirect(param),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Redirect(param),
+        )))
     }
 }
 
@@ -52,13 +52,13 @@ mod test_redirect_data {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::DataRedirect(
-            DataConnectionIdWrapper {
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Redirect(DataConnectionIdWrapper {
                 data_connection_id: DataConnectionId::try_create(
                     "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
                 )
                 .unwrap(),
-            },
+            }),
         ));
 
         // API Callのためのパラメータを生成

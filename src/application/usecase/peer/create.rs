@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall_double::double;
@@ -8,10 +7,11 @@ use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::create_service;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
@@ -27,9 +27,9 @@ pub(crate) struct CreateService {
 impl Service for CreateService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = create_service::try_create(&self.repository, params).await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::PeerCreate(peer_info),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Create(peer_info),
+        )))
     }
 }
 
@@ -64,8 +64,9 @@ mod test_create_peer {
         // 正常終了するケースとして値を生成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(peer_info.clone()));
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Create(peer_info.clone()),
+        ));
 
         // 正しいPeerInfoを返す正常系動作
         let ret_peer_info = peer_info.clone();

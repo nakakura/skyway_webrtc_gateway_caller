@@ -21,7 +21,9 @@ pub async fn create_media(
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaContentCreate(socket))) => socket,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::ContentCreate(socket),
+        ))) => socket,
         message => {
             panic!("data socket open failed{:?}", message);
         }
@@ -46,7 +48,9 @@ pub async fn create_rtcp(
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaRtcpCreate(socket))) => socket,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::RtcpCreate(socket),
+        ))) => socket,
         message => {
             panic!("data socket open failed{:?}", message);
         }
@@ -78,9 +82,9 @@ pub async fn call(
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaCall(response))) => {
-            response.media_connection_id
-        }
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::Call(response),
+        ))) => response.media_connection_id,
         message => {
             panic!("data socket open failed{:?}", message);
         }
@@ -120,7 +124,9 @@ pub async fn answer(
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::MediaAnswer(response))) => response,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::Answer(response),
+        ))) => response,
         message => {
             panic!("data socket open failed{:?}", message);
         }

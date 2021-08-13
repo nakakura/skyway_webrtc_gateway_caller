@@ -6,7 +6,7 @@ use shaku::*;
 use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
 use crate::domain::utility::ApplicationState;
 use crate::prelude::{DataConnectionEventEnum, ResponseMessageBodyEnum};
@@ -33,8 +33,8 @@ impl EventListener for EventService {
             let event = self.api.event(params.clone()).await;
             match event {
                 Ok(DataConnectionEventEnum::CLOSE(ref _data_connection_id)) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(
-                        event.unwrap().clone(),
+                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+                        DataResponseMessageBodyEnum::Event(event.unwrap().clone()),
                     ));
                     let _ = event_tx.send(message.clone()).await;
                     return message;
@@ -43,8 +43,9 @@ impl EventListener for EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message =
-                        ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(event.clone()));
+                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+                        DataResponseMessageBodyEnum::Event(event.clone()),
+                    ));
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
@@ -56,8 +57,8 @@ impl EventListener for EventService {
             }
         }
 
-        ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(
-            DataConnectionEventEnum::TIMEOUT,
+        ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT),
         ))
     }
 }
@@ -123,8 +124,10 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(
-                DataConnectionEventEnum::CLOSE(data_connection_id.clone())
+            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
+                    data_connection_id.clone()
+                ))
             ))
         );
 
@@ -133,8 +136,10 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(
-                DataConnectionEventEnum::OPEN(data_connection_id.clone())
+            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::OPEN(
+                    data_connection_id.clone()
+                ))
             ))
         );
 
@@ -143,8 +148,10 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(
-                DataConnectionEventEnum::CLOSE(data_connection_id)
+            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
+                    data_connection_id
+                ))
             ))
         );
     }
@@ -233,8 +240,8 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::DataEvent(
-                DataConnectionEventEnum::TIMEOUT
+            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
+                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
             ))
         );
 

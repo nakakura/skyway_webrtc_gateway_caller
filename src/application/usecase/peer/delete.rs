@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use crate::error;
 use async_trait::async_trait;
 use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::delete_service;
+use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
 
 #[cfg(test)]
@@ -28,9 +28,9 @@ pub(crate) struct DeleteService {
 impl Service for DeleteService {
     async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = delete_service::try_delete(&self.repository, message).await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::PeerDelete(peer_info),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Delete(peer_info),
+        )))
     }
 }
 
@@ -56,8 +56,9 @@ mod test_delete_peer {
         // 正解の値を作成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let expected =
-            ResponseMessage::Success(ResponseMessageBodyEnum::PeerDelete(peer_info.clone()));
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Delete(peer_info.clone()),
+        ));
 
         // Peerの生成に成功するケース
         let ret_peer_info = peer_info.clone();

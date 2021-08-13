@@ -59,15 +59,19 @@ async fn main() {
     let event_fut = async {
         while let Some(ResponseMessage::Success(event)) = event_rx.recv().await {
             match event {
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::ERROR(error_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::ERROR(error_event),
+                )) => {
                     eprintln!("error recv: {:?}", error_event);
                 }
-                ResponseMessageBodyEnum::PeerEvent(PeerEventEnum::CLOSE(close_event)) => {
+                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                    PeerEventEnum::CLOSE(close_event),
+                )) => {
                     println!("{:?} has been deleted. \nExiting Program", close_event);
                     break;
                 }
-                ResponseMessageBodyEnum::DataEvent(DataConnectionEventEnum::OPEN(
-                    data_connection_id,
+                ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(
+                    DataConnectionEventEnum::OPEN(data_connection_id),
                 )) => {
                     // DataConnectionの確立に成功
                     println!(
@@ -85,7 +89,7 @@ async fn main() {
                         recv_socket.port()
                     );
                 }
-                ResponseMessageBodyEnum::DataEvent(event) => {
+                ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(event)) => {
                     println!("data event: {:?}", event);
                 }
                 event => {

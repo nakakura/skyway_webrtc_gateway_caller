@@ -5,7 +5,7 @@ use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::media::service::MediaApi;
 use crate::error;
 use crate::prelude::ResponseMessageBodyEnum;
@@ -23,9 +23,9 @@ pub(crate) struct CallService {
 impl Service for CallService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.call(params).await?;
-        Ok(ResponseMessage::Success(
-            ResponseMessageBodyEnum::MediaCall(param),
-        ))
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::Call(param),
+        )))
     }
 }
 
@@ -53,10 +53,10 @@ mod test_create_media {
         // 期待値を生成
         let media_connection_id =
             MediaConnectionId::try_create("mc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::MediaCall(
-            MediaConnectionIdWrapper {
+        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
+            MediaResponseMessageBodyEnum::Call(MediaConnectionIdWrapper {
                 media_connection_id: media_connection_id.clone(),
-            },
+            }),
         ));
 
         // socketの生成に成功する場合のMockを作成

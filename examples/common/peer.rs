@@ -32,7 +32,9 @@ pub async fn create_peer(
 
     let _ = message_tx.send((tx, message)).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::PeerCreate(result))) => result,
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Create(result),
+        ))) => result,
         Ok(ResponseMessage::Error(e)) => {
             panic!("{:?}", e);
         }
@@ -63,7 +65,9 @@ pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &
 
     let _ = message_tx.send((tx, message)).await;
     match rx.await {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::PeerDelete(result))) => {
+        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+            PeerResponseMessageBodyEnum::Delete(result),
+        ))) => {
             println!("Peer {:?} is deleted", result);
         }
         Ok(ResponseMessage::Error(e)) => {
