@@ -9,7 +9,8 @@ async fn test_create_peer() {
     // create peer
     let message = format!(
         r#"{{
-                "command": "PEER_CREATE",
+                "type": "PEER",
+                "command": "CREATE",
                 "params": {{
                     "key": "api_key",
                     "domain": "localhost",

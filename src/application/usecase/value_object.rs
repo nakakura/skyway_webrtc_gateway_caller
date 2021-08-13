@@ -16,48 +16,73 @@ use crate::domain::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::DataConnectionEventEnum;
 
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "command")]
+pub enum PeerServiceParams {
+    #[serde(rename = "CREATE")]
+    Create { params: Value },
+    #[serde(rename = "DELETE")]
+    Delete { params: Value },
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "command")]
+pub enum DataServiceParams {
+    #[serde(rename = "CREATE")]
+    Create { params: Value },
+    #[serde(rename = "DELETE")]
+    Delete { params: Value },
+    #[serde(rename = "CONNECT")]
+    Connect { params: Value },
+    #[serde(rename = "REDIRECT")]
+    Redirect { params: Value },
+    #[serde(rename = "DISCONNECT")]
+    Disconnect { params: Value },
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "command")]
+pub enum MediaServiceParams {
+    #[serde(rename = "CONTENT_CREATE")]
+    ContentCreate { params: Value },
+    #[serde(rename = "CONTENT_DELETE")]
+    ContentDelete { params: Value },
+    #[serde(rename = "RTCP_CREATE")]
+    RtcpCreate { params: Option<Value> },
+    #[serde(rename = "CALL")]
+    Call { params: Value },
+    #[serde(rename = "ANSWER")]
+    Answer { params: Value },
+}
+
 // JSONでクライアントから受け取るメッセージ
 // JSONとしてなので、キャメルケースではなくスネークケースで受け取る
 #[allow(non_camel_case_types)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "command")]
+#[serde(tag = "type")]
 pub enum ServiceParams {
-    #[serde(rename = "PEER_CREATE")]
-    PeerCreate { params: Value },
-    #[serde(rename = "PEER_DELETE")]
-    PeerDelete { params: Value },
-    #[serde(rename = "DATA_CREATE")]
-    DataCreate { params: Value },
-    #[serde(rename = "DATA_DELETE")]
-    DataDelete { params: Value },
-    #[serde(rename = "DATA_CONNECT")]
-    DataConnect { params: Value },
-    #[serde(rename = "DATA_REDIRECT")]
-    DataRedirect { params: Value },
-    #[serde(rename = "DATA_DISCONNECT")]
-    DataDisconnect { params: Value },
-    #[serde(rename = "MEDIA_CONTENT_CREATE")]
-    MediaContentCreate { params: Value },
-    #[serde(rename = "MEDIA_CONTENT_DELETE")]
-    MediaContentDelete { params: Value },
-    #[serde(rename = "MEDIA_RTCP_CREATE")]
-    MediaRtcpCreate { params: Option<Value> },
-    #[serde(rename = "MEDIA_CALL")]
-    MediaCall { params: Value },
-    #[serde(rename = "MEDIA_ANSWER")]
-    MediaAnswer { params: Value },
+    #[serde(rename = "PEER")]
+    Peer(PeerServiceParams),
+    #[serde(rename = "DATA")]
+    Data(DataServiceParams),
+    #[serde(rename = "MEDIA")]
+    Media(MediaServiceParams),
 }
 
 #[cfg(test)]
 mod service_params_deserialize {
-    use crate::application::usecase::value_object::ServiceParams;
+    use crate::application::usecase::value_object::{PeerServiceParams, ServiceParams};
     use crate::domain::peer::value_object::CreatePeerParams;
     use crate::prelude::PeerInfo;
 
     #[test]
     fn create_message() {
         let message = r#"{
-            "command": "PEER_CREATE",
+            "type": "PEER",
+            "command": "CREATE",
             "params": {
                 "base_url": "http://localhost:8000",
                 "key": "api_key",
@@ -68,7 +93,7 @@ mod service_params_deserialize {
         }"#;
 
         let create_message = serde_json::from_str::<ServiceParams>(message);
-        if let Ok(ServiceParams::PeerCreate { params }) = create_message {
+        if let Ok(ServiceParams::Peer(PeerServiceParams::Create { params })) = create_message {
             let _ = serde_json::from_value::<CreatePeerParams>(params).unwrap();
             assert!(true);
         } else {
@@ -79,7 +104,8 @@ mod service_params_deserialize {
     #[test]
     fn delete_message() {
         let message = r#"{
-            "command": "PEER_DELETE",
+            "type": "PEER",
+            "command": "DELETE",
             "params": {
                 "peer_id": "my_peer_id",
                 "token": "pt-9749250e-d157-4f80-9ee2-359ce8524308"
@@ -87,7 +113,7 @@ mod service_params_deserialize {
         }"#;
 
         let create_message = serde_json::from_str::<ServiceParams>(message);
-        if let Ok(ServiceParams::PeerDelete { params }) = create_message {
+        if let Ok(ServiceParams::Peer(PeerServiceParams::Delete { params })) = create_message {
             let _ = serde_json::from_value::<PeerInfo>(params).unwrap();
             assert!(true);
         } else {
@@ -96,62 +122,85 @@ mod service_params_deserialize {
     }
 }
 
-// FIXME: no test
-pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>) {
+fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) {
     use crate::di::*;
 
     match params {
-        ServiceParams::PeerCreate { params } => {
+        PeerServiceParams::Create { params } => {
             let module = PeerCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::PeerDelete { params } => {
+        PeerServiceParams::Delete { params } => {
             let module = PeerDeleteServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::DataCreate { params } => {
+    }
+}
+
+fn data_service_factory(params: DataServiceParams) -> (Value, Arc<dyn Service>) {
+    use crate::di::*;
+
+    match params {
+        DataServiceParams::Create { params } => {
             let module = DataCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::DataDelete { params } => {
+        DataServiceParams::Delete { params } => {
             let module = DataDeleteServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::DataConnect { params } => {
+        DataServiceParams::Connect { params } => {
             let module = DataConnectServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::DataRedirect { params } => {
+        DataServiceParams::Redirect { params } => {
             let module = DataRedirectServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::MediaContentCreate { params } => {
+        _ => unreachable!(),
+    }
+}
+
+fn media_service_factory(params: MediaServiceParams) -> (Value, Arc<dyn Service>) {
+    use crate::di::*;
+
+    match params {
+        MediaServiceParams::ContentCreate { params } => {
             let module = MediaContentCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::MediaRtcpCreate { params: _ } => {
+        MediaServiceParams::RtcpCreate { params: _ } => {
             let module = MediaRtcpCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (Value::Null, service)
         }
-        ServiceParams::MediaCall { params } => {
+        MediaServiceParams::Call { params } => {
             let module = MediaCallServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        ServiceParams::MediaAnswer { params } => {
+        MediaServiceParams::Answer { params } => {
             let module = MediaAnswerServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
         _ => unreachable!(),
+    }
+}
+
+// FIXME: no unit test
+pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>) {
+    match params {
+        ServiceParams::Peer(params) => peer_service_factory(params),
+        ServiceParams::Data(params) => data_service_factory(params),
+        ServiceParams::Media(params) => media_service_factory(params),
     }
 }
 

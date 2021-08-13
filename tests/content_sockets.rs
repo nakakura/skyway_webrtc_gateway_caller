@@ -4,7 +4,8 @@ use rust_module::*;
 
 fn create_data_message() -> String {
     r#"{
-        "command": "DATA_CREATE",
+        "type": "DATA",
+        "command": "CREATE",
         "params": ""
     }"#
     .to_string()
@@ -13,7 +14,8 @@ fn create_data_message() -> String {
 fn delete_data_message(data_id: &str) -> String {
     format!(
         r#"{{
-            "command": "DATA_DELETE",
+            "type": "DATA",
+            "command": "DELETE",
             "params": {{
                 "data_id": "{}"
             }}

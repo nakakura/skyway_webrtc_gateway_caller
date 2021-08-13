@@ -133,7 +133,8 @@ async fn test_create_peer() {
         // http://35.200.46.204/#/1.peers/peer
         let body = format!(
             r#"{{
-                "command": "PEER_CREATE",
+                "type": "PEER",
+                "command": "CREATE",
                 "params": {{
                     "key": "api_key",
                     "domain": "localhost",
