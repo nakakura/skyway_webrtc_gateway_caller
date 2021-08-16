@@ -8,7 +8,7 @@ use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
 use crate::error;
-use crate::prelude::{DataIdWrapper, ResponseMessageBodyEnum};
+use crate::prelude::DataIdWrapper;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -23,9 +23,10 @@ pub(crate) struct DeleteService {
 impl Service for DeleteService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete(params).await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: param }),
-        )))
+        Ok(
+            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: param })
+                .create_response_message(),
+        )
     }
 }
 
@@ -42,7 +43,7 @@ mod test_create_data {
     use crate::domain::common::value_object::SerializableId;
     use crate::domain::data::service::MockDataApi;
     use crate::domain::data::value_object::DataId;
-    use crate::prelude::{DataIdWrapper, ResponseMessageBodyEnum};
+    use crate::prelude::DataIdWrapper;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -55,11 +56,10 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Delete(DataIdWrapper {
-                data_id: DataId::try_create(data_id_str).unwrap(),
-            }),
-        ));
+        let expected = DataResponseMessageBodyEnum::Delete(DataIdWrapper {
+            data_id: DataId::try_create(data_id_str).unwrap(),
+        })
+        .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

@@ -10,7 +10,6 @@ use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, Re
 use crate::domain::media::service::MediaApi;
 use crate::domain::media::value_object::MediaConnectionEventEnum;
 use crate::domain::utility::ApplicationState;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -34,9 +33,8 @@ impl EventListener for EventService {
             let event = self.api.event(params.clone()).await;
             match event {
                 Ok(MediaConnectionEventEnum::CLOSE(ref _media_connection_id)) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-                        MediaResponseMessageBodyEnum::Event(event.unwrap().clone()),
-                    ));
+                    let message = MediaResponseMessageBodyEnum::Event(event.unwrap().clone())
+                        .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -44,9 +42,8 @@ impl EventListener for EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-                        MediaResponseMessageBodyEnum::Event(event),
-                    ));
+                    let message =
+                        MediaResponseMessageBodyEnum::Event(event).create_response_message();
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
@@ -58,9 +55,8 @@ impl EventListener for EventService {
             }
         }
 
-        ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT),
-        ))
+        MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
+            .create_response_message()
     }
 }
 
@@ -76,7 +72,6 @@ mod test_delete_media {
     use crate::domain::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
     use crate::error;
     use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
-    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -125,11 +120,10 @@ mod test_delete_media {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                    media_connection_id.clone()
-                ))
+            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
+                media_connection_id.clone()
             ))
+            .create_response_message()
         );
 
         // close eventが発火してevent_serviceが終了しているのでこの行に処理が回る
@@ -137,22 +131,20 @@ mod test_delete_media {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
-                    media_connection_id.clone()
-                ))
+            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
+                media_connection_id.clone()
             ))
+            .create_response_message()
         );
 
         // 2回目はready eventが帰ってくる
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                    media_connection_id.clone()
-                ))
+            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
+                media_connection_id.clone()
             ))
+            .create_response_message()
         );
     }
 
@@ -240,9 +232,8 @@ mod test_delete_media {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
-            ))
+            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
+                .create_response_message()
         );
 
         // event発生前にApplicationStateによりloopを抜けている

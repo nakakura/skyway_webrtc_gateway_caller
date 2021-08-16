@@ -8,7 +8,6 @@ use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -19,15 +18,11 @@ pub(crate) struct RedirectService {
     api: Arc<dyn DataApi>,
 }
 
-impl RedirectService {}
-
 #[async_trait]
 impl Service for RedirectService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.redirect(params).await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Redirect(param),
-        )))
+        Ok(DataResponseMessageBodyEnum::Redirect(param).create_response_message())
     }
 }
 
@@ -41,7 +36,7 @@ mod test_redirect_data {
     use super::*;
     use crate::di::DataRedirectServiceContainer;
     use crate::domain::data::service::MockDataApi;
-    use crate::prelude::{DataConnectionId, DataConnectionIdWrapper, ResponseMessageBodyEnum};
+    use crate::prelude::{DataConnectionId, DataConnectionIdWrapper};
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -52,14 +47,13 @@ mod test_redirect_data {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Redirect(DataConnectionIdWrapper {
-                data_connection_id: DataConnectionId::try_create(
-                    "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
-                )
-                .unwrap(),
-            }),
-        ));
+        let expected = DataResponseMessageBodyEnum::Redirect(DataConnectionIdWrapper {
+            data_connection_id: DataConnectionId::try_create(
+                "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
+            )
+            .unwrap(),
+        })
+        .create_response_message();
 
         // API Callのためのパラメータを生成
         let parameter = r#"

@@ -12,7 +12,6 @@ use crate::domain::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::peer::service::create_service;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -27,9 +26,7 @@ pub(crate) struct CreateService {
 impl Service for CreateService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info = create_service::try_create(&self.repository, params).await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Create(peer_info),
-        )))
+        Ok(PeerResponseMessageBodyEnum::Create(peer_info).create_response_message())
     }
 }
 
@@ -64,9 +61,8 @@ mod test_create_peer {
         // 正常終了するケースとして値を生成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Create(peer_info.clone()),
-        ));
+        let expected =
+            PeerResponseMessageBodyEnum::Create(peer_info.clone()).create_response_message();
 
         // 正しいPeerInfoを返す正常系動作
         let ret_peer_info = peer_info.clone();

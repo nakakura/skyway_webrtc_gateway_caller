@@ -9,7 +9,6 @@ use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, Re
 use crate::domain::media::service::MediaApi;
 use crate::domain::media::value_object::MediaIdWrapper;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -24,9 +23,10 @@ pub(crate) struct DeleteMediaService {
 impl Service for DeleteMediaService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.delete_media(params).await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id: param }),
-        )))
+        Ok(
+            MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id: param })
+                .create_response_message(),
+        )
     }
 }
 
@@ -41,7 +41,6 @@ mod test_delete_media {
     use crate::domain::media::service::MockMediaApi;
     use crate::domain::media::value_object::MediaId;
     use crate::error;
-    use crate::prelude::ResponseMessageBodyEnum;
 
     use super::*;
 
@@ -55,11 +54,10 @@ mod test_delete_media {
 
         // 期待値を生成
         let media_id = MediaId::try_create("vi-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper {
-                media_id: media_id.clone(),
-            }),
-        ));
+        let expected = MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper {
+            media_id: media_id.clone(),
+        })
+        .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();

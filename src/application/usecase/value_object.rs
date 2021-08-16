@@ -215,6 +215,24 @@ pub enum PeerResponseMessageBodyEnum {
     Event(PeerEventEnum),
 }
 
+impl PeerResponseMessageBodyEnum {
+    pub fn create_response_message(self) -> ResponseMessage {
+        ResponseMessage::Success(ResponseMessageBodyEnum::Peer(self))
+    }
+}
+
+#[test]
+fn peer_response_message_body_enum_create_response_message() {
+    let peer_id =
+        PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+    let body_enum = PeerResponseMessageBodyEnum::Create(peer_id);
+    let response_message = body_enum.create_response_message();
+    // 型システムによって守られているので、ミスの発生しうる余地はErrorでのラップのみである
+    if let ResponseMessage::Error(_) = response_message {
+        assert!(false)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "command")]
 pub enum DataResponseMessageBodyEnum {
@@ -230,6 +248,25 @@ pub enum DataResponseMessageBodyEnum {
     Redirect(DataConnectionIdWrapper),
     #[serde(rename = "EVENT")]
     Event(DataConnectionEventEnum),
+}
+
+impl DataResponseMessageBodyEnum {
+    pub fn create_response_message(self) -> ResponseMessage {
+        ResponseMessage::Success(ResponseMessageBodyEnum::Data(self))
+    }
+}
+
+#[test]
+fn data_response_message_body_enum_create_response_message() {
+    use skyway_webrtc_gateway_api::prelude::SerializableId;
+
+    let data_id = DataId::try_create("da-4d053831-5dc2-461b-a358-d062d6115216").unwrap();
+    let body_enum = DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id });
+    let response_message = body_enum.create_response_message();
+    // 型システムによって守られているので、ミスの発生しうる余地はErrorでのラップのみである
+    if let ResponseMessage::Error(_) = response_message {
+        assert!(false)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -249,6 +286,25 @@ pub enum MediaResponseMessageBodyEnum {
     Answer(AnswerResult),
     #[serde(rename = "EVENT")]
     Event(MediaConnectionEventEnum),
+}
+
+impl MediaResponseMessageBodyEnum {
+    pub fn create_response_message(self) -> ResponseMessage {
+        ResponseMessage::Success(ResponseMessageBodyEnum::Media(self))
+    }
+}
+
+#[test]
+fn media_response_message_body_enum_create_response_message() {
+    use skyway_webrtc_gateway_api::prelude::SerializableId;
+
+    let media_id = MediaId::try_create("vi-4d053831-5dc2-461b-a358-d062d6115216").unwrap();
+    let body_enum = MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id });
+    let response_message = body_enum.create_response_message();
+    // 型システムによって守られているので、ミスの発生しうる余地はErrorでのラップのみである
+    if let ResponseMessage::Error(_) = response_message {
+        assert!(false)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -321,12 +377,58 @@ mod response_message_serialize {
     }
 }
 
+fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
+    param: V,
+    component: T,
+) -> (Value, Arc<dyn EventListener>) {
+    let value = serde_json::to_value(&param).unwrap();
+    (value, component.resolve())
+}
+
 fn peer_event_factory(
     params: PeerResponseMessageBodyEnum,
 ) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+    use crate::di::*;
+
     match params {
         PeerResponseMessageBodyEnum::Create(params) => {
             let component = PeerEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        _ => None,
+    }
+}
+
+fn data_event_factory(
+    params: DataResponseMessageBodyEnum,
+) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+    use crate::di::*;
+
+    match params {
+        DataResponseMessageBodyEnum::Connect(params) => {
+            let component = DataEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        DataResponseMessageBodyEnum::Redirect(params) => {
+            let component = DataEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        _ => None,
+    }
+}
+
+fn media_event_factory(
+    params: MediaResponseMessageBodyEnum,
+) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+    use crate::di::*;
+
+    match params {
+        MediaResponseMessageBodyEnum::Call(params) => {
+            let component = MediaEventServiceContainer::builder().build();
+            Some(value(params, component))
+        }
+        MediaResponseMessageBodyEnum::Answer(params) => {
+            let component = MediaEventServiceContainer::builder().build();
             Some(value(params, component))
         }
         _ => None,
@@ -337,39 +439,9 @@ fn peer_event_factory(
 pub(crate) fn event_factory(
     message: ResponseMessageBodyEnum,
 ) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
-    use crate::di::*;
-
-    fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
-        param: V,
-        component: T,
-    ) -> (Value, Arc<dyn EventListener>) {
-        let value = serde_json::to_value(&param).unwrap();
-        (value, component.resolve())
-    }
-
     match message {
         ResponseMessageBodyEnum::Peer(params) => peer_event_factory(params),
-        ResponseMessageBodyEnum::Data(params) => match params {
-            DataResponseMessageBodyEnum::Connect(params) => {
-                let component = DataEventServiceContainer::builder().build();
-                Some(value(params, component))
-            }
-            DataResponseMessageBodyEnum::Redirect(params) => {
-                let component = DataEventServiceContainer::builder().build();
-                Some(value(params, component))
-            }
-            _ => None,
-        },
-        ResponseMessageBodyEnum::Media(params) => match params {
-            MediaResponseMessageBodyEnum::Call(params) => {
-                let component = MediaEventServiceContainer::builder().build();
-                Some(value(params, component))
-            }
-            MediaResponseMessageBodyEnum::Answer(params) => {
-                let component = MediaEventServiceContainer::builder().build();
-                Some(value(params, component))
-            }
-            _ => None,
-        },
+        ResponseMessageBodyEnum::Data(params) => data_event_factory(params),
+        ResponseMessageBodyEnum::Media(params) => media_event_factory(params),
     }
 }

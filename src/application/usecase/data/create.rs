@@ -8,7 +8,6 @@ use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -25,9 +24,7 @@ impl CreateService {}
 impl Service for CreateService {
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create().await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Create(param),
-        )))
+        Ok(DataResponseMessageBodyEnum::Create(param).create_response_message())
     }
 }
 
@@ -35,7 +32,6 @@ impl Service for CreateService {
 mod test_create_data {
     use std::sync::Mutex;
 
-    use crate::error;
     use once_cell::sync::Lazy;
 
     use super::*;
@@ -44,7 +40,7 @@ mod test_create_data {
     use crate::domain::common::value_object::SocketInfo;
     use crate::domain::data::service::MockDataApi;
     use crate::domain::data::value_object::DataId;
-    use crate::prelude::ResponseMessageBodyEnum;
+    use crate::error;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -61,9 +57,8 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Create(data_id.clone()),
-        ));
+        let expected =
+            DataResponseMessageBodyEnum::Create(data_id.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();

@@ -9,7 +9,6 @@ use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::peer::value_object::{Peer, PeerEventEnum};
 use crate::domain::utility::ApplicationState;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -33,9 +32,8 @@ impl EventListener for EventService {
             let event = self.api.event(params.clone()).await;
             match event {
                 Ok(PeerEventEnum::CLOSE(ref _event)) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-                        PeerResponseMessageBodyEnum::Event(event.unwrap().clone()),
-                    ));
+                    let message = PeerResponseMessageBodyEnum::Event(event.unwrap().clone())
+                        .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -43,9 +41,8 @@ impl EventListener for EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-                        PeerResponseMessageBodyEnum::Event(event),
-                    ));
+                    let message =
+                        PeerResponseMessageBodyEnum::Event(event).create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                 }
                 Err(e) => {
@@ -57,9 +54,7 @@ impl EventListener for EventService {
             }
         }
 
-        ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Event(PeerEventEnum::TIMEOUT),
-        ))
+        PeerResponseMessageBodyEnum::Event(PeerEventEnum::TIMEOUT).create_response_message()
     }
 }
 
@@ -92,12 +87,10 @@ mod test_peer_event {
         });
 
         // 期待値の生成
-        let expected_connect = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Event(connect_event.clone()),
-        ));
-        let expected_close = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Event(close_event.clone()),
-        ));
+        let expected_connect =
+            PeerResponseMessageBodyEnum::Event(connect_event.clone()).create_response_message();
+        let expected_close =
+            PeerResponseMessageBodyEnum::Event(close_event.clone()).create_response_message();
 
         // 1回目はCONNECT、2回目はCLOSEイベントを返すMockを作る
         let mut counter = 0u8;
@@ -197,9 +190,8 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 期待値の生成
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Event(PeerEventEnum::TIMEOUT),
-        ));
+        let expected =
+            PeerResponseMessageBodyEnum::Event(PeerEventEnum::TIMEOUT).create_response_message();
 
         // CLOSEイベントを返すMockを作る
         let mut mock = MockPeer::default();

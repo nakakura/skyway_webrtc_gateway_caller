@@ -8,7 +8,6 @@ use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -23,9 +22,7 @@ pub(crate) struct DisconnectService {
 impl Service for DisconnectService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.disconnect(params).await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Disconnect(param),
-        )))
+        Ok(DataResponseMessageBodyEnum::Disconnect(param).create_response_message())
     }
 }
 

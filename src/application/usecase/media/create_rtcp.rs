@@ -8,7 +8,6 @@ use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::media::service::MediaApi;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -23,9 +22,7 @@ pub(crate) struct CreateRtcpService {
 impl Service for CreateRtcpService {
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.create_rtcp().await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::RtcpCreate(param),
-        )))
+        Ok(MediaResponseMessageBodyEnum::RtcpCreate(param).create_response_message())
     }
 }
 
@@ -41,7 +38,6 @@ mod test_create_rtcp {
     use crate::domain::common::value_object::SocketInfo;
     use crate::domain::media::service::MockMediaApi;
     use crate::domain::media::value_object::RtcpId;
-    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -58,9 +54,8 @@ mod test_create_rtcp {
             10000,
         )
         .unwrap();
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::RtcpCreate(rtcp_id.clone()),
-        ));
+        let expected =
+            MediaResponseMessageBodyEnum::RtcpCreate(rtcp_id.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();

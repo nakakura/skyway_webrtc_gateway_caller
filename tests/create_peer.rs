@@ -172,7 +172,7 @@ async fn test_create_peer() {
 
     // 期待値の生成
     // 1回目のevent listenerが取得するはずのCONNECT
-    let expected_connect = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
+    let expected_connect =
         PeerResponseMessageBodyEnum::Event(PeerEventEnum::CONNECTION(PeerConnectionEvent {
             params: peer_info.clone(),
             data_params: DataConnectionIdWrapper {
@@ -181,15 +181,14 @@ async fn test_create_peer() {
                 )
                 .unwrap(),
             },
-        })),
-    ));
+        }))
+        .create_response_message();
 
     // 2回目のevent listenerが取得するはずのCLOSE
-    let expected_close = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-        PeerResponseMessageBodyEnum::Event(PeerEventEnum::CLOSE(PeerCloseEvent {
-            params: peer_info.clone(),
-        })),
-    ));
+    let expected_close = PeerResponseMessageBodyEnum::Event(PeerEventEnum::CLOSE(PeerCloseEvent {
+        params: peer_info.clone(),
+    }))
+    .create_response_message();
 
     // serverが呼ばれたかチェックする
     mock_event_api.assert();

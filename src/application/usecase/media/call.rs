@@ -8,7 +8,6 @@ use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::media::service::MediaApi;
 use crate::error;
-use crate::prelude::ResponseMessageBodyEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -23,9 +22,7 @@ pub(crate) struct CallService {
 impl Service for CallService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let param = self.api.call(params).await?;
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::Call(param),
-        )))
+        Ok(MediaResponseMessageBodyEnum::Call(param).create_response_message())
     }
 }
 
@@ -40,7 +37,6 @@ mod test_create_media {
     use crate::domain::media::service::MockMediaApi;
     use crate::domain::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
     use crate::error;
-    use crate::prelude::ResponseMessageBodyEnum;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -53,11 +49,10 @@ mod test_create_media {
         // 期待値を生成
         let media_connection_id =
             MediaConnectionId::try_create("mc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::Call(MediaConnectionIdWrapper {
-                media_connection_id: media_connection_id.clone(),
-            }),
-        ));
+        let expected = MediaResponseMessageBodyEnum::Call(MediaConnectionIdWrapper {
+            media_connection_id: media_connection_id.clone(),
+        })
+        .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();

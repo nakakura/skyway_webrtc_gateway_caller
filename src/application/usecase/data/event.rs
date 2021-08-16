@@ -9,7 +9,7 @@ use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::data::service::DataApi;
 use crate::domain::utility::ApplicationState;
-use crate::prelude::{DataConnectionEventEnum, ResponseMessageBodyEnum};
+use crate::prelude::DataConnectionEventEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -33,9 +33,8 @@ impl EventListener for EventService {
             let event = self.api.event(params.clone()).await;
             match event {
                 Ok(DataConnectionEventEnum::CLOSE(ref _data_connection_id)) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-                        DataResponseMessageBodyEnum::Event(event.unwrap().clone()),
-                    ));
+                    let message = DataResponseMessageBodyEnum::Event(event.unwrap().clone())
+                        .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -43,9 +42,8 @@ impl EventListener for EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message = ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-                        DataResponseMessageBodyEnum::Event(event.clone()),
-                    ));
+                    let message =
+                        DataResponseMessageBodyEnum::Event(event.clone()).create_response_message();
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
@@ -57,9 +55,8 @@ impl EventListener for EventService {
             }
         }
 
-        ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT),
-        ))
+        DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
+            .create_response_message()
     }
 }
 
@@ -124,11 +121,10 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
-                    data_connection_id.clone()
-                ))
+            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
+                data_connection_id.clone()
             ))
+            .create_response_message()
         );
 
         // event_service内から送信されたevent
@@ -136,11 +132,10 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::OPEN(
-                    data_connection_id.clone()
-                ))
+            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::OPEN(
+                data_connection_id.clone()
             ))
+            .create_response_message()
         );
 
         // event_service内から送信されたevent
@@ -148,11 +143,8 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
-                    data_connection_id
-                ))
-            ))
+            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(data_connection_id))
+                .create_response_message()
         );
     }
 
@@ -240,9 +232,8 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-                DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
-            ))
+            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
+                .create_response_message()
         );
 
         // event発生前にApplicationStateによりloopを抜けている
