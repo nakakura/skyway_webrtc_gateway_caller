@@ -29,6 +29,7 @@ use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApi;
 
 pub struct Peer {
     peer_info: PeerInfo,
+    repository: Arc<dyn PeerRepositoryApi>,
 }
 
 impl Peer {
@@ -43,6 +44,7 @@ impl Peer {
                 PeerEventEnum::OPEN(event) => {
                     return Ok(Peer {
                         peer_info: event.params,
+                        repository,
                     })
                 }
                 PeerEventEnum::TIMEOUT => {
@@ -57,13 +59,18 @@ impl Peer {
         }
     }
 
+    pub async fn try_delete(&self) -> Result<PeerInfo, error::Error> {
+        let _ = self.repository.delete(self.peer_info()).await?;
+        Ok(self.peer_info.clone())
+    }
+
     pub fn peer_info(&self) -> &PeerInfo {
         &self.peer_info
     }
 }
 
 #[cfg(test)]
-mod test_peer {
+mod test_peer_create {
     use std::sync::Mutex;
 
     use once_cell::sync::Lazy;
@@ -75,7 +82,7 @@ mod test_peer {
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     #[tokio::test]
-    async fn create_success() {
+    async fn success() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
@@ -107,12 +114,12 @@ mod test_peer {
         // 実行
         let peer = Peer::try_create(Arc::new(api), param).await.unwrap();
 
-        // 評価
-        assert_eq!(peer.peer_info, expected);
+        // 生成に成功
+        assert_eq!(peer.peer_info(), &expected);
     }
 
     #[tokio::test]
-    async fn create_success_after_timeout() {
+    async fn success_after_timeout() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
@@ -152,12 +159,12 @@ mod test_peer {
         // 実行
         let peer = Peer::try_create(Arc::new(api), param).await.unwrap();
 
-        // 評価
-        assert_eq!(peer.peer_info, expected);
+        // 生成に成功
+        assert_eq!(peer.peer_info(), &expected);
     }
 
     #[tokio::test]
-    async fn create_err() {
+    async fn create_fail() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
@@ -181,7 +188,7 @@ mod test_peer {
         // 実行
         let result = Peer::try_create(Arc::new(api), param).await;
 
-        // 評価
+        // createメソッドの実行失敗
         if let Err(error::Error::LocalError(e)) = result {
             assert_eq!(e, "peer create error".to_string());
         } else {
@@ -222,7 +229,7 @@ mod test_peer {
         // 実行
         let result = Peer::try_create(Arc::new(api), param).await;
 
-        // 評価
+        // eventメソッドを実行した結果、異常なEVENTを受け取った
         if let Err(error::Error::LocalError(e)) = result {
             assert_eq!(
                 e,
@@ -265,9 +272,77 @@ mod test_peer {
         // 実行
         let result = Peer::try_create(Arc::new(api), param).await;
 
-        // 評価
+        // eventメソッドの実行失敗
         if let Err(error::Error::LocalError(e)) = result {
             assert_eq!(e, "event fail".to_string());
+        } else {
+            assert!(false);
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_peer_delete {
+    use std::sync::Mutex;
+
+    use once_cell::sync::Lazy;
+
+    use super::super::repository::MockPeerRepositoryApi;
+    use super::*;
+
+    // Lock to prevent tests from running simultaneously
+    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+    #[tokio::test]
+    async fn success() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 正解値を生成
+        let expected =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+
+        // 成功するパターンのMockを生成
+        let mut api = MockPeerRepositoryApi::default();
+        api.expect_delete().return_once(move |_| Ok(()));
+
+        // パラメータのセットアップ
+        let peer = Peer {
+            peer_info: expected.clone(),
+            repository: Arc::new(api),
+        };
+
+        // 実行
+        let result = peer.try_delete().await.unwrap();
+
+        // 作成に成功する
+        assert_eq!(result, expected);
+    }
+
+    #[tokio::test]
+    async fn fail() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 失敗するパターンのMockを生成
+        let mut api = MockPeerRepositoryApi::default();
+        api.expect_delete()
+            .return_once(move |_| Err(error::Error::create_local_error("delete method failed")));
+
+        // パラメータのセットアップ
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        let peer = Peer {
+            peer_info: peer_info,
+            repository: Arc::new(api),
+        };
+
+        // 実行
+        let result = peer.try_delete().await;
+
+        // 作成に失敗する
+        if let Err(error::Error::LocalError(e)) = result {
+            assert_eq!(e, "delete method failed".to_string());
         } else {
             assert!(false);
         }

@@ -27,9 +27,7 @@ impl PeerRepositoryApi for PeerRepositoryApiImpl {
         peer::event(peer_info.clone()).await
     }
 
-    /*
-    async fn close(&self, peer_info: &PeerInfo) -> Result<(), error::Error> {
+    async fn delete(&self, peer_info: &PeerInfo) -> Result<(), error::Error> {
         peer::delete(peer_info).await
     }
-     */
 }

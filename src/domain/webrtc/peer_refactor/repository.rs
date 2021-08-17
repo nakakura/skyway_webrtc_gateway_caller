@@ -14,4 +14,5 @@ use mockall::automock;
 pub trait PeerRepositoryApi {
     async fn create(&self, params: CreatePeerParams) -> Result<PeerInfo, error::Error>;
     async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error>;
+    async fn delete(&self, peer_info: &PeerInfo) -> Result<(), error::Error>;
 }
