@@ -6,9 +6,9 @@ use skyway_webrtc_gateway_api::data;
 use skyway_webrtc_gateway_api::data::RedirectDataParams;
 use skyway_webrtc_gateway_api::prelude::PhantomId;
 
-use crate::domain::common::value_object::SocketInfo;
-use crate::domain::data::service::DataApi;
-use crate::domain::data::value_object::{
+use crate::domain::webrtc::common::value_object::SocketInfo;
+use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::value_object::{
     DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper, DataId, DataIdWrapper,
 };
 use crate::error;
@@ -40,7 +40,7 @@ impl DataApi for DataApiImpl {
     }
 
     async fn connect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error> {
-        use crate::domain::data::value_object::ConnectQuery;
+        use crate::domain::webrtc::data::value_object::ConnectQuery;
         let params = serde_json::from_value::<ConnectQuery>(params)
             .map_err(|e| error::Error::SerdeError { error: e })?;
         data::connect(params)

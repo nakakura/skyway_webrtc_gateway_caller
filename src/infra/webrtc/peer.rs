@@ -5,8 +5,10 @@ use async_trait::async_trait;
 use shaku::*;
 use skyway_webrtc_gateway_api::peer;
 
-use crate::domain::peer::repository::{PeerRepository, PeerRepositoryApi};
-use crate::domain::peer::value_object::{CreatePeerParams, PeerApi, PeerEventEnum, PeerInfo};
+use crate::domain::webrtc::peer::repository::{PeerRepository, PeerRepositoryApi};
+use crate::domain::webrtc::peer::value_object::{
+    CreatePeerParams, PeerApi, PeerEventEnum, PeerInfo,
+};
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
@@ -81,8 +83,8 @@ mod test_create {
 
     use super::*;
     use crate::di::PeerCreateServiceContainer;
-    use crate::domain::peer::repository::MockPeerRepositoryApi;
-    use crate::domain::peer::value_object::PeerId;
+    use crate::domain::webrtc::peer::repository::MockPeerRepositoryApi;
+    use crate::domain::webrtc::peer::value_object::PeerId;
 
     fn create_peer_info() -> PeerInfo {
         PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap()
@@ -274,7 +276,7 @@ mod test_close {
 
     use super::*;
     use crate::di::PeerDeleteServiceContainer;
-    use crate::domain::peer::repository::MockPeerRepositoryApi;
+    use crate::domain::webrtc::peer::repository::MockPeerRepositoryApi;
 
     fn create_peer_info() -> PeerInfo {
         PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap()

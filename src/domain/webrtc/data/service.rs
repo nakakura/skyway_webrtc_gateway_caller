@@ -2,13 +2,16 @@ use async_trait::async_trait;
 use serde_json::Value;
 use shaku::Interface;
 
-use crate::domain::common::value_object::SocketInfo;
-use crate::domain::data::value_object::{DataConnectionEventEnum, DataConnectionIdWrapper, DataId};
+use crate::domain::webrtc::common::value_object::SocketInfo;
+use crate::domain::webrtc::data::value_object::{
+    DataConnectionEventEnum, DataConnectionIdWrapper, DataId,
+};
 use crate::error;
 
 #[cfg(test)]
 use mockall::automock;
 
+/// /data APIに対応する機能を定義する
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait DataApi: Interface {

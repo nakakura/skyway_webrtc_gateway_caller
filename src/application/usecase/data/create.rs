@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::data::service::DataApi;
+use crate::domain::webrtc::data::service::DataApi;
 use crate::error;
 
 // Serviceの具象Struct
@@ -36,10 +36,10 @@ mod test_create_data {
 
     use super::*;
     use crate::di::DataCreateServiceContainer;
-    use crate::domain::common::value_object::SerializableSocket;
-    use crate::domain::common::value_object::SocketInfo;
-    use crate::domain::data::service::MockDataApi;
-    use crate::domain::data::value_object::DataId;
+    use crate::domain::webrtc::common::value_object::SerializableSocket;
+    use crate::domain::webrtc::common::value_object::SocketInfo;
+    use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::value_object::DataId;
     use crate::error;
 
     // Lock to prevent tests from running simultaneously

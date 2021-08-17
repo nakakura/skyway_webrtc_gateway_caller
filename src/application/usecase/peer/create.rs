@@ -8,9 +8,9 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::peer::repository::PeerRepository;
+use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::peer::service::create_service;
+use crate::domain::webrtc::peer::service::create_service;
 use crate::error;
 
 // Serviceの具象Struct
@@ -38,7 +38,7 @@ mod test_create_peer {
 
     use super::*;
     use crate::di::PeerCreateServiceContainer;
-    use crate::domain::peer::value_object::PeerInfo;
+    use crate::domain::webrtc::peer::value_object::PeerInfo;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

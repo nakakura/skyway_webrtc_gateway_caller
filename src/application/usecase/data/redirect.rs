@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::data::service::DataApi;
+use crate::domain::webrtc::data::service::DataApi;
 use crate::error;
 
 // Serviceの具象Struct
@@ -35,7 +35,7 @@ mod test_redirect_data {
 
     use super::*;
     use crate::di::DataRedirectServiceContainer;
-    use crate::domain::data::service::MockDataApi;
+    use crate::domain::webrtc::data::service::MockDataApi;
     use crate::prelude::{DataConnectionId, DataConnectionIdWrapper};
 
     // Lock to prevent tests from running simultaneously

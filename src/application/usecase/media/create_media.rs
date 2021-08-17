@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::media::service::MediaApi;
+use crate::domain::webrtc::media::service::MediaApi;
 use crate::error;
 
 // Serviceの具象Struct
@@ -35,10 +35,10 @@ mod test_create_media {
 
     use super::*;
     use crate::di::MediaContentCreateServiceContainer;
-    use crate::domain::common::value_object::SerializableSocket;
-    use crate::domain::common::value_object::SocketInfo;
-    use crate::domain::media::service::MockMediaApi;
-    use crate::domain::media::value_object::MediaId;
+    use crate::domain::webrtc::common::value_object::SerializableSocket;
+    use crate::domain::webrtc::common::value_object::SocketInfo;
+    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::value_object::MediaId;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

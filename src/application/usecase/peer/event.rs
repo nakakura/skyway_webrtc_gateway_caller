@@ -7,8 +7,8 @@ use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::peer::value_object::{Peer, PeerEventEnum};
-use crate::domain::utility::ApplicationState;
+use crate::domain::state::ApplicationState;
+use crate::domain::webrtc::peer::value_object::{Peer, PeerEventEnum};
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -61,8 +61,8 @@ impl EventListener for EventService {
 #[cfg(test)]
 mod test_peer_event {
     use crate::di::PeerEventServiceContainer;
-    use crate::domain::data::value_object::*;
-    use crate::domain::peer::value_object::*;
+    use crate::domain::webrtc::data::value_object::*;
+    use crate::domain::webrtc::peer::value_object::*;
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 

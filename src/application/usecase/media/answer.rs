@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::media::service::MediaApi;
+use crate::domain::webrtc::media::service::MediaApi;
 use crate::error;
 
 // Serviceの具象Struct
@@ -34,8 +34,8 @@ mod test_answer {
 
     use super::*;
     use crate::di::MediaAnswerServiceContainer;
-    use crate::domain::media::service::MockMediaApi;
-    use crate::domain::media::value_object::AnswerResult;
+    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::value_object::AnswerResult;
     use crate::error;
     use crate::prelude::MediaConnectionId;
 

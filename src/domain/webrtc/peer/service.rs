@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::error;
 
 use super::value_object::{CreatePeerParams, PeerInfo};
-use crate::domain::peer::repository::PeerRepository;
+use crate::domain::webrtc::peer::repository::PeerRepository;
 
 #[cfg(test)]
 use mockall::automock;
@@ -29,7 +29,7 @@ mod test_peer_create {
     use serde_json::Value;
 
     use super::*;
-    use crate::domain::peer::repository::MockPeerRepository;
+    use crate::domain::webrtc::peer::repository::MockPeerRepository;
 
     fn create_valid_json_message() -> Value {
         let message = r#"{
@@ -143,7 +143,7 @@ mod test_peer_delete {
     use serde_json::Value;
 
     use super::*;
-    use crate::domain::peer::repository::MockPeerRepository;
+    use crate::domain::webrtc::peer::repository::MockPeerRepository;
 
     fn create_peer_info() -> PeerInfo {
         PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap()

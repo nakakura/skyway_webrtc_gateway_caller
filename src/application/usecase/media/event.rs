@@ -7,9 +7,9 @@ use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::media::service::MediaApi;
-use crate::domain::media::value_object::MediaConnectionEventEnum;
-use crate::domain::utility::ApplicationState;
+use crate::domain::state::ApplicationState;
+use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::value_object::MediaConnectionEventEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -68,8 +68,8 @@ mod test_delete_media {
 
     use super::*;
     use crate::di::MediaEventServiceContainer;
-    use crate::domain::media::service::MockMediaApi;
-    use crate::domain::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
+    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 

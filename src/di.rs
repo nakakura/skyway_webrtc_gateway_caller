@@ -3,7 +3,7 @@ use shaku::*;
 use crate::application::usecase::data;
 use crate::application::usecase::media;
 use crate::application::usecase::peer;
-use crate::domain::peer::value_object::PeerImpl;
+use crate::domain::webrtc::peer::value_object::PeerImpl;
 use crate::infra::state::ApplicationStateAlwaysTrueImpl;
 use crate::infra::webrtc::data::DataApiImpl;
 use crate::infra::webrtc::media::MediaApiImpl;

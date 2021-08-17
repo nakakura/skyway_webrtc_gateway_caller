@@ -6,8 +6,8 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::media::service::MediaApi;
-use crate::domain::media::value_object::MediaIdWrapper;
+use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::value_object::MediaIdWrapper;
 use crate::error;
 
 // Serviceの具象Struct
@@ -37,9 +37,9 @@ mod test_delete_media {
     use once_cell::sync::Lazy;
 
     use crate::di::MediaContentDeleteServiceContainer;
-    use crate::domain::common::value_object::SerializableId;
-    use crate::domain::media::service::MockMediaApi;
-    use crate::domain::media::value_object::MediaId;
+    use crate::domain::webrtc::common::value_object::SerializableId;
+    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::value_object::MediaId;
     use crate::error;
 
     use super::*;

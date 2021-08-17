@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::data::service::DataApi;
+use crate::domain::webrtc::data::service::DataApi;
 use crate::error;
 
 // Serviceの具象Struct
@@ -34,8 +34,8 @@ mod test_create_data {
     use once_cell::sync::Lazy;
 
     use crate::di::DataDisconnectServiceContainer;
-    use crate::domain::data::service::MockDataApi;
-    use crate::domain::data::value_object::{DataConnectionId, DataConnectionIdWrapper};
+    use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::value_object::{DataConnectionId, DataConnectionIdWrapper};
 
     use super::*;
 

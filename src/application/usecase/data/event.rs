@@ -7,8 +7,8 @@ use tokio::sync::mpsc;
 
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::data::service::DataApi;
-use crate::domain::utility::ApplicationState;
+use crate::domain::state::ApplicationState;
+use crate::domain::webrtc::data::service::DataApi;
 use crate::prelude::DataConnectionEventEnum;
 
 // Serviceの具象Struct
@@ -68,7 +68,7 @@ mod test_data_event {
 
     use super::*;
     use crate::di::DataEventServiceContainer;
-    use crate::domain::data::service::MockDataApi;
+    use crate::domain::webrtc::data::service::MockDataApi;
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
     use crate::prelude::*;

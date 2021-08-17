@@ -1,15 +1,17 @@
 use async_trait::async_trait;
-#[cfg(test)]
-use mockall::automock;
 use serde_json::Value;
 use shaku::Interface;
 
-use crate::domain::common::value_object::SocketInfo;
-use crate::domain::media::value_object::{
+use crate::domain::webrtc::common::value_object::SocketInfo;
+use crate::domain::webrtc::media::value_object::{
     AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId, RtcpId,
 };
 use crate::error;
 
+#[cfg(test)]
+use mockall::automock;
+
+/// /media APIに対応する機能を定義する
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait MediaApi: Interface {

@@ -6,9 +6,9 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::peer::repository::PeerRepository;
+use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::peer::service::delete_service;
+use crate::domain::webrtc::peer::service::delete_service;
 use crate::error;
 
 #[cfg(test)]
@@ -39,7 +39,7 @@ mod test_delete_peer {
 
     use super::*;
     use crate::di::PeerDeleteServiceContainer;
-    use crate::domain::peer::value_object::PeerInfo;
+    use crate::domain::webrtc::peer::value_object::PeerInfo;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

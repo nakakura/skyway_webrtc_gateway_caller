@@ -1,6 +1,6 @@
 use shaku::*;
 
-use crate::domain::utility::ApplicationState;
+use crate::domain::state::ApplicationState;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる

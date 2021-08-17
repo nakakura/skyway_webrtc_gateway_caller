@@ -5,7 +5,7 @@ use shaku::Interface;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::domain::peer::value_object::{CreatePeerParams, PeerEventEnum, PeerInfo};
+use crate::domain::webrtc::peer::value_object::{CreatePeerParams, PeerEventEnum, PeerInfo};
 
 #[cfg_attr(test, automock)]
 #[async_trait]

@@ -3,8 +3,8 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
-use crate::domain::media::service::MediaApi;
-use crate::domain::media::value_object::{
+use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::value_object::{
     AnswerQuery, AnswerResponse, AnswerResult, CallQuery, MediaConnectionEventEnum,
     MediaConnectionId, MediaConnectionIdWrapper, MediaId, RtcpId,
 };

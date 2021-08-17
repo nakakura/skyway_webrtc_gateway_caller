@@ -7,13 +7,13 @@ use shaku::HasComponent;
 use skyway_webrtc_gateway_api::media::RtcpId;
 
 use crate::application::usecase::service::{EventListener, Service};
-use crate::domain::common::value_object::SocketInfo;
-use crate::domain::data::value_object::{DataConnectionIdWrapper, DataId};
-use crate::domain::media::value_object::{
+use crate::domain::webrtc::common::value_object::SocketInfo;
+use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataId};
+use crate::domain::webrtc::media::value_object::{
     AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId,
 };
-use crate::domain::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
-use crate::domain::peer::value_object::{PeerEventEnum, PeerInfo};
+use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
+use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
 
 #[allow(non_camel_case_types)]
@@ -75,7 +75,7 @@ pub enum ServiceParams {
 #[cfg(test)]
 mod service_params_deserialize {
     use crate::application::usecase::value_object::{PeerServiceParams, ServiceParams};
-    use crate::domain::peer::value_object::CreatePeerParams;
+    use crate::domain::webrtc::peer::value_object::CreatePeerParams;
     use crate::prelude::PeerInfo;
 
     #[test]
@@ -352,7 +352,7 @@ mod response_message_serialize {
     use serde_json::Value;
 
     use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-    use crate::domain::peer::value_object::PeerInfo;
+    use crate::domain::webrtc::peer::value_object::PeerInfo;
     use crate::prelude::ResponseMessageBodyEnum;
 
     #[test]
