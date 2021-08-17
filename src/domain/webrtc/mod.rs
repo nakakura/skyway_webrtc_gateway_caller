@@ -6,3 +6,4 @@ pub(crate) mod data;
 pub(crate) mod media;
 /// /peer APIに対応する機能を定義するモジュール
 pub(crate) mod peer;
+pub(crate) mod peer_refactor;
