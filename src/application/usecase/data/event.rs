@@ -70,7 +70,7 @@ mod test_data_event {
     use crate::di::DataEventServiceContainer;
     use crate::domain::data::service::MockDataApi;
     use crate::error;
-    use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
+    use crate::infra::state::ApplicationStateAlwaysFalseImpl;
     use crate::prelude::*;
 
     // Lock to prevent tests from running simultaneously

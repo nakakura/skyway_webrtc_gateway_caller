@@ -64,7 +64,7 @@ mod test_peer_event {
     use crate::domain::data::value_object::*;
     use crate::domain::peer::value_object::*;
     use crate::error;
-    use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
+    use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 
     use super::*;
 

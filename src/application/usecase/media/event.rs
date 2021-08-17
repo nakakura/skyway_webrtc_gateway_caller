@@ -71,7 +71,7 @@ mod test_delete_media {
     use crate::domain::media::service::MockMediaApi;
     use crate::domain::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
     use crate::error;
-    use crate::infra::utility::ApplicationStateAlwaysFalseImpl;
+    use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

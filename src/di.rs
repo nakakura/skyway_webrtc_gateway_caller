@@ -4,10 +4,10 @@ use crate::application::usecase::data;
 use crate::application::usecase::media;
 use crate::application::usecase::peer;
 use crate::domain::peer::value_object::PeerImpl;
-use crate::infra::data::DataApiImpl;
-use crate::infra::media::MediaApiImpl;
-use crate::infra::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
-use crate::infra::utility::ApplicationStateAlwaysTrueImpl;
+use crate::infra::state::ApplicationStateAlwaysTrueImpl;
+use crate::infra::webrtc::data::DataApiImpl;
+use crate::infra::webrtc::media::MediaApiImpl;
+use crate::infra::webrtc::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
 
 //========== Peer Service ==========
 module! {
