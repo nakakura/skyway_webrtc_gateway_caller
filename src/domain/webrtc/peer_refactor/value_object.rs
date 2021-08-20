@@ -2,12 +2,14 @@
 // ドメイン知識としての値のvalidationは、skyway-webrtc-gateway内部の機能として利用する
 // このような再定義は、webrtcモジュール配下のvalue_objectのみに留め、
 // その他のskyway-webrtc-gateway crateへの直接的な依存はinfra層に限定する
-
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
 use crate::error;
+
+#[cfg(test)]
+use mockall::automock;
 
 /// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/peer APIに関係するものを利用する。
 /// これらは単なるパラメータであり、値自体のvalidationはskyway-webrtc-gateway-api crate内で行われる
@@ -25,16 +27,17 @@ pub struct CreatePeerParams {
     pub turn: bool,
 }
 
-use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApi;
+use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
 
 pub struct Peer {
     peer_info: PeerInfo,
-    repository: Arc<dyn PeerRepositoryApi>,
+    repository: Arc<dyn PeerRepositoryApiRefactor>,
 }
 
+#[cfg_attr(test, automock)]
 impl Peer {
     pub async fn try_create(
-        repository: Arc<dyn PeerRepositoryApi>,
+        repository: Arc<dyn PeerRepositoryApiRefactor>,
         params: CreatePeerParams,
     ) -> Result<Self, error::Error> {
         let peer_info = repository.create(params).await?;
@@ -75,7 +78,7 @@ mod test_peer_create {
 
     use once_cell::sync::Lazy;
 
-    use super::super::repository::MockPeerRepositoryApi;
+    use super::super::repository::MockPeerRepositoryApiRefactor;
     use super::*;
 
     // Lock to prevent tests from running simultaneously
@@ -99,7 +102,7 @@ mod test_peer_create {
         };
 
         // 成功するパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -136,7 +139,7 @@ mod test_peer_create {
         };
 
         // Timeoutが帰ってきた後に成功するパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -181,7 +184,7 @@ mod test_peer_create {
         };
 
         // createに失敗するパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_create()
             .return_once(move |_| Err(error::Error::create_local_error("peer create error")));
 
@@ -214,7 +217,7 @@ mod test_peer_create {
         };
 
         // 間違ったイベントが帰ってくるパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -258,7 +261,7 @@ mod test_peer_create {
         };
 
         // 間違ったイベントが帰ってくるパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -287,7 +290,7 @@ mod test_peer_delete {
 
     use once_cell::sync::Lazy;
 
-    use super::super::repository::MockPeerRepositoryApi;
+    use super::super::repository::MockPeerRepositoryApiRefactor;
     use super::*;
 
     // Lock to prevent tests from running simultaneously
@@ -303,7 +306,7 @@ mod test_peer_delete {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 成功するパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_delete().return_once(move |_| Ok(()));
 
         // パラメータのセットアップ
@@ -325,7 +328,7 @@ mod test_peer_delete {
         let _lock = LOCKER.lock();
 
         // 失敗するパターンのMockを生成
-        let mut api = MockPeerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApiRefactor::default();
         api.expect_delete()
             .return_once(move |_| Err(error::Error::create_local_error("delete method failed")));
 

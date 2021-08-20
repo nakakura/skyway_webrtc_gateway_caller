@@ -127,7 +127,7 @@ fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) 
 
     match params {
         PeerServiceParams::Create { params } => {
-            let module = PeerCreateServiceContainer::builder().build();
+            let module = PeerCreateServiceRefactorContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
