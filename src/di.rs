@@ -7,7 +7,7 @@ use crate::domain::webrtc::peer::value_object::PeerImpl;
 use crate::infra::state::ApplicationStateAlwaysTrueImpl;
 use crate::infra::webrtc::data::DataApiImpl;
 use crate::infra::webrtc::media::MediaApiImpl;
-use crate::infra::webrtc::peer::{PeerApiImpl, PeerRepositoryApiImpl, PeerRepositoryImpl};
+use crate::infra::webrtc::peer::PeerApiImpl;
 
 //========== Peer Refactor Service ==========
 use crate::infra::webrtc::peer_refactor::PeerRepositoryApiImplRefactor;
@@ -26,14 +26,14 @@ module! {
     }
 }
 
-//========== Peer Service ==========
-
 module! {
-    pub(crate) PeerDeleteServiceContainer {
-        components = [peer::delete::DeleteService, PeerRepositoryApiImpl, PeerRepositoryImpl],
+    pub(crate) PeerDeleteServiceRefactorContainer {
+        components = [peer::delete::DeleteService, PeerRepositoryApiImplRefactor],
         providers = []
     }
 }
+
+//========== Peer Service ==========
 
 module! {
     pub(crate) PeerEventServiceContainer {

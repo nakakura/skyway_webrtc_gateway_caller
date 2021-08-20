@@ -6,10 +6,10 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::PeerRepository;
+use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer::service::delete_service;
-use crate::error;
+use crate::domain::webrtc::peer_refactor::value_object::Peer;
+use crate::{error, PeerInfo};
 
 #[cfg(test)]
 use mockall_double::double;
@@ -20,14 +20,23 @@ use mockall_double::double;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteService {
     #[shaku(inject)]
-    repository: Arc<dyn PeerRepository>,
+    repository: Arc<dyn PeerRepositoryApiRefactor>,
 }
 
 #[async_trait]
 impl Service for DeleteService {
-    async fn execute(&self, message: Value) -> Result<ResponseMessage, error::Error> {
-        let peer_info = delete_service::try_delete(&self.repository, message).await?;
-        Ok(PeerResponseMessageBodyEnum::Delete(peer_info).create_response_message())
+    async fn execute(&self, param: Value) -> Result<ResponseMessage, error::Error> {
+        let peer_info: PeerInfo =
+            serde_json::from_value(param).map_err(|e| error::Error::SerdeError { error: e })?;
+        let (peer_opt, _) = Peer::find(self.repository.clone(), peer_info).await?;
+        if let Some(peer) = peer_opt {
+            let result = peer.try_delete().await?;
+            Ok(PeerResponseMessageBodyEnum::Delete(result).create_response_message())
+        } else {
+            Err(error::Error::create_local_error(
+                "Peer has been already deleted.",
+            ))
+        }
     }
 }
 
@@ -38,8 +47,10 @@ mod test_delete_peer {
     use once_cell::sync::Lazy;
 
     use super::*;
-    use crate::di::PeerDeleteServiceContainer;
+    use crate::di::PeerDeleteServiceRefactorContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
+    use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
+    use crate::error;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -49,64 +60,167 @@ mod test_delete_peer {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
-        // 正解の値を作成
+        // 削除対象の情報を定義
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        // サービスに与えるパラメータ化
+        let param = serde_json::to_value(&peer_info).unwrap();
+
+        // 待値を生成
         let expected =
             PeerResponseMessageBodyEnum::Delete(peer_info.clone()).create_response_message();
 
-        // Peerの生成に成功するケース
-        let ret_peer_info = peer_info.clone();
-        let ctx = delete_service::try_delete_context();
-        ctx.expect().return_once(|_, _| Ok(ret_peer_info));
+        // deleteが成功するかのように振る舞うMockを作成
+        let ret_value = peer_info.clone();
+        let mut peer_mock = Peer::default();
+        peer_mock
+            .expect_try_delete()
+            .returning(move || Ok(ret_value.clone()));
 
-        // Mockを埋め込んだEventServiceを生成
-        let module = PeerDeleteServiceContainer::builder().build();
+        // 正しくstatusを返すようMockを設定
+        let ctx = Peer::find_context();
+        ctx.expect().return_once(|_, peer_info| {
+            Ok((
+                Some(peer_mock),
+                PeerStatusMessage {
+                    peer_id: peer_info.peer_id().clone(),
+                    disconnected: false,
+                },
+            ))
+        });
+
+        // diでサービスを作成
+        let module = PeerDeleteServiceRefactorContainer::builder().build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
-        // execute
-        let result = crate::application::usecase::service::execute_service(
-            delete_service,
-            serde_json::to_value(&peer_info).unwrap(),
-        )
-        .await;
+        // 実行
+        let result = delete_service.execute(param).await.unwrap();
 
         // clear context
         ctx.checkpoint();
 
-        // evaluate
+        // 成功するケースなので、Deleteメッセージが帰る
         assert_eq!(result, expected);
     }
 
     #[tokio::test]
-    async fn fail() {
+    async fn invalid_json() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
         let _lock = LOCKER.lock();
 
-        // 正解の値を作成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
-
-        // Peerの生成に失敗するケース
-        let ctx = delete_service::try_delete_context();
-        ctx.expect()
-            .return_once(|_, _| Err(error::Error::create_local_error("error")));
+        // ユーザがtokenを指定してこなかった場合
+        let message = r#"{
+            "peer_id": "peer_id"
+        }"#;
+        let message = serde_json::from_str::<Value>(message).unwrap();
 
         // Mockを埋め込んだEventServiceを生成
-        let module = PeerDeleteServiceContainer::builder().build();
+        let module = PeerDeleteServiceRefactorContainer::builder().build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = crate::application::usecase::service::execute_service(
-            delete_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        let result = delete_service.execute(message).await;
+
+        // JSONのパースエラーが帰ってくる
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[tokio::test]
+    async fn already_released() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 削除対象の情報を定義
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        // サービスに与えるパラメータ化
+        let param = serde_json::to_value(&peer_info).unwrap();
+
+        // deleteが成功するかのように振る舞うMockを作成
+        let ret_value = peer_info.clone();
+        let mut peer_mock = Peer::default();
+        peer_mock
+            .expect_try_delete()
+            .returning(move || Ok(ret_value.clone()));
+
+        // 正しくstatusを返すが、Peer Objectが削除済みのケース
+        let ctx = Peer::find_context();
+        ctx.expect().return_once(|_, peer_info| {
+            Ok((
+                None,
+                PeerStatusMessage {
+                    peer_id: peer_info.peer_id().clone(),
+                    disconnected: true,
+                },
+            ))
+        });
+
+        // diでサービスを作成
+        let module = PeerDeleteServiceRefactorContainer::builder().build();
+        let delete_service: Arc<dyn Service> = module.resolve();
+
+        // 実行
+        let result = delete_service.execute(param).await;
 
         // clear context
         ctx.checkpoint();
 
-        // evaluate
-        assert_eq!(result, expected);
+        // 削除済みの場合エラーが帰る
+        if let Err(error::Error::LocalError(e)) = result {
+            assert_eq!(e, "Peer has been already deleted.")
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[tokio::test]
+    async fn api_failed() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 削除対象の情報を定義
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        // サービスに与えるパラメータ化
+        let param = serde_json::to_value(&peer_info).unwrap();
+
+        // deleteが成功するかのように振る舞うMockを作成
+        let mut peer_mock = Peer::default();
+        peer_mock
+            .expect_try_delete()
+            .returning(move || Err(error::Error::create_local_error("try_delete method failed")));
+
+        // 正しくstatusを返すようMockを設定
+        let ctx = Peer::find_context();
+        ctx.expect().return_once(|_, peer_info| {
+            Ok((
+                Some(peer_mock),
+                PeerStatusMessage {
+                    peer_id: peer_info.peer_id().clone(),
+                    disconnected: false,
+                },
+            ))
+        });
+
+        // diでサービスを作成
+        let module = PeerDeleteServiceRefactorContainer::builder().build();
+        let delete_service: Arc<dyn Service> = module.resolve();
+
+        // 実行
+        let result = delete_service.execute(param).await;
+
+        // clear context
+        ctx.checkpoint();
+
+        // 削除済みの場合エラーが帰る
+        if let Err(error::Error::LocalError(e)) = result {
+            assert_eq!(e, "try_delete method failed")
+        } else {
+            assert!(false);
+        }
     }
 }

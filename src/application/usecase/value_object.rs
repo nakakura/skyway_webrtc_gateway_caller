@@ -140,7 +140,7 @@ fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) 
             (params, service)
         }
         PeerServiceParams::Delete { params } => {
-            let module = PeerDeleteServiceContainer::builder().build();
+            let module = PeerDeleteServiceRefactorContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
