@@ -15,7 +15,7 @@ use mockall::automock;
 /// これらは単なるパラメータであり、値自体のvalidationはskyway-webrtc-gateway-api crate内で行われる
 pub use skyway_webrtc_gateway_api::peer::{
     PeerCallEvent, PeerCloseEvent, PeerConnectionEvent, PeerErrorEvent, PeerEventEnum, PeerId,
-    PeerInfo, PeerOpenEvent, Token,
+    PeerInfo, PeerOpenEvent, PeerStatusMessage, Token,
 };
 
 /// POST /peerで必要なパラメータ類
@@ -59,6 +59,26 @@ impl Peer {
                     ));
                 }
             }
+        }
+    }
+
+    pub async fn find(
+        repository: Arc<dyn PeerRepositoryApiRefactor>,
+        peer_info: PeerInfo,
+    ) -> Result<(Option<Self>, PeerStatusMessage), error::Error> {
+        let status = repository.status(&peer_info).await?;
+        if !status.disconnected {
+            // Peerがまだ有効な場合
+            Ok((
+                Some(Peer {
+                    peer_info: peer_info,
+                    repository,
+                }),
+                status,
+            ))
+        } else {
+            // Peerは既に無効である場合
+            Ok((None, status))
         }
     }
 
@@ -278,6 +298,102 @@ mod test_peer_create {
         // eventメソッドの実行失敗
         if let Err(error::Error::LocalError(e)) = result {
             assert_eq!(e, "event fail".to_string());
+        } else {
+            assert!(false);
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_peer_find {
+    use std::sync::Mutex;
+
+    use once_cell::sync::Lazy;
+
+    use super::super::repository::MockPeerRepositoryApiRefactor;
+    use super::*;
+
+    // Lock to prevent tests from running simultaneously
+    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+    #[tokio::test]
+    async fn success() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 実行用パラメータの生成
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+
+        // 正解値を生成
+        let expected = PeerStatusMessage {
+            peer_id: peer_info.peer_id().clone(),
+            disconnected: false,
+        };
+
+        // 成功するパターンのMockを生成
+        let mut api = MockPeerRepositoryApiRefactor::default();
+        let status = expected.clone();
+        api.expect_status().return_once(move |_| Ok(status.clone()));
+
+        // 実行
+        let (peer, status) = Peer::find(Arc::new(api), peer_info.clone()).await.unwrap();
+
+        // 作成に成功する
+        assert_eq!(peer.unwrap().peer_info(), &peer_info);
+        assert_eq!(status, expected);
+    }
+
+    #[tokio::test]
+    async fn closed_peer() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 実行用パラメータの生成
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+
+        // 正解値を生成
+        let expected = PeerStatusMessage {
+            peer_id: peer_info.peer_id().clone(),
+            disconnected: true,
+        };
+
+        // statusの取得には成功するパターンのMockを生成
+        // Peerが解放済みなので、disconnectedはtrueで返す
+        let mut api = MockPeerRepositoryApiRefactor::default();
+        let status = expected.clone();
+        api.expect_status().return_once(move |_| Ok(status.clone()));
+
+        // 実行
+        let (peer, status) = Peer::find(Arc::new(api), peer_info.clone()).await.unwrap();
+
+        // Peer Objectは生成されない
+        assert!(peer.is_none());
+        // statusは取得できる
+        assert_eq!(status, expected);
+    }
+
+    #[tokio::test]
+    async fn api_fail() {
+        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
+        let _lock = LOCKER.lock();
+
+        // 実行用パラメータの生成
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+
+        // エラーを返すパターンのMockを生成
+        let mut api = MockPeerRepositoryApiRefactor::default();
+        api.expect_status()
+            .return_once(move |_| Err(error::Error::create_local_error("status api error")));
+
+        // 実行
+        let result = Peer::find(Arc::new(api), peer_info.clone()).await;
+
+        // API Errorを返す
+        if let Err(error::Error::LocalError(e)) = result {
+            assert_eq!(&e, "status api error");
         } else {
             assert!(false);
         }

@@ -4,7 +4,7 @@ use skyway_webrtc_gateway_api::peer;
 
 use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
 use crate::domain::webrtc::peer_refactor::value_object::{
-    CreatePeerParams, PeerEventEnum, PeerInfo,
+    CreatePeerParams, PeerEventEnum, PeerInfo, PeerStatusMessage,
 };
 use crate::error;
 
@@ -28,6 +28,10 @@ impl PeerRepositoryApiRefactor for PeerRepositoryApiImplRefactor {
 
     async fn event(&self, peer_info: PeerInfo) -> Result<PeerEventEnum, error::Error> {
         peer::event(peer_info.clone()).await
+    }
+
+    async fn status(&self, peer_info: &PeerInfo) -> Result<PeerStatusMessage, error::Error> {
+        peer::status(peer_info).await
     }
 
     async fn delete(&self, peer_info: &PeerInfo) -> Result<(), error::Error> {

@@ -14,6 +14,7 @@ use crate::domain::webrtc::media::value_object::{
 };
 use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
+use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
 use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
 
 #[allow(non_camel_case_types)]
@@ -22,6 +23,8 @@ use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
 pub enum PeerServiceParams {
     #[serde(rename = "CREATE")]
     Create { params: Value },
+    #[serde(rename = "STATUS")]
+    Status { params: Value },
     #[serde(rename = "DELETE")]
     Delete { params: Value },
 }
@@ -131,6 +134,11 @@ fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) 
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
+        PeerServiceParams::Status { params } => {
+            let module = PeerStatusServiceRefactorContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
         PeerServiceParams::Delete { params } => {
             let module = PeerDeleteServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
@@ -209,6 +217,8 @@ pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>
 pub enum PeerResponseMessageBodyEnum {
     #[serde(rename = "CREATE")]
     Create(PeerInfo),
+    #[serde(rename = "STATUS")]
+    Status(PeerStatusMessage),
     #[serde(rename = "DELETE")]
     Delete(PeerInfo),
     #[serde(rename = "EVENT")]

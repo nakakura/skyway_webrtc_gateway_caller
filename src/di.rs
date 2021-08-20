@@ -19,6 +19,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) PeerStatusServiceRefactorContainer {
+        components = [peer::status::StatusService, PeerRepositoryApiImplRefactor],
+        providers = []
+    }
+}
+
 //========== Peer Service ==========
 
 module! {
