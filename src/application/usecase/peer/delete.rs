@@ -42,23 +42,16 @@ impl Service for DeleteService {
 
 #[cfg(test)]
 mod test_delete_peer {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::PeerDeleteServiceRefactorContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
     use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
     use crate::error;
 
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
     #[tokio::test]
     async fn success() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         // 削除対象の情報を定義
         let peer_info =
@@ -106,7 +99,7 @@ mod test_delete_peer {
     #[tokio::test]
     async fn invalid_json() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         // ユーザがtokenを指定してこなかった場合
         let message = r#"{
@@ -132,7 +125,7 @@ mod test_delete_peer {
     #[tokio::test]
     async fn already_released() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         // 削除対象の情報を定義
         let peer_info =
@@ -180,7 +173,7 @@ mod test_delete_peer {
     #[tokio::test]
     async fn api_failed() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         // 削除対象の情報を定義
         let peer_info =

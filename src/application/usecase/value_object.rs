@@ -402,7 +402,7 @@ fn peer_event_factory(
 
     match params {
         PeerResponseMessageBodyEnum::Create(params) => {
-            let component = PeerEventServiceContainer::builder().build();
+            let component = PeerEventServiceRefactorContainer::builder().build();
             Some(value(params, component))
         }
         _ => None,

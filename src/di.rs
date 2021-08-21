@@ -3,11 +3,9 @@ use shaku::*;
 use crate::application::usecase::data;
 use crate::application::usecase::media;
 use crate::application::usecase::peer;
-use crate::domain::webrtc::peer::value_object::PeerImpl;
 use crate::infra::state::ApplicationStateAlwaysTrueImpl;
 use crate::infra::webrtc::data::DataApiImpl;
 use crate::infra::webrtc::media::MediaApiImpl;
-use crate::infra::webrtc::peer::PeerApiImpl;
 
 //========== Peer Refactor Service ==========
 use crate::infra::webrtc::peer_refactor::PeerRepositoryApiImplRefactor;
@@ -33,11 +31,9 @@ module! {
     }
 }
 
-//========== Peer Service ==========
-
 module! {
-    pub(crate) PeerEventServiceContainer {
-        components = [peer::event::EventService, PeerImpl, PeerApiImpl, ApplicationStateAlwaysTrueImpl],
+    pub(crate) PeerEventServiceRefactorContainer {
+        components = [peer::event::EventService, PeerRepositoryApiImplRefactor, ApplicationStateAlwaysTrueImpl],
         providers = []
     }
 }

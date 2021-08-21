@@ -87,6 +87,10 @@ impl Peer {
         Ok(self.peer_info.clone())
     }
 
+    pub async fn try_event(&self) -> Result<PeerEventEnum, error::Error> {
+        self.repository.event(self.peer_info.clone()).await
+    }
+
     pub fn peer_info(&self) -> &PeerInfo {
         &self.peer_info
     }
@@ -171,7 +175,6 @@ mod test_peer_create {
         api.expect_event().returning(move |peer_info: PeerInfo| {
             let mut mutex_value = counter.lock().unwrap();
             if *mutex_value == 0 {
-                println!("hoge");
                 *mutex_value += 1;
                 Ok(PeerEventEnum::TIMEOUT)
             } else {

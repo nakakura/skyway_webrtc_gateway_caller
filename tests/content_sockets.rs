@@ -56,7 +56,6 @@ async fn test_create_data() {
     assert!(result.is_ok());
     let result = rx.await.unwrap();
 
-    println!("{:?}", result);
     // evaluate
     assert_eq!(serde_json::to_string(&result).unwrap(),
                "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"CREATE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\",\"ip_v4\":\"127.0.0.1\",\"port\":10001}}");
@@ -88,7 +87,6 @@ async fn test_delete_data() {
     let result = message_tx.send((tx, body.unwrap())).await;
     assert!(result.is_ok());
     let result = rx.await.unwrap();
-    println!("{:?}", result);
 
     // evaluate
     assert_eq!(

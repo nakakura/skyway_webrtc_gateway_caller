@@ -35,22 +35,15 @@ impl Service for StatusService {
 
 #[cfg(test)]
 mod test_create_peer {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::PeerStatusServiceRefactorContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
     use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
 
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
     #[tokio::test]
     async fn success() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         // 正常終了するケースとして値を生成
         let peer_info =
@@ -97,7 +90,7 @@ mod test_create_peer {
     #[tokio::test]
     async fn invalid_json() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         // ユーザがtokenを指定してこなかった場合
         let message = r#"{
@@ -124,7 +117,7 @@ mod test_create_peer {
     #[tokio::test]
     async fn invalid_api() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
+        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
 
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
