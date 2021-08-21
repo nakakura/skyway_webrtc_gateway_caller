@@ -7,7 +7,7 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::service::MediaApi;
-use crate::domain::webrtc::media::value_object::RtcpIdWrapper;
+use crate::domain::webrtc::media::value_object::{RtcpIdWrapper, RtcpSocket};
 use crate::error;
 
 // Serviceの具象Struct
@@ -22,7 +22,10 @@ pub(crate) struct DeleteRtcpService {
 #[async_trait]
 impl Service for DeleteRtcpService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.delete_rtcp(params).await?;
+        let rtcp_id = serde_json::from_value::<RtcpIdWrapper>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+
+        let param = RtcpSocket::try_delete(self.api.clone(), rtcp_id.rtcp_id).await?;
         Ok(
             MediaResponseMessageBodyEnum::RtcpDelete(RtcpIdWrapper { rtcp_id: param })
                 .create_response_message(),
@@ -70,11 +73,12 @@ mod test_delete_media {
         let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        let param = serde_json::to_value(RtcpIdWrapper {
+            rtcp_id: RtcpId::try_create("rc-970f2e5d-4da0-43e7-92b6-796678c104ad").unwrap(),
+        })
+        .unwrap();
+        let result =
+            crate::application::usecase::service::execute_service(create_service, param).await;
 
         // evaluate
         assert_eq!(result, expected);
@@ -86,8 +90,8 @@ mod test_delete_media {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
+        let expected = "{\"reason\":\"JsonError\",\"message\":\"invalid type: boolean `true`, expected struct RtcpIdWrapper\"}";
+        let expected = ResponseMessage::Error(expected.into());
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
