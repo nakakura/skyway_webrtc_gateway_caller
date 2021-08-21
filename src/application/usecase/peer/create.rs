@@ -8,10 +8,10 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
-use crate::domain::webrtc::peer_refactor::value_object::CreatePeerParams;
+use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::value_object::CreatePeerParams;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer_refactor::value_object::Peer;
+use crate::domain::webrtc::peer::value_object::Peer;
 use crate::error;
 
 // Serviceの具象Struct

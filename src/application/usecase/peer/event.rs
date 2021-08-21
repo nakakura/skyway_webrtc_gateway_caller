@@ -8,11 +8,11 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::peer::value_object::PeerEventEnum;
-use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer_refactor::value_object::Peer;
-use crate::domain::webrtc::peer_refactor::value_object::PeerErrorEvent;
+use crate::domain::webrtc::peer::value_object::Peer;
+use crate::domain::webrtc::peer::value_object::PeerErrorEvent;
+use crate::domain::webrtc::peer::value_object::PeerEventEnum;
 use crate::error;
 use crate::PeerInfo;
 
@@ -118,7 +118,7 @@ mod test_peer_event {
     use crate::application::usecase::value_object::ResponseMessageBodyEnum;
     use crate::di::PeerEventServiceRefactorContainer;
     use crate::domain::webrtc::data::value_object::*;
-    use crate::domain::webrtc::peer_refactor::value_object::{
+    use crate::domain::webrtc::peer::value_object::{
         PeerCloseEvent, PeerConnectionEvent, PeerStatusMessage,
     };
     use crate::error;

@@ -6,9 +6,9 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer_refactor::value_object::Peer;
+use crate::domain::webrtc::peer::value_object::Peer;
 use crate::{error, PeerInfo};
 
 #[cfg(test)]
@@ -45,7 +45,7 @@ mod test_delete_peer {
     use super::*;
     use crate::di::PeerDeleteServiceRefactorContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
-    use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
+    use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
     use crate::error;
 
     #[tokio::test]

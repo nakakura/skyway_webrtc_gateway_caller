@@ -13,8 +13,8 @@ use crate::domain::webrtc::media::value_object::{
     AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId,
 };
 use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
+use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
 use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
-use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
 use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
 
 #[allow(non_camel_case_types)]

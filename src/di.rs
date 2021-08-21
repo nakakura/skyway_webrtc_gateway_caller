@@ -8,7 +8,7 @@ use crate::infra::webrtc::data::DataApiImpl;
 use crate::infra::webrtc::media::MediaApiImpl;
 
 //========== Peer Refactor Service ==========
-use crate::infra::webrtc::peer_refactor::PeerRepositoryApiImplRefactor;
+use crate::infra::webrtc::peer::PeerRepositoryApiImplRefactor;
 
 module! {
     pub(crate) PeerCreateServiceRefactorContainer {

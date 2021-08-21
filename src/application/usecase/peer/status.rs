@@ -8,10 +8,10 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer_refactor::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer_refactor::value_object::Peer;
-use crate::domain::webrtc::peer_refactor::value_object::PeerInfo;
+use crate::domain::webrtc::peer::value_object::Peer;
+use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
 
 // Serviceの具象Struct
@@ -38,7 +38,7 @@ mod test_create_peer {
     use super::*;
     use crate::di::PeerStatusServiceRefactorContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
-    use crate::domain::webrtc::peer_refactor::value_object::PeerStatusMessage;
+    use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
 
     #[tokio::test]
     async fn success() {
