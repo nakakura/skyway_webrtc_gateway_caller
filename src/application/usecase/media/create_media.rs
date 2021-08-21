@@ -72,22 +72,17 @@ mod test_create_media {
 
         // execute
         let param = IsVideo { is_video: true };
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::to_value(param).unwrap(),
-        )
-        .await;
+        let result = create_service
+            .execute(serde_json::to_value(&param).unwrap())
+            .await
+            .unwrap();
 
         // evaluate
         assert_eq!(result, expected);
     }
 
     #[tokio::test]
-    async fn fail() {
-        // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
-
+    async fn invalid_param() {
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
         mock.expect_create_media()
@@ -100,14 +95,15 @@ mod test_create_media {
         let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let param = IsVideo { is_video: true };
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::to_value(param).unwrap(),
-        )
-        .await;
+        let result = create_service
+            .execute(serde_json::Value::String("foo".into()))
+            .await;
 
-        // evaluate
-        assert_eq!(result, expected);
+        // 求められるJSONとは異なるのでSerdeErrorが帰る
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
     }
 }

@@ -61,39 +61,10 @@ mod test_create_rtcp {
         let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
-
-        // evaluate
-        assert_eq!(result, expected);
-    }
-
-    #[tokio::test]
-    async fn fail() {
-        // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
-
-        // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
-        mock.expect_create_rtcp()
-            .returning(move || Err(error::Error::create_local_error("error")));
-
-        // Mockを埋め込んだEventServiceを生成
-        let module = MediaRtcpCreateServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
-            .build();
-        let create_service: Arc<dyn Service> = module.resolve();
-
-        // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        let result = create_service
+            .execute(serde_json::Value::Bool(true))
+            .await
+            .unwrap();
 
         // evaluate
         assert_eq!(result, expected);

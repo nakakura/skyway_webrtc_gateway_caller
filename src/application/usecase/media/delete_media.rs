@@ -62,27 +62,23 @@ mod test_delete_media {
         let module = MediaContentDeleteServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: Arc<dyn Service> = module.resolve();
+        let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
         let media_id = MediaIdWrapper {
             media_id: MediaId::try_create("vi-4d053831-5dc2-461b-a358-d062d6115216").unwrap(),
         };
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::to_value(&media_id).unwrap(),
-        )
-        .await;
+        let result = delete_service
+            .execute(serde_json::to_value(&media_id).unwrap())
+            .await
+            .unwrap();
 
         // evaluate
         assert_eq!(result, expected);
     }
 
     #[tokio::test]
-    async fn fail() {
-        // 期待値を生成
-        let expected = ResponseMessage::Error("{\"reason\":\"JsonError\",\"message\":\"invalid type: boolean `true`, expected struct MediaIdWrapper\"}".into());
-
+    async fn invalid_param() {
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
         mock.expect_delete_media()
@@ -92,16 +88,16 @@ mod test_delete_media {
         let module = MediaContentDeleteServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: Arc<dyn Service> = module.resolve();
+        let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        let result = delete_service.execute(serde_json::Value::Bool(true)).await;
 
-        // evaluate
-        assert_eq!(result, expected);
+        // 求められるJSONとは異なるのでSerdeErrorが帰る
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
     }
 }
