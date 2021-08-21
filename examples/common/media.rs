@@ -10,14 +10,16 @@ pub async fn create_media(
 ) -> SocketInfo<MediaId> {
     let body_json = format!(
         r#"{{
-            "command": "MEDIA_CONTENT_CREATE",
-            "params": {}
+            "type": "MEDIA",
+            "command": "CONTENT_CREATE",
+            "params": {{
+                "is_video": "{}"
+            }}
         }}"#,
         is_video
     );
     let body = serde_json::from_str::<ServiceParams>(&body_json);
     // 処理を開始
-
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
     match rx.await {
@@ -37,7 +39,8 @@ pub async fn create_rtcp(
 ) -> SocketInfo<RtcpId> {
     let body_json = format!(
         r#"{{
-            "command": "MEDIA_RTCP_CREATE",
+            "type": "MEDIA",
+            "command": "RTCP_CREATE",
             "params": {}
         }}"#,
         is_video
@@ -66,12 +69,14 @@ pub async fn call(
 
     #[derive(Serialize)]
     struct Parameter {
+        r#type: String,
         command: String,
         params: CallQuery,
     }
 
     let paramter = Parameter {
-        command: "MEDIA_CALL".into(),
+        r#type: "MEDIA".into(),
+        command: "CALL".into(),
         params: query,
     };
 
@@ -101,6 +106,7 @@ pub async fn answer(
 
     #[derive(Serialize)]
     struct AnswerParameter {
+        r#type: String,
         command: String,
         params: InternalParams,
     }
@@ -112,7 +118,8 @@ pub async fn answer(
     }
 
     let param = AnswerParameter {
-        command: "MEDIA_ANSWER".into(),
+        r#type: "MEDIA".into(),
+        command: "ANSWER".into(),
         params: InternalParams {
             media_connection_id,
             answer_query,

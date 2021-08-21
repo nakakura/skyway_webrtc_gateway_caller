@@ -50,7 +50,8 @@ pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &
     // create control message
     let message = format!(
         r#"{{
-                "command": "PEER_DELETE",
+                "type": "PEER",
+                "command": "DELETE",
                 "params": {{
                     "peer_id": "{}",
                     "token": "{}"

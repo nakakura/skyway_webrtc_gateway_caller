@@ -7,7 +7,8 @@ use super::ControlMessage;
 #[allow(dead_code)]
 pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInfo<DataId> {
     let body_json = r#"{
-        "command": "DATA_CREATE",
+        "type": "DATA",
+        "command": "CREATE",
         "params": ""
     }"#
     .to_string();
@@ -30,7 +31,8 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInf
 pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: DataId) -> DataId {
     let body_json = format!(
         r#"{{
-            "command": "DATA_DELETE",
+            "type": "DATA",
+            "command": "DELETE",
             "params": {{
                 "data_id": "{}"
             }}
@@ -59,11 +61,13 @@ pub async fn connect(
     // create message body
     #[derive(Serialize)]
     struct ConnectMessage {
+        r#type: String,
         command: String,
         params: ConnectQuery,
     }
     let message = ConnectMessage {
-        command: "DATA_CONNECT".into(),
+        r#type: "DATA".into(),
+        command: "CONNECT".into(),
         params: query,
     };
     let body_json = serde_json::to_value(&message).unwrap();
@@ -95,11 +99,13 @@ pub async fn redirect(
 ) -> DataConnectionId {
     #[derive(Serialize)]
     struct Message {
+        r#type: String,
         command: String,
         params: RedirectParams,
     }
     let message = Message {
-        command: "DATA_REDIRECT".into(),
+        r#type: "DATA".into(),
+        command: "REDIRECT".into(),
         params: params,
     };
 
