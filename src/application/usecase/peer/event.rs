@@ -39,9 +39,10 @@ impl EventService {
         while self.state.is_running() {
             let event = peer.try_event().await;
             match event {
-                Ok(PeerEventEnum::CLOSE(ref _event)) => {
-                    let message = PeerResponseMessageBodyEnum::Event(event.unwrap().clone())
-                        .create_response_message();
+                Ok(PeerEventEnum::CLOSE(event)) => {
+                    let message =
+                        PeerResponseMessageBodyEnum::Event(PeerEventEnum::CLOSE(event).clone())
+                            .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -54,7 +55,7 @@ impl EventService {
                     let _ = event_tx.send(message.clone()).await;
                 }
                 Err(e) => {
-                    let message = serde_json::to_string(&e).unwrap();
+                    let message = format!("error in EventService for Peer {:?}", e);
                     let message = ResponseMessage::Error(message);
                     let _ = event_tx.send(message.clone()).await;
                     return message;
@@ -351,12 +352,10 @@ mod test_peer_event {
 
         // errorが帰ってくる
         if let ResponseMessage::Error(e) = result {
+            println!("{:?}", e);
             assert_eq!(
-                serde_json::from_str::<Value>(&e).unwrap(),
-                serde_json::from_str::<Value>(
-                    "{\"reason\":\"InternalError\",\"message\":\"try_event error\"}"
-                )
-                .unwrap()
+                e,
+                "error in EventService for Peer LocalError(\"try_event error\")"
             );
         } else {
             assert!(false);

@@ -15,7 +15,8 @@ pub async fn create_peer(
     // create control message
     let message = format!(
         r#"{{
-                "command": "PEER_CREATE",
+                "type": "PEER",
+                "command": "CREATE",
                 "params": {{
                     "key": "{}",
                     "domain": "localhost",

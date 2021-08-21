@@ -32,9 +32,11 @@ impl EventListener for EventService {
         while self.state.is_running() {
             let event = self.api.event(params.clone()).await;
             match event {
-                Ok(DataConnectionEventEnum::CLOSE(ref _data_connection_id)) => {
-                    let message = DataResponseMessageBodyEnum::Event(event.unwrap().clone())
-                        .create_response_message();
+                Ok(DataConnectionEventEnum::CLOSE(data_connection_id)) => {
+                    let message = DataResponseMessageBodyEnum::Event(
+                        DataConnectionEventEnum::CLOSE(data_connection_id),
+                    )
+                    .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -47,7 +49,7 @@ impl EventListener for EventService {
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
-                    let message = serde_json::to_string(&e).unwrap();
+                    let message = format!("error in EventListener for data. {:?}", e);
                     let message = ResponseMessage::Error(message);
                     let _ = event_tx.send(message.clone()).await;
                     return message;
@@ -183,14 +185,14 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Error("{\"reason\":\"InternalError\",\"message\":\"error\"}".into())
+            ResponseMessage::Error("error in EventListener for data. LocalError(\"error\")".into())
         );
 
         // 発生したERRORを受け取る
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Error("{\"reason\":\"InternalError\",\"message\":\"error\"}".into())
+            ResponseMessage::Error("error in EventListener for data. LocalError(\"error\")".into())
         );
     }
 

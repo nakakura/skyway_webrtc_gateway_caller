@@ -391,6 +391,7 @@ fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
     param: V,
     component: T,
 ) -> (Value, Arc<dyn EventListener>) {
+    // paramsはserializeをimplementしているので、エラーが出ることはなく、unwrapで問題ない
     let value = serde_json::to_value(&param).unwrap();
     (value, component.resolve())
 }
