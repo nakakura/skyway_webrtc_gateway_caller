@@ -33,10 +33,7 @@ pub async fn create_media(
 }
 
 #[allow(dead_code)]
-pub async fn create_rtcp(
-    message_tx: &mpsc::Sender<ControlMessage>,
-    is_video: bool,
-) -> SocketInfo<RtcpId> {
+pub async fn create_rtcp(message_tx: &mpsc::Sender<ControlMessage>, is_video: bool) -> RtcpSocket {
     let body_json = format!(
         r#"{{
             "type": "MEDIA",

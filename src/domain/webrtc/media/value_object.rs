@@ -63,6 +63,21 @@ impl MediaSocket {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct RtcpSocket(pub(crate) SocketInfo<RtcpId>);
+
+//　これらの各メソッドは、application::media内のUnit Testで間接的にテストされている
+impl RtcpSocket {
+    pub async fn try_create(api: Arc<dyn MediaApi>) -> Result<Self, error::Error> {
+        let socket = api.create_rtcp().await?;
+        Ok(RtcpSocket(socket))
+    }
+
+    pub fn get_id(&self) -> Option<RtcpId> {
+        self.0.get_id()
+    }
+}
+
 /// JSONとしてserializeする際に{rtcp_id: ...}とフォーマットするためにラッピングする
 #[derive(Serialize, Deserialize, PartialOrd, PartialEq, Debug, Clone)]
 pub struct RtcpIdWrapper {

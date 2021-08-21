@@ -35,10 +35,6 @@ impl Service for DeleteMediaService {
 
 #[cfg(test)]
 mod test_delete_media {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use crate::di::MediaContentDeleteServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
     use crate::domain::webrtc::media::service::MockMediaApi;
@@ -47,14 +43,8 @@ mod test_delete_media {
 
     use super::*;
 
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let media_id = MediaId::try_create("vi-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
         let expected = MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper {
@@ -90,9 +80,6 @@ mod test_delete_media {
 
     #[tokio::test]
     async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let expected = ResponseMessage::Error("{\"reason\":\"JsonError\",\"message\":\"invalid type: boolean `true`, expected struct MediaIdWrapper\"}".into());
 

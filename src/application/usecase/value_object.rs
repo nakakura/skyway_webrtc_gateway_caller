@@ -4,13 +4,12 @@ use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use shaku::HasComponent;
-use skyway_webrtc_gateway_api::media::RtcpId;
 
 use crate::application::usecase::service::{EventListener, Service};
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataId};
 use crate::domain::webrtc::media::value_object::{
-    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaSocket,
+    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaSocket, RtcpSocket,
 };
 use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
@@ -287,7 +286,7 @@ pub enum MediaResponseMessageBodyEnum {
     #[serde(rename = "CONTENT_DELETE")]
     ContentDelete(MediaIdWrapper),
     #[serde(rename = "RTCP_CREATE")]
-    RtcpCreate(SocketInfo<RtcpId>),
+    RtcpCreate(RtcpSocket),
     #[serde(rename = "RTCP_DELETE")]
     RtcpDelete(RtcpIdWrapper),
     #[serde(rename = "CALL")]

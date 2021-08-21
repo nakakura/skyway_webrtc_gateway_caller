@@ -7,6 +7,7 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::value_object::RtcpSocket;
 use crate::error;
 
 // Serviceの具象Struct
@@ -21,17 +22,13 @@ pub(crate) struct CreateRtcpService {
 #[async_trait]
 impl Service for CreateRtcpService {
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.create_rtcp().await?;
-        Ok(MediaResponseMessageBodyEnum::RtcpCreate(param).create_response_message())
+        let socket = RtcpSocket::try_create(self.api.clone()).await?;
+        Ok(MediaResponseMessageBodyEnum::RtcpCreate(socket).create_response_message())
     }
 }
 
 #[cfg(test)]
 mod test_create_rtcp {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::MediaRtcpCreateServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableSocket;
@@ -39,14 +36,8 @@ mod test_create_rtcp {
     use crate::domain::webrtc::media::service::MockMediaApi;
     use crate::domain::webrtc::media::value_object::RtcpId;
 
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let rtcp_id = SocketInfo::<RtcpId>::try_create(
             Some("rc-50a32bab-b3d9-4913-8e20-f79c90a6a211".into()),
@@ -54,8 +45,8 @@ mod test_create_rtcp {
             10000,
         )
         .unwrap();
-        let expected =
-            MediaResponseMessageBodyEnum::RtcpCreate(rtcp_id.clone()).create_response_message();
+        let expected = MediaResponseMessageBodyEnum::RtcpCreate(RtcpSocket(rtcp_id.clone()))
+            .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
@@ -82,9 +73,6 @@ mod test_create_rtcp {
 
     #[tokio::test]
     async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
         let expected = ResponseMessage::Error(expected);
