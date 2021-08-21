@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
 use crate::{error, PeerInfo};
@@ -20,7 +20,7 @@ use mockall_double::double;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteService {
     #[shaku(inject)]
-    repository: Arc<dyn PeerRepositoryApiRefactor>,
+    repository: Arc<dyn ReerRepositoryApi>,
 }
 
 #[async_trait]
@@ -43,7 +43,7 @@ impl Service for DeleteService {
 #[cfg(test)]
 mod test_delete_peer {
     use super::*;
-    use crate::di::PeerDeleteServiceRefactorContainer;
+    use crate::di::PeerDeleteServiceContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
     use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
     use crate::error;
@@ -83,7 +83,7 @@ mod test_delete_peer {
         });
 
         // diでサービスを作成
-        let module = PeerDeleteServiceRefactorContainer::builder().build();
+        let module = PeerDeleteServiceContainer::builder().build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // 実行
@@ -108,7 +108,7 @@ mod test_delete_peer {
         let message = serde_json::from_str::<Value>(message).unwrap();
 
         // Mockを埋め込んだEventServiceを生成
-        let module = PeerDeleteServiceRefactorContainer::builder().build();
+        let module = PeerDeleteServiceContainer::builder().build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
@@ -153,7 +153,7 @@ mod test_delete_peer {
         });
 
         // diでサービスを作成
-        let module = PeerDeleteServiceRefactorContainer::builder().build();
+        let module = PeerDeleteServiceContainer::builder().build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // 実行
@@ -200,7 +200,7 @@ mod test_delete_peer {
         });
 
         // diでサービスを作成
-        let module = PeerDeleteServiceRefactorContainer::builder().build();
+        let module = PeerDeleteServiceContainer::builder().build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // 実行

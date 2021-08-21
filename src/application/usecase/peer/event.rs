@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
 use crate::domain::webrtc::peer::value_object::PeerErrorEvent;
@@ -25,7 +25,7 @@ use mockall_double::double;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn PeerRepositoryApiRefactor>,
+    api: Arc<dyn ReerRepositoryApi>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }
@@ -117,7 +117,7 @@ mod test_peer_event {
 
     use super::*;
     use crate::application::usecase::value_object::ResponseMessageBodyEnum;
-    use crate::di::PeerEventServiceRefactorContainer;
+    use crate::di::PeerEventServiceContainer;
     use crate::domain::webrtc::data::value_object::*;
     use crate::domain::webrtc::peer::value_object::{
         PeerCloseEvent, PeerConnectionEvent, PeerStatusMessage,
@@ -164,7 +164,7 @@ mod test_peer_event {
         let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
 
         // event_serviceを生成
-        let module = &PeerEventServiceRefactorContainer::builder().build();
+        let module = &PeerEventServiceContainer::builder().build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // 3つのイベントを返すmockを作成
@@ -259,7 +259,7 @@ mod test_peer_event {
 
         // EventServiceを生成
         // stateは必ずfalseを返すモックを挿入
-        let module = &PeerEventServiceRefactorContainer::builder()
+        let module = &PeerEventServiceContainer::builder()
             .with_component_override::<dyn ApplicationState>(Box::new(
                 ApplicationStateAlwaysFalseImpl {},
             ))
@@ -289,7 +289,7 @@ mod test_peer_event {
         let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // event_serviceを生成
-        let module = &PeerEventServiceRefactorContainer::builder().build();
+        let module = &PeerEventServiceContainer::builder().build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // execute
@@ -321,7 +321,7 @@ mod test_peer_event {
         let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // event_serviceを生成
-        let module = &PeerEventServiceRefactorContainer::builder().build();
+        let module = &PeerEventServiceContainer::builder().build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // errorを返すmockを作成

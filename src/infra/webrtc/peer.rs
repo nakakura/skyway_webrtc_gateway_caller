@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use shaku::Component;
 use skyway_webrtc_gateway_api::peer;
 
-use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
 use crate::domain::webrtc::peer::value_object::{
     CreatePeerParams, PeerEventEnum, PeerInfo, PeerStatusMessage,
 };
@@ -10,18 +10,18 @@ use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
-#[shaku(interface = PeerRepositoryApiRefactor)]
-pub(crate) struct PeerRepositoryApiImplRefactor;
+#[shaku(interface = ReerRepositoryApi)]
+pub(crate) struct PeerRepositoryApiImpl;
 
-impl Default for PeerRepositoryApiImplRefactor {
+impl Default for PeerRepositoryApiImpl {
     fn default() -> Self {
-        PeerRepositoryApiImplRefactor {}
+        PeerRepositoryApiImpl {}
     }
 }
 
 //FIXME: シンプルなのでUnitテストはしていない
 #[async_trait]
-impl PeerRepositoryApiRefactor for PeerRepositoryApiImplRefactor {
+impl ReerRepositoryApi for PeerRepositoryApiImpl {
     async fn create(&self, params: CreatePeerParams) -> Result<PeerInfo, error::Error> {
         peer::create(&params.key, &params.domain, params.peer_id, params.turn).await
     }

@@ -8,7 +8,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::PeerRepositoryApiRefactor;
+use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
 use crate::domain::webrtc::peer::value_object::CreatePeerParams;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
@@ -20,7 +20,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct CreateService {
     #[shaku(inject)]
-    repository: Arc<dyn PeerRepositoryApiRefactor>,
+    repository: Arc<dyn ReerRepositoryApi>,
 }
 
 #[async_trait]
@@ -40,7 +40,7 @@ mod test_create_peer {
     use once_cell::sync::Lazy;
 
     use super::*;
-    use crate::di::PeerCreateServiceRefactorContainer;
+    use crate::di::PeerCreateServiceContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
 
     // Lock to prevent tests from running simultaneously
@@ -77,7 +77,7 @@ mod test_create_peer {
         let message = serde_json::from_str::<Value>(message).unwrap();
 
         // diでサービスを作成
-        let module = PeerCreateServiceRefactorContainer::builder().build();
+        let module = PeerCreateServiceContainer::builder().build();
         let create_service: Arc<dyn Service> = module.resolve();
 
         // 実行
@@ -104,7 +104,7 @@ mod test_create_peer {
         let message = serde_json::from_str::<Value>(message).unwrap();
 
         // diでサービスを作成
-        let module = PeerCreateServiceRefactorContainer::builder().build();
+        let module = PeerCreateServiceContainer::builder().build();
         let create_service: Arc<dyn Service> = module.resolve();
 
         // 実行
@@ -140,7 +140,7 @@ mod test_create_peer {
         let message = serde_json::from_str::<Value>(message).unwrap();
 
         // diでサービスを作成
-        let module = PeerCreateServiceRefactorContainer::builder().build();
+        let module = PeerCreateServiceContainer::builder().build();
         let create_service: Arc<dyn Service> = module.resolve();
 
         // 実行

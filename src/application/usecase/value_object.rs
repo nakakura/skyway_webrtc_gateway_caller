@@ -129,17 +129,17 @@ fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) 
 
     match params {
         PeerServiceParams::Create { params } => {
-            let module = PeerCreateServiceRefactorContainer::builder().build();
+            let module = PeerCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
         PeerServiceParams::Status { params } => {
-            let module = PeerStatusServiceRefactorContainer::builder().build();
+            let module = PeerStatusServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
         PeerServiceParams::Delete { params } => {
-            let module = PeerDeleteServiceRefactorContainer::builder().build();
+            let module = PeerDeleteServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
@@ -404,7 +404,7 @@ fn peer_event_factory(
 
     match params {
         PeerResponseMessageBodyEnum::Create(params) => {
-            let component = PeerEventServiceRefactorContainer::builder().build();
+            let component = PeerEventServiceContainer::builder().build();
             Some(value(params, component))
         }
         _ => None,
