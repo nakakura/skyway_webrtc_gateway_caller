@@ -10,7 +10,7 @@ use crate::application::usecase::service::{EventListener, Service};
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataId};
 use crate::domain::webrtc::media::value_object::{
-    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaId,
+    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaSocket,
 };
 use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
@@ -283,7 +283,7 @@ fn data_response_message_body_enum_create_response_message() {
 #[serde(tag = "command")]
 pub enum MediaResponseMessageBodyEnum {
     #[serde(rename = "CONTENT_CREATE")]
-    ContentCreate(SocketInfo<MediaId>),
+    ContentCreate(MediaSocket),
     #[serde(rename = "CONTENT_DELETE")]
     ContentDelete(MediaIdWrapper),
     #[serde(rename = "RTCP_CREATE")]
@@ -307,6 +307,8 @@ impl MediaResponseMessageBodyEnum {
 #[test]
 fn media_response_message_body_enum_create_response_message() {
     use skyway_webrtc_gateway_api::prelude::SerializableId;
+
+    use crate::domain::webrtc::media::value_object::MediaId;
 
     let media_id = MediaId::try_create("vi-4d053831-5dc2-461b-a358-d062d6115216").unwrap();
     let body_enum = MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id });

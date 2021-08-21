@@ -7,7 +7,7 @@ use crate::common::ControlMessage;
 pub async fn create_media(
     message_tx: &mpsc::Sender<ControlMessage>,
     is_video: bool,
-) -> SocketInfo<MediaId> {
+) -> MediaSocket {
     let body_json = format!(
         r#"{{
             "type": "MEDIA",
