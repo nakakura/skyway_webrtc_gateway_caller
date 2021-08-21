@@ -9,6 +9,7 @@ use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, Re
 use crate::domain::webrtc::media::service::MediaApi;
 use crate::domain::webrtc::media::value_object::MediaIdWrapper;
 use crate::error;
+use crate::prelude::MediaSocket;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -22,7 +23,9 @@ pub(crate) struct DeleteMediaService {
 #[async_trait]
 impl Service for DeleteMediaService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.delete_media(params).await?;
+        let media_id: MediaIdWrapper =
+            serde_json::from_value(params).map_err(|e| error::Error::SerdeError { error: e })?;
+        let param = MediaSocket::try_delete(self.api.clone(), media_id.media_id).await?;
         Ok(
             MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id: param })
                 .create_response_message(),
@@ -72,9 +75,12 @@ mod test_delete_media {
         let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
+        let media_id = MediaIdWrapper {
+            media_id: MediaId::try_create("vi-4d053831-5dc2-461b-a358-d062d6115216").unwrap(),
+        };
         let result = crate::application::usecase::service::execute_service(
             create_service,
-            serde_json::Value::Bool(true),
+            serde_json::to_value(&media_id).unwrap(),
         )
         .await;
 
@@ -88,8 +94,7 @@ mod test_delete_media {
         let _lock = LOCKER.lock();
 
         // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
+        let expected = ResponseMessage::Error("{\"reason\":\"JsonError\",\"message\":\"invalid type: boolean `true`, expected struct MediaIdWrapper\"}".into());
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();

@@ -44,10 +44,18 @@ fn media_socket_serialize_deserialize() {
     assert_eq!(result, socket);
 }
 
+//　これらの各メソッドは、application::media内のUnit Testで間接的にテストされている
 impl MediaSocket {
     pub async fn try_create(api: Arc<dyn MediaApi>, is_video: bool) -> Result<Self, error::Error> {
         let socket = api.create_media(is_video).await?;
         Ok(MediaSocket(socket))
+    }
+
+    pub async fn try_delete(
+        api: Arc<dyn MediaApi>,
+        media_id: MediaId,
+    ) -> Result<MediaId, error::Error> {
+        api.delete_media(media_id).await
     }
 
     pub fn get_id(&self) -> Option<MediaId> {

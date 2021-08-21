@@ -29,9 +29,7 @@ impl MediaApi for MediaApiImpl {
         media::open_media_socket(is_video).await
     }
 
-    async fn delete_media(&self, media_id: Value) -> Result<MediaId, error::Error> {
-        let media_id =
-            serde_json::from_value(media_id).map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn delete_media(&self, media_id: MediaId) -> Result<MediaId, error::Error> {
         let _ = media::delete_media(&media_id).await?;
         Ok(media_id)
     }
