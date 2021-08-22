@@ -66,4 +66,11 @@ impl DataConnection {
             status,
         ))
     }
+
+    pub async fn try_event(
+        api: Arc<dyn DataApi>,
+        data_connection_id: &DataConnectionId,
+    ) -> Result<DataConnectionEventEnum, error::Error> {
+        api.event(data_connection_id).await
+    }
 }

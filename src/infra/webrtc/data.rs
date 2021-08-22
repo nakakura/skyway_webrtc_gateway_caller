@@ -83,10 +83,10 @@ impl DataApi for DataApiImpl {
             .map(|_redirect| DataConnectionIdWrapper { data_connection_id })
     }
 
-    async fn event(&self, params: Value) -> Result<DataConnectionEventEnum, error::Error> {
-        let data_connection_id = serde_json::from_value::<DataConnectionIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
-            .data_connection_id;
+    async fn event(
+        &self,
+        data_connection_id: &DataConnectionId,
+    ) -> Result<DataConnectionEventEnum, error::Error> {
         data::event(&data_connection_id).await
     }
 }

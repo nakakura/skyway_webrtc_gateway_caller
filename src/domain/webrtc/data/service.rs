@@ -25,5 +25,8 @@ pub trait DataApi: Interface {
         data_connection_id: &DataConnectionId,
     ) -> Result<DataConnectionStatus, error::Error>;
     async fn redirect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
-    async fn event(&self, params: Value) -> Result<DataConnectionEventEnum, error::Error>;
+    async fn event(
+        &self,
+        data_connection_id: &DataConnectionId,
+    ) -> Result<DataConnectionEventEnum, error::Error>;
 }

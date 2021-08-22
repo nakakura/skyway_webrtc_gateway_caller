@@ -9,6 +9,9 @@ use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::value_object::{
+    DataConnection, DataConnectionId, DataConnectionIdWrapper,
+};
 use crate::prelude::DataConnectionEventEnum;
 
 // Serviceの具象Struct
@@ -22,15 +25,14 @@ pub(crate) struct EventService {
     state: Arc<dyn ApplicationState>,
 }
 
-#[async_trait]
-impl EventListener for EventService {
-    async fn execute(
+impl EventService {
+    async fn listen(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
-        params: Value,
+        data_connection_id: DataConnectionId,
     ) -> ResponseMessage {
         while self.state.is_running() {
-            let event = self.api.event(params.clone()).await;
+            let event = DataConnection::try_event(self.api.clone(), &data_connection_id).await;
             match event {
                 Ok(DataConnectionEventEnum::CLOSE(data_connection_id)) => {
                     let message = DataResponseMessageBodyEnum::Event(
@@ -59,6 +61,27 @@ impl EventListener for EventService {
 
         DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
             .create_response_message()
+    }
+}
+
+#[async_trait]
+impl EventListener for EventService {
+    async fn execute(
+        &self,
+        event_tx: mpsc::Sender<ResponseMessage>,
+        params: Value,
+    ) -> ResponseMessage {
+        let data_connection_id_wrapper = serde_json::from_value::<DataConnectionIdWrapper>(params);
+        if data_connection_id_wrapper.is_err() {
+            let message = format!(
+                "invalid data_connection_id {:?}",
+                data_connection_id_wrapper.err()
+            );
+            return ResponseMessage::Error(message);
+        }
+
+        let data_connection_id = data_connection_id_wrapper.unwrap().data_connection_id;
+        self.listen(event_tx, data_connection_id).await
     }
 }
 
