@@ -140,6 +140,10 @@ impl MediaConnection {
         self.api.answer(&self.media_connection_id, query).await
     }
 
+    pub async fn try_event(&self) -> Result<MediaConnectionEventEnum, error::Error> {
+        self.api.event(&self.media_connection_id).await
+    }
+
     pub fn media_connection_id(&self) -> &MediaConnectionId {
         &self.media_connection_id
     }

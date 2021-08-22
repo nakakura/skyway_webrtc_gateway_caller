@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
@@ -28,7 +27,7 @@ pub trait MediaApi: Interface {
     ) -> Result<AnswerResult, error::Error>;
     async fn event(
         &self,
-        media_connection_id: Value,
+        media_connection_id: &MediaConnectionId,
     ) -> Result<MediaConnectionEventEnum, error::Error>;
     async fn status(
         &self,

@@ -226,7 +226,7 @@ mod test_peer_event {
             assert!(false);
         }
 
-        // 3つ以上は来ない
+        // 3つ以上は来ない(TIMEOUTは受信しない)
         let result = event_rx.recv().await;
         assert!(result.is_none());
     }

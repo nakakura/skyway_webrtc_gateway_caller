@@ -9,7 +9,8 @@ use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::media::service::MediaApi;
-use crate::domain::webrtc::media::value_object::MediaConnectionEventEnum;
+use crate::domain::webrtc::media::value_object::{MediaConnection, MediaConnectionEventEnum};
+use crate::prelude::MediaConnectionIdWrapper;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -22,15 +23,14 @@ pub(crate) struct EventService {
     state: Arc<dyn ApplicationState>,
 }
 
-#[async_trait]
-impl EventListener for EventService {
-    async fn execute(
+impl EventService {
+    async fn listen(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
-        params: Value,
+        connection: MediaConnection,
     ) -> ResponseMessage {
         while self.state.is_running() {
-            let event = self.api.event(params.clone()).await;
+            let event = connection.try_event().await;
             match event {
                 Ok(MediaConnectionEventEnum::CLOSE(media_connection_id)) => {
                     let message = MediaResponseMessageBodyEnum::Event(
@@ -62,184 +62,279 @@ impl EventListener for EventService {
     }
 }
 
+#[async_trait]
+impl EventListener for EventService {
+    async fn execute(
+        &self,
+        event_tx: mpsc::Sender<ResponseMessage>,
+        params: Value,
+    ) -> ResponseMessage {
+        let media_connection_id_wrapper =
+            serde_json::from_value::<MediaConnectionIdWrapper>(params);
+        if media_connection_id_wrapper.is_err() {
+            let message = format!(
+                "invalid media_connection_id {:?}",
+                media_connection_id_wrapper.err()
+            );
+            return ResponseMessage::Error(message);
+        }
+        let media_connection_id = media_connection_id_wrapper.unwrap().media_connection_id;
+        match MediaConnection::find(self.api.clone(), media_connection_id.clone()).await {
+            Err(e) => {
+                let message = format!("API Error in EventListener Process in Media {:?}", e);
+                ResponseMessage::Error(message)
+            }
+            Ok((_, status)) if !status.open => {
+                let message = format!(
+                    "MediaConnection({}) has not been established",
+                    media_connection_id.as_str()
+                );
+                ResponseMessage::Error(message)
+            }
+            Ok((connection, _)) => self.listen(event_tx, connection).await,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_delete_media {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::MediaEventServiceContainer;
     use crate::domain::webrtc::media::service::MockMediaApi;
-    use crate::domain::webrtc::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
-    use crate::error;
+    use crate::domain::webrtc::media::value_object::{
+        MediaConnectionId, MediaConnectionIdWrapper, MediaConnectionStatus,
+    };
+    use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
-    // Eventの監視ループを抜けるタイミングは3つあり、3つともテストする
-    // CLOSE Eventを受信してループを抜ける場合
+    // eventはcloseが発火するか、stateがfalseを返すまで繰り返される
+    // このケースはcloseが発火するまでイベントの取得を続ける
+    // READY, TIMEOUT, CLOSEの順で発火させる
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         let media_connection_id =
             MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
+
+        // 発火させるイベントの準備
         let ready_event = MediaConnectionEventEnum::READY(media_connection_id.clone());
         let close_event = MediaConnectionEventEnum::CLOSE(media_connection_id.clone());
 
-        // 1回目はREADY, 2回目はCLOSEイベントを返すMockを作る
-        let mut counter = 0;
+        // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
+        let counter_mutex = std::sync::Mutex::new(0u8);
         mock.expect_event().returning(move |_| {
-            if counter == 0 {
-                counter += 1;
-                return Ok(ready_event.clone());
-            } else {
-                return Ok(close_event.clone());
+            let mut counter = counter_mutex.lock().unwrap();
+            *counter += 1;
+            match *counter {
+                1 => {
+                    // 1回目はREADYを返す
+                    return Ok(ready_event.clone());
+                }
+                2 => {
+                    // 2回目はTIMEOUTを返す
+                    return Ok(MediaConnectionEventEnum::TIMEOUT);
+                }
+                3 => {
+                    return Ok(close_event.clone());
+                    // 3回目はCLOSEを返す
+                }
+                _ => {
+                    // 4回目以降は発火しない
+                    unreachable!()
+                }
             }
         });
+        mock.expect_status().returning(move |_| {
+            // MediaConnectionがまだ開いていないというステータスを返す
+            return Ok(MediaConnectionStatus {
+                metadata: "metadata".to_string(),
+                open: true,
+                remote_id: PeerId::new("peer_id"),
+                ssrc: None,
+            });
+        });
 
-        // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
-
-        // 実行
-        let param = serde_json::to_value(MediaConnectionIdWrapper {
-            media_connection_id: media_connection_id.clone(),
-        })
-        .unwrap();
-
-        // Mockを埋め込んだEventServiceを生成
-        let module = MediaEventServiceContainer::builder()
+        let module = &MediaEventServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
-        // event_serviceはループを抜けるときに最後のEVENTを返す
-        // CLOSE Eventで抜けた場合はCLOSE Eventが帰ってくる
-        let message = event_service.execute(event_tx, param).await;
+        // 引数の生成
+        let param = MediaConnectionIdWrapper {
+            media_connection_id: media_connection_id.clone(),
+        };
+        let param = serde_json::to_value(param).unwrap();
+        // eventを受け取るためのチャンネルを作成
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+
+        //実行
+        let result = event_service.execute(event_tx, param).await;
+
+        // CLOSE Eventが発火した場合は最後にCLOSE EVENTが帰る
         assert_eq!(
-            message,
+            result,
             MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
                 media_connection_id.clone()
             ))
             .create_response_message()
         );
 
-        // close eventが発火してevent_serviceが終了しているのでこの行に処理が回る
-        // 1回目はready eventが帰ってくる
-        let event = event_rx.recv().await.unwrap();
-        assert_eq!(
-            event,
-            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
-                media_connection_id.clone()
-            ))
-            .create_response_message()
-        );
+        // eventが通知されていることを確認
+        // 1つめはREADYイベント
+        let result = event_rx.recv().await;
+        if let Some(result_close_event) = result {
+            assert_eq!(
+                result_close_event,
+                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
+                    media_connection_id.clone()
+                ))
+                .create_response_message()
+            );
+        } else {
+            assert!(false);
+        }
 
-        // 2回目はready eventが帰ってくる
-        let event = event_rx.recv().await.unwrap();
-        assert_eq!(
-            event,
-            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                media_connection_id.clone()
-            ))
-            .create_response_message()
-        );
+        // 2つめはCLOSEイベント
+        let result = event_rx.recv().await;
+        if let Some(result_close_event) = result {
+            assert_eq!(
+                result_close_event,
+                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
+                    media_connection_id.clone()
+                ))
+                .create_response_message()
+            );
+        } else {
+            assert!(false);
+        }
+
+        // 3つ以上は来ない(TIMEOUTは受信しない)
+        let result = event_rx.recv().await;
+        assert!(result.is_none());
     }
 
-    // Error Eventを受信してループを抜ける場合
-    #[tokio::test]
-    async fn recv_error() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
-        // create params
-        let media_connection_id =
-            MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
-
-        // 1回目はOPEN, 2回目はCLOSEイベントを返すMockを作る
-        let mut mock = MockMediaApi::default();
-        mock.expect_event()
-            .returning(move |_| Err(error::Error::create_local_error("error")));
-
-        // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
-
-        // Mockを埋め込んだEventServiceを生成
-        let module = MediaEventServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
-            .build();
-        let event_service: &dyn EventListener = module.resolve_ref();
-
-        // 実行
-        let param = serde_json::to_value(MediaConnectionIdWrapper {
-            media_connection_id: media_connection_id.clone(),
-        })
-        .unwrap();
-
-        // event_serviceはループを抜けるときに最後のEVENTを返す
-        // ERRORが発生してループを抜けたErrorが帰ってくる
-        let message = event_service.execute(event_tx, param).await;
-        assert_eq!(
-            message,
-            ResponseMessage::Error("error in EventListener for Media LocalError(\"error\")".into())
-        );
-
-        // 発生したERRORを受け取る
-        let event = event_rx.recv().await.unwrap();
-        assert_eq!(
-            event,
-            ResponseMessage::Error("error in EventListener for Media LocalError(\"error\")".into())
-        );
-    }
-
-    // loopの継続判定がfalseになって抜ける場合
+    // eventはcloseが発火するか、stateがfalseを返すまで繰り返される
+    // このケースは最初からstateがfalseを返すのでイベントを取得しに行かないパターン
     #[tokio::test]
     async fn loop_exit() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
-        // create params
         let media_connection_id =
             MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
 
-        // 1回目はOPEN, 2回目はCLOSEイベントを返すMockを作る
-        let mut mock = MockMediaApi::default();
-        mock.expect_event()
-            .returning(move |_| Err(error::Error::create_local_error("error")));
-
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
-        // Mockを埋め込んだEventServiceを生成
-        let module = MediaEventServiceContainer::builder()
+        // socketの生成に成功する場合のMockを作成
+        let mut mock = MockMediaApi::default();
+        mock.expect_event().returning(move |_| unreachable!());
+        mock.expect_status().returning(move |_| {
+            // MediaConnectionがまだ開いていないというステータスを返す
+            return Ok(MediaConnectionStatus {
+                metadata: "metadata".to_string(),
+                open: true,
+                remote_id: PeerId::new("peer_id"),
+                ssrc: None,
+            });
+        });
+
+        let module = &MediaEventServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
+            // 常にfalseを返すStateObject
             .with_component_override::<dyn ApplicationState>(Box::new(
                 ApplicationStateAlwaysFalseImpl {},
             ))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
-        // 実行
-        let param = serde_json::to_value(MediaConnectionIdWrapper {
+        // 引数の生成
+        let param = MediaConnectionIdWrapper {
             media_connection_id: media_connection_id.clone(),
-        })
-        .unwrap();
+        };
+        let param = serde_json::to_value(param).unwrap();
 
-        // event_serviceはループを抜けるときに最後のEVENTを返す
-        // Application Stateがfalseを返すことによってループを抜けた場合は、TIMEOUTが帰ってくる
-        let message = event_service.execute(event_tx, param).await;
+        //実行
+        let result = event_service.execute(event_tx, param).await;
+
+        // loop exitの場合は最後にTIMEOUTが帰る
         assert_eq!(
-            message,
+            result,
             MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
                 .create_response_message()
         );
+    }
 
-        // event発生前にApplicationStateによりloopを抜けている
-        let event = event_rx.recv().await;
-        assert_eq!(event, None);
+    // まだMediaConnectionが確立されていない場合
+    #[tokio::test]
+    async fn media_connection_not_opened_yet() {
+        let media_connection_id =
+            MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
+
+        // eventを受け取るためのチャンネルを作成
+        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+
+        // socketの生成に成功する場合のMockを作成
+        let mut mock = MockMediaApi::default();
+        mock.expect_event().returning(move |_| unreachable!());
+        mock.expect_status().returning(move |_| {
+            // MediaConnectionがまだ開いていないというステータスを返す
+            return Ok(MediaConnectionStatus {
+                metadata: "metadata".to_string(),
+                open: false,
+                remote_id: PeerId::new("peer_id"),
+                ssrc: None,
+            });
+        });
+
+        let module = &MediaEventServiceContainer::builder()
+            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            // 常にfalseを返すStateObject
+            .with_component_override::<dyn ApplicationState>(Box::new(
+                ApplicationStateAlwaysFalseImpl {},
+            ))
+            .build();
+        let event_service: &dyn EventListener = module.resolve_ref();
+
+        // 引数の生成
+        let param = MediaConnectionIdWrapper {
+            media_connection_id: media_connection_id.clone(),
+        };
+        let param = serde_json::to_value(param).unwrap();
+
+        //実行
+        let result = event_service.execute(event_tx, param).await;
+
+        // 求められるJSONとは異なるのでSerdeErrorが帰る
+        if let ResponseMessage::Error(message) = result {
+            assert_eq!(
+                &message,
+                "MediaConnection(mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c) has not been established"
+            );
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_param() {
+        // eventを受け取るためのチャンネルを作成
+        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+
+        // socketの生成に成功する場合のMockを作成
+        let mut mock = MockMediaApi::default();
+        mock.expect_event().returning(move |_| unreachable!());
+
+        let module = &MediaEventServiceContainer::builder()
+            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .build();
+        let event_service: &dyn EventListener = module.resolve_ref();
+        let result = event_service
+            .execute(event_tx, serde_json::Value::Bool(true))
+            .await;
+
+        // 求められるJSONとは異なるのでSerdeErrorが帰る
+        if let ResponseMessage::Error(message) = result {
+            assert_eq!(&message, "invalid media_connection_id Some(Error(\"invalid type: boolean `true`, expected struct MediaConnectionIdWrapper\", line: 0, column: 0))");
+        } else {
+            assert!(false);
+        }
     }
 }

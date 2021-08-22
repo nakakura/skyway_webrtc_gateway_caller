@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
@@ -63,10 +62,8 @@ impl MediaApi for MediaApiImpl {
 
     async fn event(
         &self,
-        media_connection_id: Value,
+        media_connection_id: &MediaConnectionId,
     ) -> Result<MediaConnectionEventEnum, error::Error> {
-        let media_connection_id = serde_json::from_value::<MediaConnectionId>(media_connection_id)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
         media::event(&media_connection_id).await
     }
 
