@@ -75,9 +75,9 @@ async fn main() {
         token: peer_info.token(),
         target_id: PeerId("media_callee".into()),
         constraints: Some(Constraints {
-            video: false,
+            video: true,
             videoReceiveEnabled: None,
-            audio: false,
+            audio: true,
             audioReceiveEnabled: None,
             video_params: Some(MediaParams {
                 band_width: 1500,

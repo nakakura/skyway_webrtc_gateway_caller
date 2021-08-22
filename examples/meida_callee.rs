@@ -102,6 +102,7 @@ async fn main() {
                         }),
                     };
 
+                    println!("start answer {:?}", answer_params);
                     let result =
                         media::answer(&message_tx, media_connection_id, answer_params).await;
                     println!("result {:?}", result);

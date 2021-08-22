@@ -9,7 +9,9 @@ use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::media::service::MediaApi;
-use crate::domain::webrtc::media::value_object::{MediaConnection, MediaConnectionEventEnum};
+use crate::domain::webrtc::media::value_object::{
+    MediaConnection, MediaConnectionEventEnum, MediaConnectionId,
+};
 use crate::prelude::MediaConnectionIdWrapper;
 
 // Serviceの具象Struct
@@ -27,10 +29,10 @@ impl EventService {
     async fn listen(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
-        connection: MediaConnection,
+        media_connection_id: MediaConnectionId,
     ) -> ResponseMessage {
         while self.state.is_running() {
-            let event = connection.try_event().await;
+            let event = MediaConnection::try_event(self.api.clone(), &media_connection_id).await;
             match event {
                 Ok(MediaConnectionEventEnum::CLOSE(media_connection_id)) => {
                     let message = MediaResponseMessageBodyEnum::Event(
@@ -79,20 +81,7 @@ impl EventListener for EventService {
             return ResponseMessage::Error(message);
         }
         let media_connection_id = media_connection_id_wrapper.unwrap().media_connection_id;
-        match MediaConnection::find(self.api.clone(), media_connection_id.clone()).await {
-            Err(e) => {
-                let message = format!("API Error in EventListener Process in Media {:?}", e);
-                ResponseMessage::Error(message)
-            }
-            Ok((_, status)) if !status.open => {
-                let message = format!(
-                    "MediaConnection({}) has not been established",
-                    media_connection_id.as_str()
-                );
-                ResponseMessage::Error(message)
-            }
-            Ok((connection, _)) => self.listen(event_tx, connection).await,
-        }
+        self.listen(event_tx, media_connection_id).await
     }
 }
 
@@ -260,57 +249,6 @@ mod test_delete_media {
             MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
                 .create_response_message()
         );
-    }
-
-    // まだMediaConnectionが確立されていない場合
-    #[tokio::test]
-    async fn media_connection_not_opened_yet() {
-        let media_connection_id =
-            MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
-
-        // eventを受け取るためのチャンネルを作成
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
-
-        // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
-        mock.expect_event().returning(move |_| unreachable!());
-        mock.expect_status().returning(move |_| {
-            // MediaConnectionがまだ開いていないというステータスを返す
-            return Ok(MediaConnectionStatus {
-                metadata: "metadata".to_string(),
-                open: false,
-                remote_id: PeerId::new("peer_id"),
-                ssrc: None,
-            });
-        });
-
-        let module = &MediaEventServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
-            // 常にfalseを返すStateObject
-            .with_component_override::<dyn ApplicationState>(Box::new(
-                ApplicationStateAlwaysFalseImpl {},
-            ))
-            .build();
-        let event_service: &dyn EventListener = module.resolve_ref();
-
-        // 引数の生成
-        let param = MediaConnectionIdWrapper {
-            media_connection_id: media_connection_id.clone(),
-        };
-        let param = serde_json::to_value(param).unwrap();
-
-        //実行
-        let result = event_service.execute(event_tx, param).await;
-
-        // 求められるJSONとは異なるのでSerdeErrorが帰る
-        if let ResponseMessage::Error(message) = result {
-            assert_eq!(
-                &message,
-                "MediaConnection(mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c) has not been established"
-            );
-        } else {
-            assert!(false);
-        }
     }
 
     #[tokio::test]

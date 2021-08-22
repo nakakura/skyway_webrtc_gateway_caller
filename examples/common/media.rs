@@ -13,7 +13,7 @@ pub async fn create_media(
             "type": "MEDIA",
             "command": "CONTENT_CREATE",
             "params": {{
-                "is_video": "{}"
+                "is_video": {}
             }}
         }}"#,
         is_video
@@ -27,7 +27,7 @@ pub async fn create_media(
             MediaResponseMessageBodyEnum::ContentCreate(socket),
         ))) => socket,
         message => {
-            panic!("data socket open failed{:?}", message);
+            panic!("media socket open failed{:?}", message);
         }
     }
 }

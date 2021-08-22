@@ -335,7 +335,6 @@ mod test_peer_event {
 
         // errorが帰ってくる
         if let ResponseMessage::Error(e) = result {
-            println!("{:?}", e);
             assert_eq!(
                 e,
                 "error in EventService for Peer LocalError(\"try_event error\")"
