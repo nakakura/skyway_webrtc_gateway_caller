@@ -5,6 +5,12 @@ use tokio::sync::mpsc;
 pub async fn read_stdin(
     tx: mpsc::Sender<String>,
 ) -> Result<(), Box<mpsc::error::SendError<String>>> {
+    let message = r#"
+####################
+You can always exit the program successfully by typing "exit" and pressing the enter key.
+####################
+    "#;
+    println!("{}", message);
     let mut stdin = tokio::io::stdin();
     loop {
         let mut buf = vec![0; 1024];

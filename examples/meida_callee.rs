@@ -26,6 +26,14 @@ async fn main() {
     // rtcp送信用ポート
     let rtcp_socket = media::create_rtcp(&message_tx, true).await;
 
+    // 受信用ポート
+    let video_recv_sock = SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3000).unwrap();
+    let video_rtcp_recv_sock =
+        SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3001).unwrap();
+    let audio_recv_sock = SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3002).unwrap();
+    let audio_rtcp_recv_sock =
+        SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3003).unwrap();
+
     // terminalの読み込み
     let (terminal_tx, mut terminal_rx) = mpsc::channel::<String>(10);
     tokio::spawn(terminal::read_stdin(terminal_tx));
@@ -46,6 +54,7 @@ async fn main() {
 
     // eventを出力する
     let event_fut = async {
+        println!("waiting connection from a neighbour");
         while let Some(ResponseMessage::Success(event)) = event_rx.recv().await {
             match event {
                 ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
@@ -57,7 +66,6 @@ async fn main() {
                     PeerEventEnum::CALL(call_event),
                 )) => {
                     let media_connection_id = call_event.call_params.media_connection_id;
-                    println!("{:?}", media_connection_id);
                     let answer_params = AnswerQuery {
                         constraints: Constraints {
                             video: true,
@@ -83,29 +91,15 @@ async fn main() {
                             metadata: None,
                         },
                         redirect_params: Some(RedirectParameters {
-                            video: Some(
-                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3000)
-                                    .unwrap(),
-                            ),
-                            video_rtcp: Some(
-                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3001)
-                                    .unwrap(),
-                            ),
-                            audio: Some(
-                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3002)
-                                    .unwrap(),
-                            ),
-                            audio_rtcp: Some(
-                                SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 3003)
-                                    .unwrap(),
-                            ),
+                            video: Some(video_recv_sock.clone()),
+                            video_rtcp: Some(video_rtcp_recv_sock.clone()),
+                            audio: Some(audio_recv_sock.clone()),
+                            audio_rtcp: Some(audio_rtcp_recv_sock.clone()),
                         }),
                     };
 
-                    println!("start answer {:?}", answer_params);
-                    let result =
+                    let _result =
                         media::answer(&message_tx, media_connection_id, answer_params).await;
-                    println!("result {:?}", result);
                 }
                 ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
                     PeerEventEnum::CLOSE(close_event),
@@ -115,6 +109,50 @@ async fn main() {
                 }
                 ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
                     println!("media event \n {:?}", event);
+                    match event {
+                        MediaConnectionEventEnum::READY(_) => {
+                            // send info
+                            println!(
+                                "you can send video to: {}:{}",
+                                media_socket_video.ip(),
+                                media_socket_video.port()
+                            );
+                            println!(
+                                "you can send video rtcp to: {}:{}",
+                                rtcp_socket.ip(),
+                                rtcp_socket.port()
+                            );
+                            println!(
+                                "you can send audio to: {}:{}",
+                                media_socket_audio.ip(),
+                                media_socket_audio.port()
+                            );
+                            println!("you don't set audio rtcp forwarding config");
+
+                            // redirect info
+                            println!(
+                                "The received video will be transferred to {}:{}",
+                                video_recv_sock.ip(),
+                                video_recv_sock.port()
+                            );
+                            println!(
+                                "The received video rtcp will be transferred to {}:{}",
+                                video_rtcp_recv_sock.ip(),
+                                video_rtcp_recv_sock.port()
+                            );
+                            println!(
+                                "The received audio will be transferred to {}:{}",
+                                audio_recv_sock.ip(),
+                                audio_recv_sock.port()
+                            );
+                            println!(
+                                "The received audio rtcp will be transferred to {}:{}",
+                                audio_rtcp_recv_sock.ip(),
+                                audio_rtcp_recv_sock.port()
+                            );
+                        }
+                        _ => {}
+                    }
                 }
                 message => {
                     panic!("{:?}", message);

@@ -92,6 +92,14 @@ impl RtcpSocket {
     pub fn get_id(&self) -> Option<RtcpId> {
         self.0.get_id()
     }
+
+    pub fn ip(&self) -> IpAddr {
+        self.0.ip()
+    }
+
+    pub fn port(&self) -> u16 {
+        self.0.port()
+    }
 }
 
 /// JSONとしてserializeする際に{rtcp_id: ...}とフォーマットするためにラッピングする

@@ -44,6 +44,7 @@ async fn main() {
 
     // eventを出力する
     let event_fut = async {
+        println!("waiting connection from a neighbour");
         while let Some(ResponseMessage::Success(event)) = event_rx.recv().await {
             match event {
                 ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(

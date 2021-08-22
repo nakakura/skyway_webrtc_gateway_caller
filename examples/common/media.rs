@@ -78,7 +78,6 @@ pub async fn call(
     };
 
     let json_message = serde_json::to_string(&paramter).unwrap();
-    println!("{:?}", json_message);
     let body = serde_json::from_str::<ServiceParams>(&json_message);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
