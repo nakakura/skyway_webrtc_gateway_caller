@@ -64,11 +64,10 @@ mod test_create_data {
 
         // execute
         // 引数は利用しないので何でも良い
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        let result = create_service
+            .execute(serde_json::Value::Bool(true))
+            .await
+            .unwrap();
 
         // evaluate
         assert_eq!(result, expected);
