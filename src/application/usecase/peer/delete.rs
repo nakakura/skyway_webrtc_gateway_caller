@@ -28,8 +28,8 @@ impl Service for DeleteService {
     async fn execute(&self, param: Value) -> Result<ResponseMessage, error::Error> {
         let peer_info: PeerInfo =
             serde_json::from_value(param).map_err(|e| error::Error::SerdeError { error: e })?;
-        let (peer_opt, _) = Peer::find(self.repository.clone(), peer_info).await?;
-        if let Some(peer) = peer_opt {
+        let (peer, status) = Peer::find(self.repository.clone(), peer_info).await?;
+        if !status.disconnected {
             let result = peer.try_delete().await?;
             Ok(PeerResponseMessageBodyEnum::Delete(result).create_response_message())
         } else {
@@ -74,7 +74,7 @@ mod test_delete_peer {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                Some(peer_mock),
+                peer_mock,
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: false,
@@ -144,7 +144,7 @@ mod test_delete_peer {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                None,
+                Peer::default(),
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: true,
@@ -191,7 +191,7 @@ mod test_delete_peer {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                Some(peer_mock),
+                peer_mock,
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: false,

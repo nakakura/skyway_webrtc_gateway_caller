@@ -65,21 +65,15 @@ impl Peer {
     pub async fn find(
         repository: Arc<dyn ReerRepositoryApi>,
         peer_info: PeerInfo,
-    ) -> Result<(Option<Self>, PeerStatusMessage), error::Error> {
+    ) -> Result<(Self, PeerStatusMessage), error::Error> {
         let status = repository.status(&peer_info).await?;
-        if !status.disconnected {
-            // Peerがまだ有効な場合
-            Ok((
-                Some(Peer {
-                    peer_info: peer_info,
-                    repository,
-                }),
-                status,
-            ))
-        } else {
-            // Peerは既に無効である場合
-            Ok((None, status))
-        }
+        Ok((
+            Peer {
+                peer_info: peer_info,
+                repository,
+            },
+            status,
+        ))
     }
 
     pub async fn try_delete(&self) -> Result<PeerInfo, error::Error> {
@@ -343,10 +337,11 @@ mod test_peer_find {
         let (peer, status) = Peer::find(Arc::new(api), peer_info.clone()).await.unwrap();
 
         // 作成に成功する
-        assert_eq!(peer.unwrap().peer_info(), &peer_info);
+        assert_eq!(peer.peer_info(), &peer_info);
         assert_eq!(status, expected);
     }
 
+    // 終了後であってもWebRTC Gatewayが過去のPeer Objectの状態を把握しており、statusを返してくる場合
     #[tokio::test]
     async fn closed_peer() {
         // mockのcontextが上書きされてしまわないよう、並列実行を避ける
@@ -369,11 +364,9 @@ mod test_peer_find {
         api.expect_status().return_once(move |_| Ok(status.clone()));
 
         // 実行
-        let (peer, status) = Peer::find(Arc::new(api), peer_info.clone()).await.unwrap();
+        let (_, status) = Peer::find(Arc::new(api), peer_info.clone()).await.unwrap();
 
-        // Peer Objectは生成されない
-        assert!(peer.is_none());
-        // statusは取得できる
+        // disconnected trueのStatusを受け取る
         assert_eq!(status, expected);
     }
 

@@ -61,7 +61,7 @@ mod test_create_peer {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                Some(Peer::default()),
+                Peer::default(),
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: false,

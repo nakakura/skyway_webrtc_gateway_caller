@@ -88,11 +88,11 @@ impl EventListener for EventService {
                 let message = format!("No Such Peer Object {:?}, returns error {:?}", peer_info, e);
                 return ResponseMessage::Error(message);
             }
-            Ok((None, _)) => {
+            Ok((_, status)) if status.disconnected => {
                 let message = format!("Peer has been already deleted {:?}", peer_info);
                 return ResponseMessage::Error(message);
             }
-            Ok((Some(peer), _)) => {
+            Ok((peer, _)) => {
                 return self.listen_event(peer, event_tx).await;
             }
         }
@@ -177,7 +177,7 @@ mod test_peer_event {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                Some(peer_mock),
+                peer_mock,
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: false,
@@ -236,7 +236,7 @@ mod test_peer_event {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                Some(peer_mock),
+                peer_mock,
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: false,
@@ -317,7 +317,7 @@ mod test_peer_event {
         let ctx = Peer::find_context();
         ctx.expect().return_once(|_, peer_info| {
             Ok((
-                Some(peer_mock),
+                peer_mock,
                 PeerStatusMessage {
                     peer_id: peer_info.peer_id().clone(),
                     disconnected: false,
