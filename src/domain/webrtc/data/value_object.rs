@@ -13,8 +13,8 @@ use crate::error;
 
 /// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
 pub use skyway_webrtc_gateway_api::data::{
-    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper, DataId,
-    DataIdWrapper, RedirectDataResponse,
+    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper,
+    DataConnectionStatus, DataId, DataIdWrapper, RedirectDataResponse,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -44,5 +44,26 @@ impl DataSocket {
 
     pub fn port(&self) -> u16 {
         self.0.port()
+    }
+}
+
+pub struct DataConnection {
+    api: Arc<dyn DataApi>,
+    data_connection_id: DataConnectionId,
+}
+
+impl DataConnection {
+    pub async fn find(
+        api: Arc<dyn DataApi>,
+        data_connection_id: DataConnectionId,
+    ) -> Result<(Self, DataConnectionStatus), error::Error> {
+        let status = api.status(&data_connection_id).await?;
+        Ok((
+            Self {
+                api,
+                data_connection_id,
+            },
+            status,
+        ))
     }
 }

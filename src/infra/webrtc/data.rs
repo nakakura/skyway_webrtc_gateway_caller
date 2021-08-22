@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::data;
-use skyway_webrtc_gateway_api::data::RedirectDataParams;
+use skyway_webrtc_gateway_api::data::{DataConnectionStatus, RedirectDataParams};
 use skyway_webrtc_gateway_api::prelude::PhantomId;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
@@ -53,6 +53,13 @@ impl DataApi for DataApiImpl {
             .data_connection_id;
         let _ = data::disconnect(&data_connection_id).await?;
         Ok(DataConnectionIdWrapper { data_connection_id })
+    }
+
+    async fn status(
+        &self,
+        data_connection_id: &DataConnectionId,
+    ) -> Result<DataConnectionStatus, error::Error> {
+        data::status(data_connection_id).await
     }
 
     async fn redirect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error> {

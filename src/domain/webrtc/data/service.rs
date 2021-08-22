@@ -4,7 +4,8 @@ use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::data::value_object::{
-    DataConnectionEventEnum, DataConnectionIdWrapper, DataId,
+    DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper, DataConnectionStatus,
+    DataId,
 };
 use crate::error;
 
@@ -19,6 +20,10 @@ pub trait DataApi: Interface {
     async fn delete(&self, data_id: DataId) -> Result<DataId, error::Error>;
     async fn connect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
     async fn disconnect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
+    async fn status(
+        &self,
+        data_connection_id: &DataConnectionId,
+    ) -> Result<DataConnectionStatus, error::Error>;
     async fn redirect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
     async fn event(&self, params: Value) -> Result<DataConnectionEventEnum, error::Error>;
 }

@@ -81,6 +81,13 @@ module! {
     }
 }
 
+module! {
+    pub(crate) DataStatusServiceContainer {
+        components = [data::status::StatusService, DataApiImpl],
+        providers = []
+    }
+}
+
 //========== Media Service ==========
 module! {
     pub(crate) MediaContentCreateServiceContainer {

@@ -6,7 +6,9 @@ use serde_json::Value;
 use shaku::HasComponent;
 
 use crate::application::usecase::service::{EventListener, Service};
-use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataSocket};
+use crate::domain::webrtc::data::value_object::{
+    DataConnectionIdWrapper, DataConnectionStatus, DataSocket,
+};
 use crate::domain::webrtc::media::value_object::{
     AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaConnectionStatus,
     MediaSocket, RtcpSocket,
@@ -257,6 +259,8 @@ pub enum DataResponseMessageBodyEnum {
     Redirect(DataConnectionIdWrapper),
     #[serde(rename = "EVENT")]
     Event(DataConnectionEventEnum),
+    #[serde(rename = "STATUS")]
+    Status(DataConnectionStatus),
 }
 
 impl DataResponseMessageBodyEnum {
