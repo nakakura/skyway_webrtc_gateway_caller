@@ -116,6 +116,13 @@ pub struct MediaConnection {
 }
 
 impl MediaConnection {
+    pub async fn try_create(
+        api: Arc<dyn MediaApi>,
+        query: CallQuery,
+    ) -> Result<MediaConnectionIdWrapper, error::Error> {
+        api.call(query).await
+    }
+
     pub async fn find(
         api: Arc<dyn MediaApi>,
         media_connection_id: MediaConnectionId,

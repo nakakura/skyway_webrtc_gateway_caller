@@ -3,13 +3,13 @@ use serde_json::Value;
 use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
+use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::media::service::MediaApi;
 use crate::domain::webrtc::media::value_object::{
     AnswerQuery, AnswerResponse, AnswerResult, CallQuery, MediaConnectionEventEnum,
     MediaConnectionId, MediaConnectionIdWrapper, MediaConnectionStatus, MediaId, RtcpId,
 };
 use crate::error;
-use crate::prelude::SocketInfo;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
@@ -43,11 +43,8 @@ impl MediaApi for MediaApiImpl {
         Ok(rtcp_id)
     }
 
-    async fn call(&self, call_query: Value) -> Result<MediaConnectionIdWrapper, error::Error> {
-        let call_query = serde_json::from_value::<CallQuery>(call_query)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
-        let result = media::call(&call_query).await?;
-        Ok(result.params)
+    async fn call(&self, call_query: CallQuery) -> Result<MediaConnectionIdWrapper, error::Error> {
+        Ok(media::call(&call_query).await?.params)
     }
 
     async fn answer(&self, answer_query: Value) -> Result<AnswerResult, error::Error> {
