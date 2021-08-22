@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 use super::ControlMessage;
 
 #[allow(dead_code)]
-pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInfo<DataId> {
+pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> DataSocket {
     let body_json = r#"{
         "type": "DATA",
         "command": "CREATE",

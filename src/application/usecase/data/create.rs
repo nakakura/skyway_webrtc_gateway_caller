@@ -7,6 +7,7 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::value_object::DataSocket;
 use crate::error;
 
 // Serviceの具象Struct
@@ -23,33 +24,22 @@ impl CreateService {}
 #[async_trait]
 impl Service for CreateService {
     async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.create().await?;
-        Ok(DataResponseMessageBodyEnum::Create(param).create_response_message())
+        let data_sock = DataSocket::try_create(self.api.clone()).await?;
+        Ok(DataResponseMessageBodyEnum::Create(data_sock).create_response_message())
     }
 }
 
 #[cfg(test)]
 mod test_create_data {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::DataCreateServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableSocket;
     use crate::domain::webrtc::common::value_object::SocketInfo;
     use crate::domain::webrtc::data::service::MockDataApi;
     use crate::domain::webrtc::data::value_object::DataId;
-    use crate::error;
-
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let data_id = SocketInfo::<DataId>::try_create(
             Some("da-50a32bab-b3d9-4913-8e20-f79c90a6a211".into()),
@@ -57,8 +47,8 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected =
-            DataResponseMessageBodyEnum::Create(data_id.clone()).create_response_message();
+        let expected = DataResponseMessageBodyEnum::Create(DataSocket(data_id.clone()))
+            .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
@@ -73,37 +63,7 @@ mod test_create_data {
         let create_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
-
-        // evaluate
-        assert_eq!(result, expected);
-    }
-
-    #[tokio::test]
-    async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
-        // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
-
-        // socketの生成に成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
-        mock.expect_create()
-            .returning(move || Err(error::Error::create_local_error("error")));
-
-        // Mockを埋め込んだEventServiceを生成
-        let module = DataCreateServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
-            .build();
-        let create_service: Arc<dyn Service> = module.resolve();
-
-        // execute
+        // 引数は利用しないので何でも良い
         let result = crate::application::usecase::service::execute_service(
             create_service,
             serde_json::Value::Bool(true),

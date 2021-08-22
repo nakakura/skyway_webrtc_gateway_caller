@@ -7,8 +7,8 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::value_object::{DataIdWrapper, DataSocket};
 use crate::error;
-use crate::prelude::DataIdWrapper;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -22,7 +22,10 @@ pub(crate) struct DeleteService {
 #[async_trait]
 impl Service for DeleteService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.delete(params).await?;
+        let data_id_wrapper = serde_json::from_value::<DataIdWrapper>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+
+        let param = DataSocket::try_delete(self.api.clone(), data_id_wrapper.data_id).await?;
         Ok(
             DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: param })
                 .create_response_message(),
@@ -32,27 +35,14 @@ impl Service for DeleteService {
 
 #[cfg(test)]
 mod test_create_data {
-    use std::sync::Mutex;
-
-    use crate::error;
-    use once_cell::sync::Lazy;
-    use serde::Deserialize;
-
     use super::*;
     use crate::di::DataDeleteServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
     use crate::domain::webrtc::data::service::MockDataApi;
     use crate::domain::webrtc::data::value_object::DataId;
-    use crate::prelude::DataIdWrapper;
-
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
@@ -63,14 +53,9 @@ mod test_create_data {
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
-        mock.expect_delete().returning(move |message| {
+        mock.expect_delete().returning(move |data_id| {
             // 削除に成功した場合、削除対象のDataIdが帰る
-            #[derive(Deserialize, Debug)]
-            struct Message {
-                pub data_id: DataId,
-            }
-            let result = serde_json::from_value::<Message>(message).unwrap();
-            return Ok(result.data_id);
+            return Ok(data_id);
         });
 
         // Mockを埋め込んだEventServiceを生成
@@ -80,15 +65,13 @@ mod test_create_data {
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let message = format!(
-            r#"{{
-                "data_id": "{}"
-            }}"#,
-            data_id_str
-        );
-        let message = serde_json::from_str::<Value>(&message).unwrap();
-        let result =
-            crate::application::usecase::service::execute_service(delete_service, message).await;
+        let message = DataIdWrapper {
+            data_id: DataId::try_create(data_id_str).unwrap(),
+        };
+        let result = delete_service
+            .execute(serde_json::to_value(message).unwrap())
+            .await
+            .unwrap();
 
         // evaluate
         assert_eq!(result, expected);
@@ -96,28 +79,11 @@ mod test_create_data {
 
     #[tokio::test]
     async fn invalid_json() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
-
-        // 期待値を生成
-        let expected = ResponseMessage::Error(
-            "{\"reason\":\"JsonError\",\"message\":\"missing field `data_id`\"}".into(),
-        );
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
-        mock.expect_delete().returning(move |message| {
-            // 削除に成功した場合、削除対象のDataIdが帰る
-            #[derive(Deserialize, Debug)]
-            struct Message {
-                pub data_id: DataId,
-            }
-            serde_json::from_value::<Message>(message)
-                .map(|data| data.data_id)
-                .map_err(|e| error::Error::SerdeError { error: e })
-        });
+        mock.expect_delete().returning(move |data_id| Ok(data_id));
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataDeleteServiceContainer::builder()
@@ -133,10 +99,13 @@ mod test_create_data {
             data_id_str
         );
         let message = serde_json::from_str::<Value>(&message).unwrap();
-        let result =
-            crate::application::usecase::service::execute_service(delete_service, message).await;
+        let result = delete_service.execute(message).await;
 
-        // evaluate
-        assert_eq!(result, expected);
+        // 求められるJSONとは異なるのでSerdeErrorが帰る
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
     }
 }

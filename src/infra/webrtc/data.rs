@@ -31,10 +31,7 @@ impl DataApi for DataApiImpl {
         data::open_data_socket().await
     }
 
-    async fn delete(&self, data_id: Value) -> Result<DataId, error::Error> {
-        let data_id = serde_json::from_value::<DataIdWrapper>(data_id)
-            .map_err(|e| error::Error::SerdeError { error: e })?
-            .data_id;
+    async fn delete(&self, data_id: DataId) -> Result<DataId, error::Error> {
         let _ = data::close_data_socket(&data_id).await?;
         Ok(data_id)
     }

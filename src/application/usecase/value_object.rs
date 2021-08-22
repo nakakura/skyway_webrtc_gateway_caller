@@ -6,8 +6,7 @@ use serde_json::Value;
 use shaku::HasComponent;
 
 use crate::application::usecase::service::{EventListener, Service};
-use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataId};
+use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataSocket};
 use crate::domain::webrtc::media::value_object::{
     AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaSocket, RtcpSocket,
 };
@@ -246,7 +245,7 @@ fn peer_response_message_body_enum_create_response_message() {
 #[serde(tag = "command")]
 pub enum DataResponseMessageBodyEnum {
     #[serde(rename = "CREATE")]
-    Create(SocketInfo<DataId>),
+    Create(DataSocket),
     #[serde(rename = "CONNECT")]
     Connect(DataConnectionIdWrapper),
     #[serde(rename = "DELETE")]
@@ -268,6 +267,8 @@ impl DataResponseMessageBodyEnum {
 #[test]
 fn data_response_message_body_enum_create_response_message() {
     use skyway_webrtc_gateway_api::prelude::SerializableId;
+
+    use crate::domain::webrtc::data::value_object::DataId;
 
     let data_id = DataId::try_create("da-4d053831-5dc2-461b-a358-d062d6115216").unwrap();
     let body_enum = DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id });
