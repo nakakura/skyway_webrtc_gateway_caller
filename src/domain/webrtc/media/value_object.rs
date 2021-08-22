@@ -108,3 +108,25 @@ pub struct AnswerResult {
     pub send_sockets: Option<AnswerResponseParams>,
     pub recv_sockets: Option<RedirectParameters>,
 }
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct MediaConnection {
+    media_connection_id: MediaConnectionId,
+    is_open: bool,
+}
+
+impl MediaConnection {
+    pub async fn find(
+        api: Arc<dyn MediaApi>,
+        media_connection_id: MediaConnectionId,
+    ) -> Result<(Self, MediaConnectionStatus), error::Error> {
+        let status = api.status(&media_connection_id).await?;
+        Ok((
+            Self {
+                media_connection_id,
+                is_open: status.open,
+            },
+            status,
+        ))
+    }
+}

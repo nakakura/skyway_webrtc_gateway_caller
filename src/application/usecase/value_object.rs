@@ -8,7 +8,8 @@ use shaku::HasComponent;
 use crate::application::usecase::service::{EventListener, Service};
 use crate::domain::webrtc::data::value_object::{DataConnectionIdWrapper, DataSocket};
 use crate::domain::webrtc::media::value_object::{
-    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaSocket, RtcpSocket,
+    AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaConnectionStatus,
+    MediaSocket, RtcpSocket,
 };
 use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
@@ -296,6 +297,8 @@ pub enum MediaResponseMessageBodyEnum {
     Answer(AnswerResult),
     #[serde(rename = "EVENT")]
     Event(MediaConnectionEventEnum),
+    #[serde(rename = "STATUS")]
+    Status(MediaConnectionStatus),
 }
 
 impl MediaResponseMessageBodyEnum {

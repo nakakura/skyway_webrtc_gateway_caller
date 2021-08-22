@@ -130,3 +130,10 @@ module! {
         providers = []
     }
 }
+
+module! {
+    pub(crate) MediaStatusServiceContainer {
+        components = [media::status::StatusService, MediaApiImpl],
+        providers = []
+    }
+}
