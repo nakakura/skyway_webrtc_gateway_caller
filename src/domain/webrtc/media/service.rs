@@ -4,8 +4,8 @@ use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::media::value_object::{
-    AnswerResult, CallQuery, MediaConnectionEventEnum, MediaConnectionId, MediaConnectionIdWrapper,
-    MediaConnectionStatus, MediaId, RtcpId,
+    AnswerQuery, AnswerResult, CallQuery, MediaConnectionEventEnum, MediaConnectionId,
+    MediaConnectionIdWrapper, MediaConnectionStatus, MediaId, RtcpId,
 };
 use crate::error;
 
@@ -21,7 +21,11 @@ pub trait MediaApi: Interface {
     async fn create_rtcp(&self) -> Result<SocketInfo<RtcpId>, error::Error>;
     async fn delete_rtcp(&self, rtcp_id: RtcpId) -> Result<RtcpId, error::Error>;
     async fn call(&self, call_query: CallQuery) -> Result<MediaConnectionIdWrapper, error::Error>;
-    async fn answer(&self, answer_query: Value) -> Result<AnswerResult, error::Error>;
+    async fn answer(
+        &self,
+        media_connection_id: &MediaConnectionId,
+        answer_query: AnswerQuery,
+    ) -> Result<AnswerResult, error::Error>;
     async fn event(
         &self,
         media_connection_id: Value,

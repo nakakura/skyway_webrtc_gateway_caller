@@ -1,13 +1,21 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::value_object::{AnswerQuery, MediaConnection, MediaConnectionId};
 use crate::error;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AnswerParameters {
+    media_connection_id: MediaConnectionId,
+    answer_query: AnswerQuery,
+}
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -21,37 +29,46 @@ pub(crate) struct AnswerService {
 #[async_trait]
 impl Service for AnswerService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.answer(params).await?;
-        Ok(MediaResponseMessageBodyEnum::Answer(param).create_response_message())
+        let answer_parameters = serde_json::from_value::<AnswerParameters>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+        let (media_connection, status) =
+            MediaConnection::find(self.api.clone(), answer_parameters.media_connection_id).await?;
+        if !status.open {
+            // MediaConnectionが確立前の場合のみanswerメソッドを実行する
+            let result = media_connection
+                .try_answer(answer_parameters.answer_query)
+                .await?;
+            Ok(MediaResponseMessageBodyEnum::Answer(result).create_response_message())
+        } else {
+            // 確率後の場合はanswerは行わない
+            let message = format!(
+                "MediaConnection {} has been already opened.",
+                media_connection.media_connection_id().as_str()
+            );
+            Ok(ResponseMessage::Error(message))
+        }
     }
 }
 
 #[cfg(test)]
 mod test_answer {
-    use std::sync::Mutex;
-
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::MediaAnswerServiceContainer;
     use crate::domain::webrtc::media::service::MockMediaApi;
-    use crate::domain::webrtc::media::value_object::AnswerResult;
+    use crate::domain::webrtc::media::value_object::{
+        AnswerResult, Constraints, MediaConnectionStatus,
+    };
+    use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::error;
     use crate::prelude::MediaConnectionId;
 
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let media_connection_id =
             MediaConnectionId::try_create("mc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
         let params = AnswerResult {
-            media_connection_id,
+            media_connection_id: media_connection_id.clone(),
             send_sockets: None,
             recv_sockets: None,
         };
@@ -61,53 +78,141 @@ mod test_answer {
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
         mock.expect_answer()
-            .returning(move |_| return Ok(params.clone()));
+            .returning(move |media_connection_id, _query| {
+                let params = AnswerResult {
+                    media_connection_id: media_connection_id.clone(),
+                    send_sockets: None,
+                    recv_sockets: None,
+                };
+                return Ok(params);
+            });
+        // MediaConnectionの生成にstatusも必要
+        let expected_status = MediaConnectionStatus {
+            metadata: "metadata".to_string(),
+            open: false,
+            remote_id: PeerId::new("peer_id"),
+            ssrc: None,
+        };
+        mock.expect_status().returning(move |_| {
+            return Ok(expected_status.clone());
+        });
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaAnswerServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: Arc<dyn Service> = module.resolve();
+        let answer_service: Arc<dyn Service> = module.resolve();
 
-        // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        // 実行パラメータの生成
+        let query = AnswerQuery {
+            constraints: Constraints {
+                video: false,
+                videoReceiveEnabled: None,
+                audio: false,
+                audioReceiveEnabled: None,
+                video_params: None,
+                audio_params: None,
+                metadata: None,
+            },
+            redirect_params: None,
+        };
+        let params = AnswerParameters {
+            media_connection_id,
+            answer_query: query,
+        };
+        // 実行
+        let result = answer_service
+            .execute(serde_json::to_value(params).unwrap())
+            .await
+            .unwrap();
 
         // evaluate
         assert_eq!(result, expected);
     }
 
     #[tokio::test]
-    async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
+    async fn already_connected() {
         // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
+        let media_connection_id =
+            MediaConnectionId::try_create("mc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
+        let expected = format!(
+            "MediaConnection {} has been already opened.",
+            media_connection_id.as_str()
+        );
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
-        mock.expect_answer()
-            .returning(move |_| Err(error::Error::create_local_error("error")));
+        // answerは呼ばれないのでmockingは必要ない
+        // 既にopen済みでanswerが必要ないケース
+        let expected_status = MediaConnectionStatus {
+            metadata: "metadata".to_string(),
+            open: true,
+            remote_id: PeerId::new("peer_id"),
+            ssrc: None,
+        };
+        mock.expect_status().returning(move |_| {
+            return Ok(expected_status.clone());
+        });
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaAnswerServiceContainer::builder()
             .with_component_override::<dyn MediaApi>(Box::new(mock))
             .build();
-        let create_service: Arc<dyn Service> = module.resolve();
+        let answer_service: Arc<dyn Service> = module.resolve();
 
-        // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        // 実行パラメータの生成
+        let query = AnswerQuery {
+            constraints: Constraints {
+                video: false,
+                videoReceiveEnabled: None,
+                audio: false,
+                audioReceiveEnabled: None,
+                video_params: None,
+                audio_params: None,
+                metadata: None,
+            },
+            redirect_params: None,
+        };
+        let params = AnswerParameters {
+            media_connection_id,
+            answer_query: query,
+        };
+        // 実行
+        let result = answer_service
+            .execute(serde_json::to_value(params).unwrap())
+            .await
+            .unwrap();
 
         // evaluate
-        assert_eq!(result, expected);
+        if let ResponseMessage::Error(message) = result {
+            assert_eq!(message, expected);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_param() {
+        // socketの生成に成功する場合のMockを作成
+        // メソッドは呼ばれないので初期化はしないでOK
+        let mock = MockMediaApi::default();
+
+        // Mockを埋め込んだEventServiceを生成
+        let module = MediaAnswerServiceContainer::builder()
+            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .build();
+        let answer_service: Arc<dyn Service> = module.resolve();
+
+        // 間違ったパラメータで実行
+        let result = answer_service
+            .execute(serde_json::value::Value::Bool(true))
+            .await;
+
+        // 求められるJSONとは異なるのでSerdeErrorが帰る
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
     }
 }

@@ -47,25 +47,16 @@ impl MediaApi for MediaApiImpl {
         Ok(media::call(&call_query).await?.params)
     }
 
-    async fn answer(&self, answer_query: Value) -> Result<AnswerResult, error::Error> {
-        use serde::Deserialize;
-        #[derive(Debug, Deserialize)]
-        struct AnswerParameters {
-            media_connection_id: MediaConnectionId,
-            answer_query: AnswerQuery,
-        }
-        let answer_parameters = serde_json::from_value::<AnswerParameters>(answer_query)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
-        let result: AnswerResponse = media::answer(
-            &answer_parameters.media_connection_id,
-            &answer_parameters.answer_query,
-        )
-        .await?;
-
+    async fn answer(
+        &self,
+        media_connection_id: &MediaConnectionId,
+        answer_query: AnswerQuery,
+    ) -> Result<AnswerResult, error::Error> {
+        let result: AnswerResponse = media::answer(&media_connection_id, &answer_query).await?;
         let answer_result = AnswerResult {
-            media_connection_id: answer_parameters.media_connection_id,
+            media_connection_id: media_connection_id.clone(),
             send_sockets: Some(result.params.clone()),
-            recv_sockets: answer_parameters.answer_query.redirect_params,
+            recv_sockets: answer_query.redirect_params,
         };
         Ok(answer_result)
     }

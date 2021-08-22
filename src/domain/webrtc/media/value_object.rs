@@ -109,10 +109,9 @@ pub struct AnswerResult {
     pub recv_sockets: Option<RedirectParameters>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MediaConnection {
+    api: Arc<dyn MediaApi>,
     media_connection_id: MediaConnectionId,
-    is_open: bool,
 }
 
 impl MediaConnection {
@@ -130,10 +129,18 @@ impl MediaConnection {
         let status = api.status(&media_connection_id).await?;
         Ok((
             Self {
+                api,
                 media_connection_id,
-                is_open: status.open,
             },
             status,
         ))
+    }
+
+    pub async fn try_answer(&self, query: AnswerQuery) -> Result<AnswerResult, error::Error> {
+        self.api.answer(&self.media_connection_id, query).await
+    }
+
+    pub fn media_connection_id(&self) -> &MediaConnectionId {
+        &self.media_connection_id
     }
 }
