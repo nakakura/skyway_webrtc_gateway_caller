@@ -11,10 +11,8 @@ use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
-use crate::domain::webrtc::peer::value_object::PeerErrorEvent;
-use crate::domain::webrtc::peer::value_object::PeerEventEnum;
+use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::error;
-use crate::PeerInfo;
 
 #[cfg(test)]
 use mockall_double::double;
@@ -74,35 +72,25 @@ impl EventListener for EventService {
         params: Value,
     ) -> ResponseMessage {
         // peer_infoのvalidation
-        let peer_info = serde_json::from_value::<PeerInfo>(params)
+        let peer_info = serde_json::from_value::<PeerInfo>(params.clone())
             .map_err(|e| error::Error::SerdeError { error: e });
         if peer_info.is_err() {
-            return PeerResponseMessageBodyEnum::Event(PeerEventEnum::ERROR(PeerErrorEvent {
-                // 返すべきPeerInfoの情報がないので、必ず成功する値を入れている
-                params: PeerInfo::try_create("dummy", "pt-9749250e-d157-4f80-9ee2-359ce8524308")
-                    .unwrap(),
-                error_message: format!("invalid peer_info: {:?}", peer_info.err()),
-            }))
-            .create_response_message();
+            let message = format!(
+                "Error in EventListener for Peer. invalid peer_info: {:?}",
+                params
+            );
+            return ResponseMessage::Error(message);
         }
         let peer_info = peer_info.unwrap();
 
         match Peer::find(self.api.clone(), peer_info.clone()).await {
             Err(e) => {
-                return PeerResponseMessageBodyEnum::Event(PeerEventEnum::ERROR(PeerErrorEvent {
-                    // 返すべきPeerInfoの情報がないので、必ず成功する値を入れている
-                    params: peer_info,
-                    error_message: format!("peer find failed: {:?}", e),
-                }))
-                .create_response_message();
+                let message = format!("No Such Peer Object {:?}, returns error {:?}", peer_info, e);
+                return ResponseMessage::Error(message);
             }
             Ok((None, _)) => {
-                return PeerResponseMessageBodyEnum::Event(PeerEventEnum::ERROR(PeerErrorEvent {
-                    // 返すべきPeerInfoの情報がないので、必ず成功する値を入れている
-                    params: peer_info,
-                    error_message: format!("peer has been already deleted"),
-                }))
-                .create_response_message();
+                let message = format!("Peer has been already deleted {:?}", peer_info);
+                return ResponseMessage::Error(message);
             }
             Ok((Some(peer), _)) => {
                 return self.listen_event(peer, event_tx).await;
@@ -116,7 +104,6 @@ mod test_peer_event {
     use std::sync::Mutex;
 
     use super::*;
-    use crate::application::usecase::value_object::ResponseMessageBodyEnum;
     use crate::di::PeerEventServiceContainer;
     use crate::domain::webrtc::data::value_object::*;
     use crate::domain::webrtc::peer::value_object::{
@@ -295,15 +282,11 @@ mod test_peer_event {
         // execute
         let result = event_service.execute(event_tx, param).await;
 
-        // errorが帰ってくる
-        if let ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Event(PeerEventEnum::ERROR(PeerErrorEvent {
-                params: _,
-                error_message: _,
-            })),
-        )) = result
-        {
-            assert!(true);
+        if let ResponseMessage::Error(message) = result {
+            assert_eq!(
+                &message,
+                "Error in EventListener for Peer. invalid peer_info: Bool(true)"
+            );
         } else {
             assert!(false);
         }
