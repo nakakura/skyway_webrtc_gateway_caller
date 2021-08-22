@@ -2,6 +2,7 @@
 // ドメイン知識としての値のvalidationは、skyway-webrtc-gateway内部の機能として利用する
 // このような再定義は、webrtcモジュール配下のvalue_objectのみに留め、
 // その他のskyway-webrtc-gateway crateへの直接的な依存はinfra層に限定する
+use std::net::IpAddr;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -60,6 +61,14 @@ impl MediaSocket {
 
     pub fn get_id(&self) -> Option<MediaId> {
         self.0.get_id()
+    }
+
+    pub fn ip(&self) -> IpAddr {
+        self.0.ip()
+    }
+
+    pub fn port(&self) -> u16 {
+        self.0.port()
     }
 }
 
