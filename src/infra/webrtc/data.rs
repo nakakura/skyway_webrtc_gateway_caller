@@ -29,9 +29,8 @@ impl DataApi for DataApiImpl {
         data::open_data_socket().await
     }
 
-    async fn delete(&self, data_id: DataId) -> Result<DataId, error::Error> {
-        let _ = data::close_data_socket(&data_id).await?;
-        Ok(data_id)
+    async fn delete(&self, data_id: &DataId) -> Result<(), error::Error> {
+        data::close_data_socket(data_id).await
     }
 
     async fn connect(&self, query: ConnectQuery) -> Result<DataConnectionIdWrapper, error::Error> {

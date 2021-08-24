@@ -22,12 +22,13 @@ pub(crate) struct DeleteService {
 #[async_trait]
 impl Service for DeleteService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let data_id_wrapper = serde_json::from_value::<DataIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+        let data_id = serde_json::from_value::<DataIdWrapper>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?
+            .data_id;
 
-        let param = DataSocket::try_delete(self.api.clone(), data_id_wrapper.data_id).await?;
+        let _ = DataSocket::try_delete(self.api.clone(), &data_id).await?;
         Ok(
-            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: param })
+            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: data_id })
                 .create_response_message(),
         )
     }
@@ -53,9 +54,9 @@ mod test_create_data {
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
-        mock.expect_delete().returning(move |data_id| {
+        mock.expect_delete().returning(move |_data_id| {
             // 削除に成功した場合、削除対象のDataIdが帰る
-            return Ok(data_id);
+            return Ok(());
         });
 
         // Mockを埋め込んだEventServiceを生成
@@ -83,7 +84,7 @@ mod test_create_data {
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataApi::default();
-        mock.expect_delete().returning(move |data_id| Ok(data_id));
+        mock.expect_delete().returning(move |_data_id| Ok(()));
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataDeleteServiceContainer::builder()

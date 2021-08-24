@@ -27,10 +27,7 @@ impl DataSocket {
         Ok(DataSocket(socket))
     }
 
-    pub async fn try_delete(
-        api: Arc<dyn DataApi>,
-        data_id: DataId,
-    ) -> Result<DataId, error::Error> {
+    pub async fn try_delete(api: Arc<dyn DataApi>, data_id: &DataId) -> Result<(), error::Error> {
         api.delete(data_id).await
     }
 
