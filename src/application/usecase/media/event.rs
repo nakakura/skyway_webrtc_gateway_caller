@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::{
     MediaConnection, MediaConnectionEventEnum, MediaConnectionId,
 };
@@ -20,7 +20,7 @@ use crate::prelude::MediaConnectionIdWrapper;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }
@@ -89,7 +89,7 @@ impl EventListener for EventService {
 mod test_delete_media {
     use super::*;
     use crate::di::MediaEventServiceContainer;
-    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::{
         MediaConnectionId, MediaConnectionIdWrapper, MediaConnectionStatus,
     };
@@ -109,7 +109,7 @@ mod test_delete_media {
         let close_event = MediaConnectionEventEnum::CLOSE(media_connection_id.clone());
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         let counter_mutex = std::sync::Mutex::new(0u8);
         mock.expect_event().returning(move |_| {
             let mut counter = counter_mutex.lock().unwrap();
@@ -144,7 +144,7 @@ mod test_delete_media {
         });
 
         let module = &MediaEventServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
@@ -213,7 +213,7 @@ mod test_delete_media {
         let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_event().returning(move |_| unreachable!());
         mock.expect_status().returning(move |_| {
             // MediaConnectionがまだ開いていないというステータスを返す
@@ -226,7 +226,7 @@ mod test_delete_media {
         });
 
         let module = &MediaEventServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             // 常にfalseを返すStateObject
             .with_component_override::<dyn ApplicationState>(Box::new(
                 ApplicationStateAlwaysFalseImpl {},
@@ -257,11 +257,11 @@ mod test_delete_media {
         let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_event().returning(move |_| unreachable!());
 
         let module = &MediaEventServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
         let result = event_service

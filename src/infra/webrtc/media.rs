@@ -3,7 +3,7 @@ use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::{
     AnswerQuery, AnswerResponse, CallQuery, CallResponse, MediaConnectionEventEnum,
     MediaConnectionId, MediaConnectionStatus, MediaId, RtcpId,
@@ -12,18 +12,18 @@ use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
-#[shaku(interface = MediaApi)]
-pub(crate) struct MediaApiImpl;
+#[shaku(interface = MediaRepository)]
+pub(crate) struct MediaRepositoryImpl;
 
-impl Default for MediaApiImpl {
+impl Default for MediaRepositoryImpl {
     fn default() -> Self {
-        MediaApiImpl {}
+        MediaRepositoryImpl {}
     }
 }
 
 // FIXME: シンプルなので単体テストはしていない。結合試験のみ
 #[async_trait]
-impl MediaApi for MediaApiImpl {
+impl MediaRepository for MediaRepositoryImpl {
     async fn create_media(&self, is_video: bool) -> Result<SocketInfo<MediaId>, error::Error> {
         media::open_media_socket(is_video).await
     }

@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::{
     CallQuery, MediaConnection, MediaConnectionIdWrapper,
 };
@@ -18,7 +18,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct CallService {
     #[shaku(inject)]
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -38,7 +38,7 @@ impl Service for CallService {
 mod test_create_media {
     use super::*;
     use crate::di::MediaCallServiceContainer;
-    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::{
         CallResponse, MediaConnectionId, MediaConnectionIdWrapper,
     };
@@ -55,7 +55,7 @@ mod test_create_media {
         .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_call().returning(move |_query| {
             return Ok(CallResponse {
                 command_type: "CALL".to_string(),
@@ -67,7 +67,7 @@ mod test_create_media {
 
         // Mockを埋め込んだCallServiceを生成
         let module = MediaCallServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let call_service: Arc<dyn Service> = module.resolve();
 
@@ -94,9 +94,9 @@ mod test_create_media {
     async fn invalid_param() {
         // Mockを埋め込んだCallServiceを生成
         // このテストではMockは呼ばれないので、初期化は不要
-        let mock = MockMediaApi::default();
+        let mock = MockMediaRepository::default();
         let module = MediaCallServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let call_service: Arc<dyn Service> = module.resolve();
 

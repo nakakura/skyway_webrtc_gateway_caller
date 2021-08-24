@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::MediaIdWrapper;
 use crate::error;
 use crate::prelude::MediaSocket;
@@ -17,7 +17,7 @@ use crate::prelude::MediaSocket;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteMediaService {
     #[shaku(inject)]
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -38,7 +38,7 @@ impl Service for DeleteMediaService {
 mod test_delete_media {
     use crate::di::MediaContentDeleteServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
-    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::MediaId;
     use crate::error;
 
@@ -54,14 +54,14 @@ mod test_delete_media {
         .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_delete_media().returning(move |_| {
             return Ok(());
         });
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaContentDeleteServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
@@ -81,13 +81,13 @@ mod test_delete_media {
     #[tokio::test]
     async fn invalid_param() {
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_delete_media()
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaContentDeleteServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let delete_service: Arc<dyn Service> = module.resolve();
 

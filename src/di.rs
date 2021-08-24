@@ -5,7 +5,7 @@ use crate::application::usecase::media;
 use crate::application::usecase::peer;
 use crate::infra::state::ApplicationStateAlwaysTrueImpl;
 use crate::infra::webrtc::data::DataApiImpl;
-use crate::infra::webrtc::media::MediaApiImpl;
+use crate::infra::webrtc::media::MediaRepositoryImpl;
 use crate::infra::webrtc::peer::PeerRepositoryImpl;
 
 //========== Peer Refactor Service ==========
@@ -91,56 +91,56 @@ module! {
 //========== Media Service ==========
 module! {
     pub(crate) MediaContentCreateServiceContainer {
-        components = [media::create_media::CreateMediaService, MediaApiImpl],
+        components = [media::create_media::CreateMediaService, MediaRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaContentDeleteServiceContainer {
-        components = [media::delete_media::DeleteMediaService, MediaApiImpl],
+        components = [media::delete_media::DeleteMediaService, MediaRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaRtcpCreateServiceContainer {
-        components = [media::create_rtcp::CreateRtcpService, MediaApiImpl],
+        components = [media::create_rtcp::CreateRtcpService, MediaRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaRtcpDeleteServiceContainer {
-        components = [media::delete_rtcp::DeleteRtcpService, MediaApiImpl],
+        components = [media::delete_rtcp::DeleteRtcpService, MediaRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaCallServiceContainer {
-        components = [media::call::CallService, MediaApiImpl],
+        components = [media::call::CallService, MediaRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaAnswerServiceContainer {
-        components = [media::answer::AnswerService, MediaApiImpl],
+        components = [media::answer::AnswerService, MediaRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaEventServiceContainer {
-        components = [media::event::EventService, MediaApiImpl, ApplicationStateAlwaysTrueImpl],
+        components = [media::event::EventService, MediaRepositoryImpl, ApplicationStateAlwaysTrueImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) MediaStatusServiceContainer {
-        components = [media::status::StatusService, MediaApiImpl],
+        components = [media::status::StatusService, MediaRepositoryImpl],
         providers = []
     }
 }

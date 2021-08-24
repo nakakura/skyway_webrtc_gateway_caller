@@ -7,7 +7,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::MediaSocket;
 use crate::error;
 
@@ -23,7 +23,7 @@ struct IsVideo {
 #[shaku(interface = Service)]
 pub(crate) struct CreateMediaService {
     #[shaku(inject)]
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -41,7 +41,7 @@ mod test_create_media {
     use super::*;
     use crate::di::MediaContentCreateServiceContainer;
     use crate::domain::webrtc::common::value_object::{SerializableSocket, SocketInfo};
-    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::MediaId;
     use crate::error;
 
@@ -59,14 +59,14 @@ mod test_create_media {
             .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_create_media().returning(move |_| {
             return Ok(media_id.clone());
         });
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaContentCreateServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let create_service: Arc<dyn Service> = module.resolve();
 
@@ -84,13 +84,13 @@ mod test_create_media {
     #[tokio::test]
     async fn invalid_param() {
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_create_media()
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaContentCreateServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let create_service: Arc<dyn Service> = module.resolve();
 

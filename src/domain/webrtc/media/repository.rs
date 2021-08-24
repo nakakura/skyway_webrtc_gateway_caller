@@ -14,7 +14,7 @@ use mockall::automock;
 /// /media APIに対応する機能を定義する
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait MediaApi: Interface {
+pub trait MediaRepository: Interface {
     async fn create_media(&self, is_video: bool) -> Result<SocketInfo<MediaId>, error::Error>;
     async fn delete_media(&self, media_id: &MediaId) -> Result<(), error::Error>;
     async fn create_rtcp(&self) -> Result<SocketInfo<RtcpId>, error::Error>;

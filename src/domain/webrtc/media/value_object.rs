@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use skyway_webrtc_gateway_api::prelude::SerializableSocket;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
 
 /// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
@@ -47,13 +47,13 @@ fn media_socket_serialize_deserialize() {
 
 //　これらの各メソッドは、application::media内のUnit Testで間接的にテストされている
 impl MediaSocket {
-    pub async fn try_create(api: Arc<dyn MediaApi>, is_video: bool) -> Result<Self, error::Error> {
+    pub async fn try_create(api: Arc<dyn MediaRepository>, is_video: bool) -> Result<Self, error::Error> {
         let socket = api.create_media(is_video).await?;
         Ok(MediaSocket(socket))
     }
 
     pub async fn try_delete(
-        api: Arc<dyn MediaApi>,
+        api: Arc<dyn MediaRepository>,
         media_id: &MediaId,
     ) -> Result<(), error::Error> {
         api.delete_media(media_id).await
@@ -77,12 +77,12 @@ pub struct RtcpSocket(pub(crate) SocketInfo<RtcpId>);
 
 //　これらの各メソッドは、application::media内のUnit Testで間接的にテストされている
 impl RtcpSocket {
-    pub async fn try_create(api: Arc<dyn MediaApi>) -> Result<Self, error::Error> {
+    pub async fn try_create(api: Arc<dyn MediaRepository>) -> Result<Self, error::Error> {
         let socket = api.create_rtcp().await?;
         Ok(RtcpSocket(socket))
     }
 
-    pub async fn try_delete(api: Arc<dyn MediaApi>, rtcp_id: &RtcpId) -> Result<(), error::Error> {
+    pub async fn try_delete(api: Arc<dyn MediaRepository>, rtcp_id: &RtcpId) -> Result<(), error::Error> {
         api.delete_rtcp(rtcp_id).await
     }
 
@@ -115,20 +115,20 @@ pub struct AnswerResult {
 }
 
 pub struct MediaConnection {
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
     media_connection_id: MediaConnectionId,
 }
 
 impl MediaConnection {
     pub async fn try_create(
-        api: Arc<dyn MediaApi>,
+        api: Arc<dyn MediaRepository>,
         query: CallQuery,
     ) -> Result<CallResponse, error::Error> {
         api.call(query).await
     }
 
     pub async fn find(
-        api: Arc<dyn MediaApi>,
+        api: Arc<dyn MediaRepository>,
         media_connection_id: MediaConnectionId,
     ) -> Result<(Self, MediaConnectionStatus), error::Error> {
         let status = api.status(&media_connection_id).await?;
@@ -146,7 +146,7 @@ impl MediaConnection {
     }
 
     pub async fn try_event(
-        api: Arc<dyn MediaApi>,
+        api: Arc<dyn MediaRepository>,
         media_connection_id: &MediaConnectionId,
     ) -> Result<MediaConnectionEventEnum, error::Error> {
         api.event(media_connection_id).await

@@ -7,7 +7,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::{
     AnswerQuery, AnswerResponseParams, AnswerResult, MediaConnection, MediaConnectionId,
 };
@@ -25,7 +25,7 @@ struct AnswerParameters {
 #[shaku(interface = Service)]
 pub(crate) struct AnswerService {
     #[shaku(inject)]
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -74,7 +74,7 @@ impl Service for AnswerService {
 mod test_answer {
     use super::*;
     use crate::di::MediaAnswerServiceContainer;
-    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::{
         AnswerResponse, AnswerResponseParams, AnswerResult, Constraints, MediaConnectionStatus,
     };
@@ -96,7 +96,7 @@ mod test_answer {
             MediaResponseMessageBodyEnum::Answer(params.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_answer().returning(move |_, _query| {
             let response = AnswerResponse {
                 command_type: "ANSWER".to_string(),
@@ -120,7 +120,7 @@ mod test_answer {
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaAnswerServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let answer_service: Arc<dyn Service> = module.resolve();
 
@@ -162,7 +162,7 @@ mod test_answer {
         );
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         // answerは呼ばれないのでmockingは必要ない
         // 既にopen済みでanswerが必要ないケース
         let expected_status = MediaConnectionStatus {
@@ -177,7 +177,7 @@ mod test_answer {
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaAnswerServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let answer_service: Arc<dyn Service> = module.resolve();
 
@@ -216,11 +216,11 @@ mod test_answer {
     async fn invalid_param() {
         // socketの生成に成功する場合のMockを作成
         // メソッドは呼ばれないので初期化はしないでOK
-        let mock = MockMediaApi::default();
+        let mock = MockMediaRepository::default();
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaAnswerServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let answer_service: Arc<dyn Service> = module.resolve();
 

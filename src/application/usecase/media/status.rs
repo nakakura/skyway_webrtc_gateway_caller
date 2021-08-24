@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::service::MediaApi;
+use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::{MediaConnection, MediaConnectionIdWrapper};
 use crate::error;
 
@@ -16,7 +16,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct StatusService {
     #[shaku(inject)]
-    api: Arc<dyn MediaApi>,
+    api: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -34,7 +34,7 @@ impl Service for StatusService {
 mod test_create_media {
     use super::*;
     use crate::di::MediaStatusServiceContainer;
-    use crate::domain::webrtc::media::service::MockMediaApi;
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::{MediaConnectionId, MediaConnectionStatus};
     use crate::domain::webrtc::peer::value_object::PeerId;
 
@@ -51,14 +51,14 @@ mod test_create_media {
             MediaResponseMessageBodyEnum::Status(expected_status.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockMediaApi::default();
+        let mut mock = MockMediaRepository::default();
         mock.expect_status().returning(move |_| {
             return Ok(expected_status.clone());
         });
 
         // Mockを埋め込んだStatusServiceを生成
         let module = MediaStatusServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let status_service: Arc<dyn Service> = module.resolve();
 
@@ -84,9 +84,9 @@ mod test_create_media {
     async fn invalid_param() {
         // Mockを埋め込んだStatusServiceを生成
         // 実行されないのでmockは初期化は不要
-        let mock = MockMediaApi::default();
+        let mock = MockMediaRepository::default();
         let module = MediaStatusServiceContainer::builder()
-            .with_component_override::<dyn MediaApi>(Box::new(mock))
+            .with_component_override::<dyn MediaRepository>(Box::new(mock))
             .build();
         let status_service: Arc<dyn Service> = module.resolve();
 
