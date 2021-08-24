@@ -53,6 +53,17 @@ pub struct DataConnection {
 }
 
 impl DataConnection {
+    pub async fn try_create(
+        api: Arc<dyn DataApi>,
+        query: ConnectQuery,
+    ) -> Result<Self, error::Error> {
+        let result = api.connect(query).await?;
+        Ok(Self {
+            api,
+            data_connection_id: result.data_connection_id,
+        })
+    }
+
     pub async fn find(
         api: Arc<dyn DataApi>,
         data_connection_id: DataConnectionId,
@@ -72,5 +83,9 @@ impl DataConnection {
         data_connection_id: &DataConnectionId,
     ) -> Result<DataConnectionEventEnum, error::Error> {
         api.event(data_connection_id).await
+    }
+
+    pub fn data_connection_id(&self) -> &DataConnectionId {
+        &self.data_connection_id
     }
 }

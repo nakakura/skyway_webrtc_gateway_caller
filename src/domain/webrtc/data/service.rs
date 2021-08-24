@@ -4,8 +4,8 @@ use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::data::value_object::{
-    DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper, DataConnectionStatus,
-    DataId,
+    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper,
+    DataConnectionStatus, DataId,
 };
 use crate::error;
 
@@ -18,7 +18,7 @@ use mockall::automock;
 pub trait DataApi: Interface {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error>;
     async fn delete(&self, data_id: DataId) -> Result<DataId, error::Error>;
-    async fn connect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
+    async fn connect(&self, query: ConnectQuery) -> Result<DataConnectionIdWrapper, error::Error>;
     async fn disconnect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
     async fn status(
         &self,

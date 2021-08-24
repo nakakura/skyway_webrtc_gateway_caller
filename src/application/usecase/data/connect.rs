@@ -7,6 +7,9 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::value_object::{
+    ConnectQuery, DataConnection, DataConnectionIdWrapper,
+};
 use crate::error;
 
 // Serviceの具象Struct
@@ -21,35 +24,35 @@ pub(crate) struct ConnectService {
 #[async_trait]
 impl Service for ConnectService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.connect(params).await?;
-        Ok(DataResponseMessageBodyEnum::Connect(param).create_response_message())
+        let query = serde_json::from_value::<ConnectQuery>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+        let connection = DataConnection::try_create(self.api.clone(), query).await?;
+        let wrapper = DataConnectionIdWrapper {
+            data_connection_id: connection.data_connection_id().clone(),
+        };
+        Ok(DataResponseMessageBodyEnum::Connect(wrapper).create_response_message())
     }
 }
 
 #[cfg(test)]
 mod test_create_data {
-    use std::sync::Mutex;
-
-    use crate::error;
-    use once_cell::sync::Lazy;
-
+    use super::*;
     use crate::di::DataConnectServiceContainer;
     use crate::domain::webrtc::data::service::MockDataApi;
     use crate::domain::webrtc::data::value_object::{DataConnectionId, DataConnectionIdWrapper};
-
-    use super::*;
-
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+    use crate::domain::webrtc::peer::value_object::{PeerId, Token};
+    use crate::error;
 
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
-        // 期待値を生成
         let data_connection_id =
             DataConnectionId::try_create("dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
+
+        // 期待値を生成
+        let expected = DataResponseMessageBodyEnum::Connect(DataConnectionIdWrapper {
+            data_connection_id: data_connection_id.clone(),
+        })
+        .create_response_message();
 
         // CONNECTに成功する場合のMockを作成
         let mut mock = MockDataApi::default();
@@ -66,52 +69,27 @@ mod test_create_data {
         let connect_service: Arc<dyn Service> = module.resolve();
 
         // 引数を生成
-        let message = r#"{{
-            "peer_id": "peer_id",
-            "token": "pt-9749250e-d157-4f80-9ee2-359ce8524308",
-            "options": {{
-                "metadata": "metadata",
-                "serialization": "BINARY",
-                "dcInit": {{
-                    "ordered": true,
-                    "maxPacketLifeTime": 0,
-                    "maxRetransmits": 0,
-                    "negotiated": true,
-                    "id": 0
-                }}
-            }},
-            "target_id": "ID_BAR",
-            "params": {{
-                "data_id": "da-50a32bab-b3d9-4913-8e20-f79c90a6a211"
-            }},
-            "redirect_params": {{
-                "ip_v4": "127.0.0.1",
-                "port": 10001
-            }}
-        }}"#;
+        let message = ConnectQuery {
+            peer_id: PeerId("peer_id".into()),
+            token: Token::try_create("pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap(),
+            options: None,
+            target_id: PeerId("target_id".into()),
+            params: None,
+            redirect_params: None,
+        };
         let message = serde_json::to_value(message).unwrap();
 
         //実行
-        let result =
-            crate::application::usecase::service::execute_service(connect_service, message).await;
+        let result = connect_service.execute(message).await.unwrap();
 
         // evaluate
-        assert_eq!(serde_json::to_string(&result).unwrap(), "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"CONNECT\",\"data_connection_id\":\"dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c\"}}");
+        assert_eq!(result, expected);
     }
 
     #[tokio::test]
-    async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
-        // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
-
-        // socketの生成に成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
-        mock.expect_connect()
-            .returning(move |_| Err(error::Error::create_local_error("error")));
+    async fn invalid_params() {
+        // このMockは呼ばれないので、初期化の必要はない
+        let mock = MockDataApi::default();
 
         // Mockを埋め込んだServiceを生成
         let module = DataConnectServiceContainer::builder()
@@ -119,14 +97,14 @@ mod test_create_data {
             .build();
         let connect_service: Arc<dyn Service> = module.resolve();
 
-        // execute
-        let result = crate::application::usecase::service::execute_service(
-            connect_service,
-            serde_json::Value::Null,
-        )
-        .await;
+        // 間違った値で実行
+        let result = connect_service.execute(serde_json::Value::Bool(true)).await;
 
-        // evaluate
-        assert_eq!(result, expected);
+        // 削除済みの場合エラーが帰る
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
     }
 }
