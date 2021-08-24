@@ -5,8 +5,8 @@ use skyway_webrtc_gateway_api::media;
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::media::service::MediaApi;
 use crate::domain::webrtc::media::value_object::{
-    AnswerQuery, AnswerResponse, AnswerResult, CallQuery, MediaConnectionEventEnum,
-    MediaConnectionId, MediaConnectionIdWrapper, MediaConnectionStatus, MediaId, RtcpId,
+    AnswerQuery, AnswerResponse, AnswerResult, CallQuery, CallResponse, MediaConnectionEventEnum,
+    MediaConnectionId, MediaConnectionStatus, MediaId, RtcpId,
 };
 use crate::error;
 
@@ -40,8 +40,8 @@ impl MediaApi for MediaApiImpl {
         media::delete_rtcp(rtcp_id).await
     }
 
-    async fn call(&self, call_query: CallQuery) -> Result<MediaConnectionIdWrapper, error::Error> {
-        Ok(media::call(&call_query).await?.params)
+    async fn call(&self, call_query: CallQuery) -> Result<CallResponse, error::Error> {
+        media::call(&call_query).await
     }
 
     async fn answer(

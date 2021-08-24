@@ -7,7 +7,9 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::service::MediaApi;
-use crate::domain::webrtc::media::value_object::{CallQuery, MediaConnection};
+use crate::domain::webrtc::media::value_object::{
+    CallQuery, MediaConnection, MediaConnectionIdWrapper,
+};
 use crate::error;
 
 // Serviceの具象Struct
@@ -25,7 +27,10 @@ impl Service for CallService {
         let call_query = serde_json::from_value::<CallQuery>(params)
             .map_err(|e| error::Error::SerdeError { error: e })?;
         let result = MediaConnection::try_create(self.api.clone(), call_query).await?;
-        Ok(MediaResponseMessageBodyEnum::Call(result).create_response_message())
+        let wrapper = MediaConnectionIdWrapper {
+            media_connection_id: result.params.media_connection_id,
+        };
+        Ok(MediaResponseMessageBodyEnum::Call(wrapper).create_response_message())
     }
 }
 
@@ -34,7 +39,9 @@ mod test_create_media {
     use super::*;
     use crate::di::MediaCallServiceContainer;
     use crate::domain::webrtc::media::service::MockMediaApi;
-    use crate::domain::webrtc::media::value_object::{MediaConnectionId, MediaConnectionIdWrapper};
+    use crate::domain::webrtc::media::value_object::{
+        CallResponse, MediaConnectionId, MediaConnectionIdWrapper,
+    };
     use crate::domain::webrtc::peer::value_object::{PeerId, Token};
 
     #[tokio::test]
@@ -50,8 +57,11 @@ mod test_create_media {
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
         mock.expect_call().returning(move |_query| {
-            return Ok(MediaConnectionIdWrapper {
-                media_connection_id: media_connection_id.clone(),
+            return Ok(CallResponse {
+                command_type: "CALL".to_string(),
+                params: MediaConnectionIdWrapper {
+                    media_connection_id: media_connection_id.clone(),
+                },
             });
         });
 

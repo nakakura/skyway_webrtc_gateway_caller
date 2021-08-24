@@ -123,7 +123,7 @@ impl MediaConnection {
     pub async fn try_create(
         api: Arc<dyn MediaApi>,
         query: CallQuery,
-    ) -> Result<MediaConnectionIdWrapper, error::Error> {
+    ) -> Result<CallResponse, error::Error> {
         api.call(query).await
     }
 
