@@ -54,10 +54,10 @@ impl DataConnection {
         api: Arc<dyn DataApi>,
         query: ConnectQuery,
     ) -> Result<Self, error::Error> {
-        let result = api.connect(query).await?;
+        let data_connection_id = api.connect(query).await?;
         Ok(Self {
             api,
-            data_connection_id: result.data_connection_id,
+            data_connection_id,
         })
     }
 

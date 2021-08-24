@@ -56,11 +56,8 @@ mod test_create_data {
 
         // CONNECTに成功する場合のMockを作成
         let mut mock = MockDataApi::default();
-        mock.expect_connect().returning(move |_| {
-            return Ok(DataConnectionIdWrapper {
-                data_connection_id: data_connection_id.clone(),
-            });
-        });
+        mock.expect_connect()
+            .returning(move |_| Ok(data_connection_id.clone()));
 
         // Mockを埋め込んだServiceを生成
         let module = DataConnectServiceContainer::builder()

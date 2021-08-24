@@ -6,8 +6,7 @@ use skyway_webrtc_gateway_api::data::{DataConnectionStatus, RedirectDataParams};
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::data::service::DataApi;
 use crate::domain::webrtc::data::value_object::{
-    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper, DataId,
-    RedirectDataResponse,
+    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataId, RedirectDataResponse,
 };
 use crate::error;
 
@@ -33,12 +32,8 @@ impl DataApi for DataApiImpl {
         data::close_data_socket(data_id).await
     }
 
-    async fn connect(&self, query: ConnectQuery) -> Result<DataConnectionIdWrapper, error::Error> {
-        data::connect(query)
-            .await
-            .map(|id| DataConnectionIdWrapper {
-                data_connection_id: id,
-            })
+    async fn connect(&self, query: ConnectQuery) -> Result<DataConnectionId, error::Error> {
+        data::connect(query).await
     }
 
     async fn disconnect(&self, data_connection_id: &DataConnectionId) -> Result<(), error::Error> {
