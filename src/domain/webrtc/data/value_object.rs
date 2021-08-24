@@ -8,7 +8,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::webrtc::common::value_object::{SerializableSocket, SocketInfo};
-use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
 
 /// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
@@ -22,12 +22,12 @@ pub struct DataSocket(pub(crate) SocketInfo<DataId>);
 
 //　これらの各メソッドは、application::data内のUnit Testで間接的にテストされている
 impl DataSocket {
-    pub async fn try_create(api: Arc<dyn DataApi>) -> Result<Self, error::Error> {
+    pub async fn try_create(api: Arc<dyn DataRepository>) -> Result<Self, error::Error> {
         let socket = api.create().await?;
         Ok(DataSocket(socket))
     }
 
-    pub async fn try_delete(api: Arc<dyn DataApi>, data_id: &DataId) -> Result<(), error::Error> {
+    pub async fn try_delete(api: Arc<dyn DataRepository>, data_id: &DataId) -> Result<(), error::Error> {
         api.delete(data_id).await
     }
 
@@ -45,13 +45,13 @@ impl DataSocket {
 }
 
 pub struct DataConnection {
-    api: Arc<dyn DataApi>,
+    api: Arc<dyn DataRepository>,
     data_connection_id: DataConnectionId,
 }
 
 impl DataConnection {
     pub async fn try_create(
-        api: Arc<dyn DataApi>,
+        api: Arc<dyn DataRepository>,
         query: ConnectQuery,
     ) -> Result<Self, error::Error> {
         let data_connection_id = api.connect(query).await?;
@@ -62,14 +62,14 @@ impl DataConnection {
     }
 
     pub async fn try_delete(
-        api: Arc<dyn DataApi>,
+        api: Arc<dyn DataRepository>,
         data_connection_id: &DataConnectionId,
     ) -> Result<(), error::Error> {
         api.disconnect(data_connection_id).await
     }
 
     pub async fn try_redirect(
-        api: Arc<dyn DataApi>,
+        api: Arc<dyn DataRepository>,
         data_connection_id: &DataConnectionId,
         redirect_data_params: &RedirectDataParams,
     ) -> Result<RedirectDataResponse, error::Error> {
@@ -77,7 +77,7 @@ impl DataConnection {
     }
 
     pub async fn find(
-        api: Arc<dyn DataApi>,
+        api: Arc<dyn DataRepository>,
         data_connection_id: DataConnectionId,
     ) -> Result<(Self, DataConnectionStatus), error::Error> {
         let status = api.status(&data_connection_id).await?;
@@ -91,7 +91,7 @@ impl DataConnection {
     }
 
     pub async fn try_event(
-        api: Arc<dyn DataApi>,
+        api: Arc<dyn DataRepository>,
         data_connection_id: &DataConnectionId,
     ) -> Result<DataConnectionEventEnum, error::Error> {
         api.event(data_connection_id).await

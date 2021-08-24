@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::{
     DataConnection, DataConnectionId, DataConnectionIdWrapper,
 };
@@ -20,7 +20,7 @@ use crate::prelude::DataConnectionEventEnum;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn DataApi>,
+    api: Arc<dyn DataRepository>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }
@@ -93,7 +93,7 @@ mod test_data_event {
 
     use super::*;
     use crate::di::DataEventServiceContainer;
-    use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
     use crate::prelude::*;
@@ -116,7 +116,7 @@ mod test_data_event {
 
         // 1回目はOPEN, 2回目はCLOSEイベントを返すMockを作る
         let mut counter = 0;
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_event().returning(move |_| {
             if counter == 0 {
                 counter += 1;
@@ -137,7 +137,7 @@ mod test_data_event {
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataEventServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
@@ -184,7 +184,7 @@ mod test_data_event {
             DataConnectionId::try_create("dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
 
         // 1回目はOPEN, 2回目はCLOSEイベントを返すMockを作る
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_event()
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
@@ -193,7 +193,7 @@ mod test_data_event {
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataEventServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
 
@@ -230,7 +230,7 @@ mod test_data_event {
             DataConnectionId::try_create("dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
 
         // 1回目はOPEN, 2回目はCLOSEイベントを返すMockを作る
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_event()
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
@@ -239,7 +239,7 @@ mod test_data_event {
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataEventServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .with_component_override::<dyn ApplicationState>(Box::new(
                 ApplicationStateAlwaysFalseImpl {},
             ))

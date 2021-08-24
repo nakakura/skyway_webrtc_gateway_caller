@@ -8,7 +8,7 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
-use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::{
     DataConnectionId, DataIdWrapper, RedirectDataParams,
 };
@@ -29,7 +29,7 @@ struct RedirectParams {
 #[shaku(interface = Service)]
 pub(crate) struct RedirectService {
     #[shaku(inject)]
-    api: Arc<dyn DataApi>,
+    api: Arc<dyn DataRepository>,
 }
 
 #[async_trait]
@@ -59,7 +59,7 @@ mod test_redirect_data {
     use super::*;
     use crate::di::DataRedirectServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
-    use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::domain::webrtc::data::value_object::{DataId, RedirectDataResponse};
     use crate::error;
     use crate::prelude::{DataConnectionId, DataConnectionIdWrapper};
@@ -76,7 +76,7 @@ mod test_redirect_data {
         .create_response_message();
 
         // redirectに成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_redirect().returning(move |_, _| {
             Ok(RedirectDataResponse {
                 command_type: "RESPONSE".to_string(),
@@ -97,7 +97,7 @@ mod test_redirect_data {
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataRedirectServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let redirect_service: Arc<dyn Service> = module.resolve();
 
@@ -111,11 +111,11 @@ mod test_redirect_data {
     #[tokio::test]
     async fn invalid_params() {
         // このMockは呼ばれないので、初期化は必要ない
-        let mock = MockDataApi::default();
+        let mock = MockDataRepository::default();
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataRedirectServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let redirect_service: Arc<dyn Service> = module.resolve();
 

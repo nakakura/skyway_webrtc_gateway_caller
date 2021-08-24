@@ -4,7 +4,7 @@ use crate::application::usecase::data;
 use crate::application::usecase::media;
 use crate::application::usecase::peer;
 use crate::infra::state::ApplicationStateAlwaysTrueImpl;
-use crate::infra::webrtc::data::DataApiImpl;
+use crate::infra::webrtc::data::DataRepositoryImpl;
 use crate::infra::webrtc::media::MediaRepositoryImpl;
 use crate::infra::webrtc::peer::PeerRepositoryImpl;
 
@@ -41,49 +41,49 @@ module! {
 //========== Data Service ==========
 module! {
     pub(crate) DataCreateServiceContainer {
-        components = [data::create::CreateService, DataApiImpl],
+        components = [data::create::CreateService, DataRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) DataDeleteServiceContainer {
-        components = [data::delete::DeleteService, DataApiImpl],
+        components = [data::delete::DeleteService, DataRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) DataConnectServiceContainer {
-        components = [data::connect::ConnectService, DataApiImpl],
+        components = [data::connect::ConnectService, DataRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) DataDisconnectServiceContainer {
-        components = [data::disconnect::DisconnectService, DataApiImpl],
+        components = [data::disconnect::DisconnectService, DataRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) DataRedirectServiceContainer {
-        components = [data::redirect::RedirectService, DataApiImpl],
+        components = [data::redirect::RedirectService, DataRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) DataEventServiceContainer {
-        components = [data::event::EventService, DataApiImpl, ApplicationStateAlwaysTrueImpl],
+        components = [data::event::EventService, DataRepositoryImpl, ApplicationStateAlwaysTrueImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) DataStatusServiceContainer {
-        components = [data::status::StatusService, DataApiImpl],
+        components = [data::status::StatusService, DataRepositoryImpl],
         providers = []
     }
 }

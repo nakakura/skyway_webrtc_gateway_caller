@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::{DataConnection, DataConnectionIdWrapper};
 use crate::error;
 
@@ -16,7 +16,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct StatusService {
     #[shaku(inject)]
-    api: Arc<dyn DataApi>,
+    api: Arc<dyn DataRepository>,
 }
 
 impl StatusService {}
@@ -37,7 +37,7 @@ impl Service for StatusService {
 mod test_create_data {
     use super::*;
     use crate::di::DataStatusServiceContainer;
-    use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::domain::webrtc::data::value_object::DataConnectionStatus;
     use skyway_webrtc_gateway_api::data::DataConnectionId;
 
@@ -58,12 +58,12 @@ mod test_create_data {
             DataResponseMessageBodyEnum::Status(status.clone()).create_response_message();
 
         // statusの取得に成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_status().returning(move |_| Ok(status.clone()));
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataStatusServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let status_service: Arc<dyn Service> = module.resolve();
 
@@ -86,11 +86,11 @@ mod test_create_data {
     #[tokio::test]
     async fn invalid_param() {
         // このmockは呼ばれることはないので、初期化は必要ない
-        let mock = MockDataApi::default();
+        let mock = MockDataRepository::default();
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataStatusServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let status_service: Arc<dyn Service> = module.resolve();
 

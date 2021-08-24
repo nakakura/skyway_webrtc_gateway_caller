@@ -4,7 +4,7 @@ use skyway_webrtc_gateway_api::data;
 use skyway_webrtc_gateway_api::data::{DataConnectionStatus, RedirectDataParams};
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::{
     ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataId, RedirectDataResponse,
 };
@@ -12,18 +12,18 @@ use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
 #[derive(Component)]
-#[shaku(interface = DataApi)]
-pub(crate) struct DataApiImpl;
+#[shaku(interface = DataRepository)]
+pub(crate) struct DataRepositoryImpl;
 
-impl Default for DataApiImpl {
+impl Default for DataRepositoryImpl {
     fn default() -> Self {
-        DataApiImpl {}
+        DataRepositoryImpl {}
     }
 }
 
 // FIXME: シンプルなので単体テストはしていない。結合試験のみ
 #[async_trait]
-impl DataApi for DataApiImpl {
+impl DataRepository for DataRepositoryImpl {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error> {
         data::open_data_socket().await
     }

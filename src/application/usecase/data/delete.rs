@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::{DataIdWrapper, DataSocket};
 use crate::error;
 
@@ -16,7 +16,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteService {
     #[shaku(inject)]
-    api: Arc<dyn DataApi>,
+    api: Arc<dyn DataRepository>,
 }
 
 #[async_trait]
@@ -39,7 +39,7 @@ mod test_create_data {
     use super::*;
     use crate::di::DataDeleteServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
-    use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::domain::webrtc::data::value_object::DataId;
 
     #[tokio::test]
@@ -53,7 +53,7 @@ mod test_create_data {
         .create_response_message();
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_delete().returning(move |_data_id| {
             // 削除に成功した場合、削除対象のDataIdが帰る
             return Ok(());
@@ -61,7 +61,7 @@ mod test_create_data {
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataDeleteServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let delete_service: Arc<dyn Service> = module.resolve();
 
@@ -83,12 +83,12 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // socketの生成に成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
+        let mut mock = MockDataRepository::default();
         mock.expect_delete().returning(move |_data_id| Ok(()));
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataDeleteServiceContainer::builder()
-            .with_component_override::<dyn DataApi>(Box::new(mock))
+            .with_component_override::<dyn DataRepository>(Box::new(mock))
             .build();
         let delete_service: Arc<dyn Service> = module.resolve();
 

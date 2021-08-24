@@ -14,7 +14,7 @@ use mockall::automock;
 /// /data APIに対応する機能を定義する
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait DataApi: Interface {
+pub trait DataRepository: Interface {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error>;
     async fn delete(&self, data_id: &DataId) -> Result<(), error::Error>;
     async fn connect(&self, query: ConnectQuery) -> Result<DataConnectionId, error::Error>;
