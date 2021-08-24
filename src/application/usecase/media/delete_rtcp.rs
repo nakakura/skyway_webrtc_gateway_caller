@@ -23,11 +23,12 @@ pub(crate) struct DeleteRtcpService {
 impl Service for DeleteRtcpService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let rtcp_id = serde_json::from_value::<RtcpIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+            .map_err(|e| error::Error::SerdeError { error: e })?
+            .rtcp_id;
 
-        let param = RtcpSocket::try_delete(self.api.clone(), rtcp_id.rtcp_id).await?;
+        let _ = RtcpSocket::try_delete(self.api.clone(), &rtcp_id).await?;
         Ok(
-            MediaResponseMessageBodyEnum::RtcpDelete(RtcpIdWrapper { rtcp_id: param })
+            MediaResponseMessageBodyEnum::RtcpDelete(RtcpIdWrapper { rtcp_id })
                 .create_response_message(),
         )
     }
@@ -52,9 +53,7 @@ mod test_delete_media {
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
-        mock.expect_delete_rtcp().returning(move |_| {
-            return Ok(rtcp_id.clone());
-        });
+        mock.expect_delete_rtcp().returning(move |_| Ok(()));
 
         // Mockを埋め込んだEventServiceを生成
         let module = MediaRtcpDeleteServiceContainer::builder()
@@ -64,7 +63,7 @@ mod test_delete_media {
 
         // execute
         let param = serde_json::to_value(RtcpIdWrapper {
-            rtcp_id: RtcpId::try_create("rc-970f2e5d-4da0-43e7-92b6-796678c104ad").unwrap(),
+            rtcp_id: rtcp_id.clone(),
         })
         .unwrap();
         let result = delete_service.execute(param).await.unwrap();

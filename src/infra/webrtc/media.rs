@@ -36,9 +36,8 @@ impl MediaApi for MediaApiImpl {
         media::open_rtcp_socket().await
     }
 
-    async fn delete_rtcp(&self, rtcp_id: RtcpId) -> Result<RtcpId, error::Error> {
-        let _ = media::delete_rtcp(&rtcp_id).await?;
-        Ok(rtcp_id)
+    async fn delete_rtcp(&self, rtcp_id: &RtcpId) -> Result<(), error::Error> {
+        media::delete_rtcp(rtcp_id).await
     }
 
     async fn call(&self, call_query: CallQuery) -> Result<MediaConnectionIdWrapper, error::Error> {

@@ -82,10 +82,7 @@ impl RtcpSocket {
         Ok(RtcpSocket(socket))
     }
 
-    pub async fn try_delete(
-        api: Arc<dyn MediaApi>,
-        rtcp_id: RtcpId,
-    ) -> Result<RtcpId, error::Error> {
+    pub async fn try_delete(api: Arc<dyn MediaApi>, rtcp_id: &RtcpId) -> Result<(), error::Error> {
         api.delete_rtcp(rtcp_id).await
     }
 
