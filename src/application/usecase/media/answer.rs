@@ -8,7 +8,9 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::service::MediaApi;
-use crate::domain::webrtc::media::value_object::{AnswerQuery, MediaConnection, MediaConnectionId};
+use crate::domain::webrtc::media::value_object::{
+    AnswerQuery, AnswerResponseParams, AnswerResult, MediaConnection, MediaConnectionId,
+};
 use crate::error;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,13 +33,31 @@ impl Service for AnswerService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
         let answer_parameters = serde_json::from_value::<AnswerParameters>(params)
             .map_err(|e| error::Error::SerdeError { error: e })?;
-        let (media_connection, status) =
-            MediaConnection::find(self.api.clone(), answer_parameters.media_connection_id).await?;
+        let (media_connection, status) = MediaConnection::find(
+            self.api.clone(),
+            answer_parameters.media_connection_id.clone(),
+        )
+        .await?;
         if !status.open {
             // MediaConnectionが確立前の場合のみanswerメソッドを実行する
             let result = media_connection
-                .try_answer(answer_parameters.answer_query)
+                .try_answer(&answer_parameters.answer_query)
                 .await?;
+            let video_params = result.params.video_id;
+            let audio_params = result.params.audio_id;
+            let send_socket = if video_params.is_none() && audio_params.is_none() {
+                None
+            } else {
+                Some(AnswerResponseParams {
+                    video_id: video_params,
+                    audio_id: audio_params,
+                })
+            };
+            let result = AnswerResult {
+                media_connection_id: media_connection.media_connection_id().clone(),
+                send_sockets: send_socket,
+                recv_sockets: answer_parameters.answer_query.redirect_params,
+            };
             Ok(MediaResponseMessageBodyEnum::Answer(result).create_response_message())
         } else {
             // 確率後の場合はanswerは行わない
@@ -56,7 +76,7 @@ mod test_answer {
     use crate::di::MediaAnswerServiceContainer;
     use crate::domain::webrtc::media::service::MockMediaApi;
     use crate::domain::webrtc::media::value_object::{
-        AnswerResult, Constraints, MediaConnectionStatus,
+        AnswerResponse, AnswerResponseParams, AnswerResult, Constraints, MediaConnectionStatus,
     };
     use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::error;
@@ -77,15 +97,16 @@ mod test_answer {
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
-        mock.expect_answer()
-            .returning(move |media_connection_id, _query| {
-                let params = AnswerResult {
-                    media_connection_id: media_connection_id.clone(),
-                    send_sockets: None,
-                    recv_sockets: None,
-                };
-                return Ok(params);
-            });
+        mock.expect_answer().returning(move |_, _query| {
+            let response = AnswerResponse {
+                command_type: "ANSWER".to_string(),
+                params: AnswerResponseParams {
+                    video_id: None,
+                    audio_id: None,
+                },
+            };
+            return Ok(response);
+        });
         // MediaConnectionの生成にstatusも必要
         let expected_status = MediaConnectionStatus {
             metadata: "metadata".to_string(),

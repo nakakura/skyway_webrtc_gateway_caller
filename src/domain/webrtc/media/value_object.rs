@@ -141,7 +141,7 @@ impl MediaConnection {
         ))
     }
 
-    pub async fn try_answer(&self, query: AnswerQuery) -> Result<AnswerResult, error::Error> {
+    pub async fn try_answer(&self, query: &AnswerQuery) -> Result<AnswerResponse, error::Error> {
         self.api.answer(&self.media_connection_id, query).await
     }
 

@@ -3,7 +3,7 @@ use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::media::value_object::{
-    AnswerQuery, AnswerResult, CallQuery, CallResponse, MediaConnectionEventEnum,
+    AnswerQuery, AnswerResponse, CallQuery, CallResponse, MediaConnectionEventEnum,
     MediaConnectionId, MediaConnectionStatus, MediaId, RtcpId,
 };
 use crate::error;
@@ -23,8 +23,8 @@ pub trait MediaApi: Interface {
     async fn answer(
         &self,
         media_connection_id: &MediaConnectionId,
-        answer_query: AnswerQuery,
-    ) -> Result<AnswerResult, error::Error>;
+        answer_query: &AnswerQuery,
+    ) -> Result<AnswerResponse, error::Error>;
     async fn event(
         &self,
         media_connection_id: &MediaConnectionId,

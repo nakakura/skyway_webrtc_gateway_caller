@@ -5,7 +5,7 @@ use skyway_webrtc_gateway_api::media;
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::media::service::MediaApi;
 use crate::domain::webrtc::media::value_object::{
-    AnswerQuery, AnswerResponse, AnswerResult, CallQuery, CallResponse, MediaConnectionEventEnum,
+    AnswerQuery, AnswerResponse, CallQuery, CallResponse, MediaConnectionEventEnum,
     MediaConnectionId, MediaConnectionStatus, MediaId, RtcpId,
 };
 use crate::error;
@@ -47,15 +47,9 @@ impl MediaApi for MediaApiImpl {
     async fn answer(
         &self,
         media_connection_id: &MediaConnectionId,
-        answer_query: AnswerQuery,
-    ) -> Result<AnswerResult, error::Error> {
-        let result: AnswerResponse = media::answer(&media_connection_id, &answer_query).await?;
-        let answer_result = AnswerResult {
-            media_connection_id: media_connection_id.clone(),
-            send_sockets: Some(result.params.clone()),
-            recv_sockets: answer_query.redirect_params,
-        };
-        Ok(answer_result)
+        answer_query: &AnswerQuery,
+    ) -> Result<AnswerResponse, error::Error> {
+        media::answer(media_connection_id, answer_query).await
     }
 
     async fn event(
