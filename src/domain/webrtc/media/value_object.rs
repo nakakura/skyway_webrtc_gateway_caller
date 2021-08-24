@@ -54,8 +54,8 @@ impl MediaSocket {
 
     pub async fn try_delete(
         api: Arc<dyn MediaApi>,
-        media_id: MediaId,
-    ) -> Result<MediaId, error::Error> {
+        media_id: &MediaId,
+    ) -> Result<(), error::Error> {
         api.delete_media(media_id).await
     }
 

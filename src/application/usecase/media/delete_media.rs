@@ -23,11 +23,12 @@ pub(crate) struct DeleteMediaService {
 #[async_trait]
 impl Service for DeleteMediaService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let media_id: MediaIdWrapper =
-            serde_json::from_value(params).map_err(|e| error::Error::SerdeError { error: e })?;
-        let param = MediaSocket::try_delete(self.api.clone(), media_id.media_id).await?;
+        let media_id = serde_json::from_value::<MediaIdWrapper>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?
+            .media_id;
+        let _ = MediaSocket::try_delete(self.api.clone(), &media_id).await?;
         Ok(
-            MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id: param })
+            MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id })
                 .create_response_message(),
         )
     }
@@ -55,7 +56,7 @@ mod test_delete_media {
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaApi::default();
         mock.expect_delete_media().returning(move |_| {
-            return Ok(media_id.clone());
+            return Ok(());
         });
 
         // Mockを埋め込んだEventServiceを生成
@@ -66,7 +67,7 @@ mod test_delete_media {
 
         // execute
         let media_id = MediaIdWrapper {
-            media_id: MediaId::try_create("vi-4d053831-5dc2-461b-a358-d062d6115216").unwrap(),
+            media_id: media_id.clone(),
         };
         let result = delete_service
             .execute(serde_json::to_value(&media_id).unwrap())
