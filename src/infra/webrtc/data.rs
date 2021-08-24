@@ -45,12 +45,8 @@ impl DataApi for DataApiImpl {
             })
     }
 
-    async fn disconnect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error> {
-        let data_connection_id = serde_json::from_value::<DataConnectionIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
-            .data_connection_id;
-        let _ = data::disconnect(&data_connection_id).await?;
-        Ok(DataConnectionIdWrapper { data_connection_id })
+    async fn disconnect(&self, data_connection_id: &DataConnectionId) -> Result<(), error::Error> {
+        data::disconnect(&data_connection_id).await
     }
 
     async fn status(

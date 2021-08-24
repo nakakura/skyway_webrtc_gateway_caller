@@ -19,7 +19,7 @@ pub trait DataApi: Interface {
     async fn create(&self) -> Result<SocketInfo<DataId>, error::Error>;
     async fn delete(&self, data_id: DataId) -> Result<DataId, error::Error>;
     async fn connect(&self, query: ConnectQuery) -> Result<DataConnectionIdWrapper, error::Error>;
-    async fn disconnect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
+    async fn disconnect(&self, data_connection_id: &DataConnectionId) -> Result<(), error::Error>;
     async fn status(
         &self,
         data_connection_id: &DataConnectionId,

@@ -64,6 +64,13 @@ impl DataConnection {
         })
     }
 
+    pub async fn try_delete(
+        api: Arc<dyn DataApi>,
+        data_connection_id: &DataConnectionId,
+    ) -> Result<(), error::Error> {
+        api.disconnect(data_connection_id).await
+    }
+
     pub async fn find(
         api: Arc<dyn DataApi>,
         data_connection_id: DataConnectionId,
