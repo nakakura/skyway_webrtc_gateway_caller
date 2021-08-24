@@ -14,7 +14,7 @@ use crate::error;
 /// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
 pub use skyway_webrtc_gateway_api::data::{
     ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper,
-    DataConnectionStatus, DataId, DataIdWrapper, RedirectDataResponse,
+    DataConnectionStatus, DataId, DataIdWrapper, RedirectDataParams, RedirectDataResponse,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -69,6 +69,14 @@ impl DataConnection {
         data_connection_id: &DataConnectionId,
     ) -> Result<(), error::Error> {
         api.disconnect(data_connection_id).await
+    }
+
+    pub async fn try_redirect(
+        api: Arc<dyn DataApi>,
+        data_connection_id: &DataConnectionId,
+        redirect_data_params: &RedirectDataParams,
+    ) -> Result<RedirectDataResponse, error::Error> {
+        api.redirect(data_connection_id, redirect_data_params).await
     }
 
     pub async fn find(

@@ -1,13 +1,27 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
 use crate::domain::webrtc::data::service::DataApi;
+use crate::domain::webrtc::data::value_object::{
+    DataConnectionId, DataIdWrapper, RedirectDataParams,
+};
 use crate::error;
+use crate::prelude::DataConnectionIdWrapper;
+
+// JSON Parse用の定義
+#[derive(Serialize, Deserialize)]
+struct RedirectParams {
+    pub data_connection_id: DataConnectionId,
+    pub feed_params: Option<DataIdWrapper>,
+    pub redirect_params: Option<SocketInfo<PhantomId>>,
+}
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -21,31 +35,37 @@ pub(crate) struct RedirectService {
 #[async_trait]
 impl Service for RedirectService {
     async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let param = self.api.redirect(params).await?;
-        Ok(DataResponseMessageBodyEnum::Redirect(param).create_response_message())
+        let params = serde_json::from_value::<RedirectParams>(params)
+            .map_err(|e| error::Error::SerdeError { error: e })?;
+        let data_connection_id = params.data_connection_id;
+        let redirect_data_params = RedirectDataParams {
+            feed_params: params.feed_params,
+            redirect_params: params.redirect_params,
+        };
+        let _ = self
+            .api
+            .redirect(&data_connection_id, &redirect_data_params)
+            .await?;
+        let wrapper = DataConnectionIdWrapper {
+            data_connection_id: data_connection_id,
+        };
+
+        Ok(DataResponseMessageBodyEnum::Redirect(wrapper).create_response_message())
     }
 }
 
 #[cfg(test)]
 mod test_redirect_data {
-    use std::sync::Mutex;
-
-    use crate::error;
-    use once_cell::sync::Lazy;
-
     use super::*;
     use crate::di::DataRedirectServiceContainer;
+    use crate::domain::webrtc::common::value_object::SerializableId;
     use crate::domain::webrtc::data::service::MockDataApi;
+    use crate::domain::webrtc::data::value_object::{DataId, RedirectDataResponse};
+    use crate::error;
     use crate::prelude::{DataConnectionId, DataConnectionIdWrapper};
-
-    // Lock to prevent tests from running simultaneously
-    static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
         // 期待値を生成
         let expected = DataResponseMessageBodyEnum::Redirect(DataConnectionIdWrapper {
             data_connection_id: DataConnectionId::try_create(
@@ -55,74 +75,60 @@ mod test_redirect_data {
         })
         .create_response_message();
 
-        // API Callのためのパラメータを生成
-        let parameter = r#"
-        {
-            "data_connection_id": "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
-            "feed_params": {
-                "data_id": "da-50a32bab-b3d9-4913-8e20-f79c90a6a211"
-            },
-            "redirect_params": {
-                "ip_v4": "127.0.0.1",
-                "port": 10001
-            }
-        }"#;
-        let parameter = serde_json::to_value(parameter).unwrap();
-
         // redirectに成功する場合のMockを作成
         let mut mock = MockDataApi::default();
-        mock.expect_redirect().returning(move |_| {
-            return Ok(DataConnectionIdWrapper {
-                data_connection_id: DataConnectionId::try_create(
-                    "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
-                )
-                .unwrap(),
-            }
-            .clone());
+        mock.expect_redirect().returning(move |_, _| {
+            Ok(RedirectDataResponse {
+                command_type: "RESPONSE".to_string(),
+                data_id: DataId::try_create("da-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap(),
+            })
         });
+
+        // API Callのためのパラメータを生成
+        let param = RedirectParams {
+            data_connection_id: DataConnectionId::try_create(
+                "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
+            )
+            .unwrap(),
+            feed_params: None,
+            redirect_params: None,
+        };
+        let param = serde_json::to_value(param).unwrap();
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataRedirectServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let create_service: Arc<dyn Service> = module.resolve();
+        let redirect_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result =
-            crate::application::usecase::service::execute_service(create_service, parameter).await;
+        let result = redirect_service.execute(param).await.unwrap();
 
         // evaluate
         assert_eq!(result, expected);
     }
 
     #[tokio::test]
-    async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = LOCKER.lock();
-
-        // 期待値を生成
-        let expected = serde_json::to_string(&error::Error::create_local_error("error")).unwrap();
-        let expected = ResponseMessage::Error(expected);
-
-        // socketの生成に成功する場合のMockを作成
-        let mut mock = MockDataApi::default();
-        mock.expect_redirect()
-            .returning(move |_| Err(error::Error::create_local_error("error")));
+    async fn invalid_params() {
+        // このMockは呼ばれないので、初期化は必要ない
+        let mock = MockDataApi::default();
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataRedirectServiceContainer::builder()
             .with_component_override::<dyn DataApi>(Box::new(mock))
             .build();
-        let create_service: Arc<dyn Service> = module.resolve();
+        let redirect_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = crate::application::usecase::service::execute_service(
-            create_service,
-            serde_json::Value::Bool(true),
-        )
-        .await;
+        let result = redirect_service
+            .execute(serde_json::Value::Bool(true))
+            .await;
 
         // evaluate
-        assert_eq!(result, expected);
+        if let Err(error::Error::SerdeError { error: _ }) = result {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
     }
 }

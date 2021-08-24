@@ -1,11 +1,10 @@
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
 use crate::domain::webrtc::data::value_object::{
     ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper,
-    DataConnectionStatus, DataId,
+    DataConnectionStatus, DataId, RedirectDataParams, RedirectDataResponse,
 };
 use crate::error;
 
@@ -24,7 +23,11 @@ pub trait DataApi: Interface {
         &self,
         data_connection_id: &DataConnectionId,
     ) -> Result<DataConnectionStatus, error::Error>;
-    async fn redirect(&self, params: Value) -> Result<DataConnectionIdWrapper, error::Error>;
+    async fn redirect(
+        &self,
+        data_conenction_id: &DataConnectionId,
+        redirect_data_params: &RedirectDataParams,
+    ) -> Result<RedirectDataResponse, error::Error>;
     async fn event(
         &self,
         data_connection_id: &DataConnectionId,
