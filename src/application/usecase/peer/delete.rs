@@ -6,7 +6,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::PeerRepositoryApi;
+use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
 use crate::{error, PeerInfo};
@@ -20,7 +20,7 @@ use mockall_double::double;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteService {
     #[shaku(inject)]
-    repository: Arc<dyn PeerRepositoryApi>,
+    repository: Arc<dyn PeerRepository>,
 }
 
 #[async_trait]

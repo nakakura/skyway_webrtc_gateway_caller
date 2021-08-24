@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::peer::repository::PeerRepositoryApi;
+use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
 use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
@@ -23,7 +23,7 @@ use mockall_double::double;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn PeerRepositoryApi>,
+    api: Arc<dyn PeerRepository>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }

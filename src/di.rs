@@ -6,34 +6,34 @@ use crate::application::usecase::peer;
 use crate::infra::state::ApplicationStateAlwaysTrueImpl;
 use crate::infra::webrtc::data::DataApiImpl;
 use crate::infra::webrtc::media::MediaApiImpl;
-use crate::infra::webrtc::peer::PeerRepositoryApiImpl;
+use crate::infra::webrtc::peer::PeerRepositoryImpl;
 
 //========== Peer Refactor Service ==========
 
 module! {
     pub(crate) PeerCreateServiceContainer {
-        components = [peer::create::CreateService, PeerRepositoryApiImpl],
+        components = [peer::create::CreateService, PeerRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) PeerStatusServiceContainer {
-        components = [peer::status::StatusService, PeerRepositoryApiImpl],
+        components = [peer::status::StatusService, PeerRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) PeerDeleteServiceContainer {
-        components = [peer::delete::DeleteService, PeerRepositoryApiImpl],
+        components = [peer::delete::DeleteService, PeerRepositoryImpl],
         providers = []
     }
 }
 
 module! {
     pub(crate) PeerEventServiceContainer {
-        components = [peer::event::EventService, PeerRepositoryApiImpl, ApplicationStateAlwaysTrueImpl],
+        components = [peer::event::EventService, PeerRepositoryImpl, ApplicationStateAlwaysTrueImpl],
         providers = []
     }
 }
