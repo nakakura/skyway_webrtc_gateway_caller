@@ -8,7 +8,7 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
+use crate::domain::webrtc::peer::repository::PeerRepositoryApi;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::value_object::Peer;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
@@ -20,7 +20,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct StatusService {
     #[shaku(inject)]
-    repository: Arc<dyn ReerRepositoryApi>,
+    repository: Arc<dyn PeerRepositoryApi>,
 }
 
 #[async_trait]

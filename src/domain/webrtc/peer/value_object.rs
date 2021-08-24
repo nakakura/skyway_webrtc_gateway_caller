@@ -27,17 +27,17 @@ pub struct CreatePeerParams {
     pub turn: bool,
 }
 
-use crate::domain::webrtc::peer::repository::ReerRepositoryApi;
+use crate::domain::webrtc::peer::repository::PeerRepositoryApi;
 
 pub struct Peer {
     peer_info: PeerInfo,
-    repository: Arc<dyn ReerRepositoryApi>,
+    repository: Arc<dyn PeerRepositoryApi>,
 }
 
 #[cfg_attr(test, automock)]
 impl Peer {
     pub async fn try_create(
-        repository: Arc<dyn ReerRepositoryApi>,
+        repository: Arc<dyn PeerRepositoryApi>,
         params: CreatePeerParams,
     ) -> Result<Self, error::Error> {
         let peer_info = repository.create(params).await?;
@@ -63,7 +63,7 @@ impl Peer {
     }
 
     pub async fn find(
-        repository: Arc<dyn ReerRepositoryApi>,
+        repository: Arc<dyn PeerRepositoryApi>,
         peer_info: PeerInfo,
     ) -> Result<(Self, PeerStatusMessage), error::Error> {
         let status = repository.status(&peer_info).await?;
@@ -96,7 +96,7 @@ mod test_peer_create {
 
     use once_cell::sync::Lazy;
 
-    use super::super::repository::MockReerRepositoryApi;
+    use super::super::repository::MockPeerRepositoryApi;
     use super::*;
 
     // Lock to prevent tests from running simultaneously
@@ -120,7 +120,7 @@ mod test_peer_create {
         };
 
         // 成功するパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -157,7 +157,7 @@ mod test_peer_create {
         };
 
         // Timeoutが帰ってきた後に成功するパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -201,7 +201,7 @@ mod test_peer_create {
         };
 
         // createに失敗するパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_create()
             .return_once(move |_| Err(error::Error::create_local_error("peer create error")));
 
@@ -234,7 +234,7 @@ mod test_peer_create {
         };
 
         // 間違ったイベントが帰ってくるパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -278,7 +278,7 @@ mod test_peer_create {
         };
 
         // 間違ったイベントが帰ってくるパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_create()
             .return_once(move |params: CreatePeerParams| {
                 PeerInfo::try_create(
@@ -307,7 +307,7 @@ mod test_peer_find {
 
     use once_cell::sync::Lazy;
 
-    use super::super::repository::MockReerRepositoryApi;
+    use super::super::repository::MockPeerRepositoryApi;
     use super::*;
 
     // Lock to prevent tests from running simultaneously
@@ -329,7 +329,7 @@ mod test_peer_find {
         };
 
         // 成功するパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         let status = expected.clone();
         api.expect_status().return_once(move |_| Ok(status.clone()));
 
@@ -359,7 +359,7 @@ mod test_peer_find {
 
         // statusの取得には成功するパターンのMockを生成
         // Peerが解放済みなので、disconnectedはtrueで返す
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         let status = expected.clone();
         api.expect_status().return_once(move |_| Ok(status.clone()));
 
@@ -380,7 +380,7 @@ mod test_peer_find {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // エラーを返すパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_status()
             .return_once(move |_| Err(error::Error::create_local_error("status api error")));
 
@@ -402,7 +402,7 @@ mod test_peer_delete {
 
     use once_cell::sync::Lazy;
 
-    use super::super::repository::MockReerRepositoryApi;
+    use super::super::repository::MockPeerRepositoryApi;
     use super::*;
 
     // Lock to prevent tests from running simultaneously
@@ -418,7 +418,7 @@ mod test_peer_delete {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 成功するパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_delete().return_once(move |_| Ok(()));
 
         // パラメータのセットアップ
@@ -440,7 +440,7 @@ mod test_peer_delete {
         let _lock = LOCKER.lock();
 
         // 失敗するパターンのMockを生成
-        let mut api = MockReerRepositoryApi::default();
+        let mut api = MockPeerRepositoryApi::default();
         api.expect_delete()
             .return_once(move |_| Err(error::Error::create_local_error("delete method failed")));
 
