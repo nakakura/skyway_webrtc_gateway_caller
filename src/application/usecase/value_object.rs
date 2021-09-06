@@ -10,8 +10,9 @@ use crate::domain::webrtc::media::entity::{
     MediaSocket, RtcpSocket,
 };
 use crate::domain::webrtc::media::entity::{MediaIdWrapper, RtcpIdWrapper};
-use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
-use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
+use crate::domain::webrtc::peer::entity::PeerEventEnum;
+use crate::domain::webrtc::peer::entity::PeerStatusMessage;
+use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
 
 #[allow(non_camel_case_types)]
@@ -75,7 +76,7 @@ pub enum ServiceParams {
 #[cfg(test)]
 mod service_params_deserialize {
     use crate::application::usecase::value_object::{PeerServiceParams, ServiceParams};
-    use crate::domain::webrtc::peer::value_object::CreatePeerParams;
+    use crate::domain::webrtc::peer::entity::CreatePeerParams;
     use crate::prelude::PeerInfo;
 
     #[test]

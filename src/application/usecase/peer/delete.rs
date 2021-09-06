@@ -6,10 +6,11 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer::value_object::Peer;
-use crate::{error, PeerInfo};
+use crate::domain::webrtc::peer::entity::Peer;
+use crate::domain::webrtc::peer::repository::PeerRepository;
+use crate::domain::webrtc::peer::value_object::PeerInfo;
+use crate::error;
 
 #[cfg(test)]
 use mockall_double::double;
@@ -44,8 +45,7 @@ impl Service for DeleteService {
 mod test_delete_peer {
     use super::*;
     use crate::di::PeerDeleteServiceContainer;
-    use crate::domain::webrtc::peer::value_object::PeerInfo;
-    use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
+    use crate::domain::webrtc::peer::entity::PeerStatusMessage;
     use crate::error;
 
     #[tokio::test]

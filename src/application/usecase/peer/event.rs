@@ -8,10 +8,11 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer::value_object::Peer;
-use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
+use crate::domain::webrtc::peer::entity::Peer;
+use crate::domain::webrtc::peer::entity::PeerEventEnum;
+use crate::domain::webrtc::peer::repository::PeerRepository;
+use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
 
 #[cfg(test)]
@@ -107,7 +108,7 @@ mod test_peer_event {
     use crate::di::PeerEventServiceContainer;
     use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
     use crate::domain::webrtc::data::value_object::DataConnectionId;
-    use crate::domain::webrtc::peer::value_object::{
+    use crate::domain::webrtc::peer::entity::{
         PeerCloseEvent, PeerConnectionEvent, PeerStatusMessage,
     };
     use crate::error;

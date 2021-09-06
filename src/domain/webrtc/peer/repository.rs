@@ -1,9 +1,8 @@
 use async_trait::async_trait;
 use shaku::Interface;
 
-use crate::domain::webrtc::peer::value_object::{
-    CreatePeerParams, PeerEventEnum, PeerInfo, PeerStatusMessage,
-};
+use crate::domain::webrtc::peer::entity::{CreatePeerParams, PeerEventEnum, PeerStatusMessage};
+use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
 
 #[cfg(test)]

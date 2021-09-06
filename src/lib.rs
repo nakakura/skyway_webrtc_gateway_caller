@@ -73,7 +73,8 @@ use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
 pub use application::usecase::value_object::{ResponseMessage, ServiceParams};
-pub use domain::webrtc::peer::value_object::{PeerEventEnum, PeerId, PeerInfo, Token};
+pub use domain::webrtc::peer::entity::PeerEventEnum;
+pub use domain::webrtc::peer::value_object::{PeerId, PeerInfo, Token};
 
 pub(crate) mod application;
 pub(crate) mod di;

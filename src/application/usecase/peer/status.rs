@@ -8,9 +8,9 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::peer::repository::PeerRepository;
 #[cfg_attr(test, double)]
-use crate::domain::webrtc::peer::value_object::Peer;
+use crate::domain::webrtc::peer::entity::Peer;
+use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
 
@@ -37,8 +37,7 @@ impl Service for StatusService {
 mod test_create_peer {
     use super::*;
     use crate::di::PeerStatusServiceContainer;
-    use crate::domain::webrtc::peer::value_object::PeerInfo;
-    use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
+    use crate::domain::webrtc::peer::entity::PeerStatusMessage;
 
     #[tokio::test]
     async fn success() {

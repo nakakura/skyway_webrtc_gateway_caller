@@ -2,10 +2,9 @@ use async_trait::async_trait;
 use shaku::Component;
 use skyway_webrtc_gateway_api::peer;
 
+use crate::domain::webrtc::peer::entity::{CreatePeerParams, PeerEventEnum, PeerStatusMessage};
 use crate::domain::webrtc::peer::repository::PeerRepository;
-use crate::domain::webrtc::peer::value_object::{
-    CreatePeerParams, PeerEventEnum, PeerInfo, PeerStatusMessage,
-};
+use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ
