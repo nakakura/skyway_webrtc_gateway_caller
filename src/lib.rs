@@ -140,7 +140,7 @@ async fn skyway_control_service_observe(
                 // 適宜event_txへsendされる
                 if let ResponseMessage::Success(message) = result {
                     if let Some((value, service)) =
-                        application::usecase::value_object::event_factory(message)
+                        application::usecase::factory::event_factory(message)
                     {
                         // event_txをイベント監視スレッドにmoveし、監視を開始する
                         let tx = event_tx.clone();
