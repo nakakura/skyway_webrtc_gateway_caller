@@ -1,11 +1,7 @@
-use std::sync::Arc;
-
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
-use shaku::HasComponent;
 
-use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::value_object::{
     DataConnectionIdWrapper, DataConnectionStatus, DataSocket,
 };
@@ -123,93 +119,6 @@ mod service_params_deserialize {
         } else {
             assert!(false);
         }
-    }
-}
-
-fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) {
-    use crate::di::*;
-
-    match params {
-        PeerServiceParams::Create { params } => {
-            let module = PeerCreateServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        PeerServiceParams::Status { params } => {
-            let module = PeerStatusServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        PeerServiceParams::Delete { params } => {
-            let module = PeerDeleteServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-    }
-}
-
-fn data_service_factory(params: DataServiceParams) -> (Value, Arc<dyn Service>) {
-    use crate::di::*;
-
-    match params {
-        DataServiceParams::Create { params } => {
-            let module = DataCreateServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        DataServiceParams::Delete { params } => {
-            let module = DataDeleteServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        DataServiceParams::Connect { params } => {
-            let module = DataConnectServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        DataServiceParams::Redirect { params } => {
-            let module = DataRedirectServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        _ => unreachable!(),
-    }
-}
-
-fn media_service_factory(params: MediaServiceParams) -> (Value, Arc<dyn Service>) {
-    use crate::di::*;
-
-    match params {
-        MediaServiceParams::ContentCreate { params } => {
-            let module = MediaContentCreateServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        MediaServiceParams::RtcpCreate { params: _ } => {
-            let module = MediaRtcpCreateServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (Value::Null, service)
-        }
-        MediaServiceParams::Call { params } => {
-            let module = MediaCallServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        MediaServiceParams::Answer { params } => {
-            let module = MediaAnswerServiceContainer::builder().build();
-            let service: Arc<dyn Service> = module.resolve();
-            (params, service)
-        }
-        _ => unreachable!(),
-    }
-}
-
-// FIXME: no unit test
-pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>) {
-    match params {
-        ServiceParams::Peer(params) => peer_service_factory(params),
-        ServiceParams::Data(params) => data_service_factory(params),
-        ServiceParams::Media(params) => media_service_factory(params),
     }
 }
 
