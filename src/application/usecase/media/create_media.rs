@@ -7,8 +7,8 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::domain::webrtc::media::entity::MediaSocket;
 use crate::domain::webrtc::media::repository::MediaRepository;
-use crate::domain::webrtc::media::value_object::MediaSocket;
 use crate::error;
 
 // エンドユーザから渡されるJSONのparamsフィールドを構造化するためのStruct

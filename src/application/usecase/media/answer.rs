@@ -7,10 +7,11 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::repository::MediaRepository;
-use crate::domain::webrtc::media::value_object::{
-    AnswerQuery, AnswerResponseParams, AnswerResult, MediaConnection, MediaConnectionId,
+use crate::domain::webrtc::media::entity::{
+    AnswerQuery, AnswerResponseParams, AnswerResult, MediaConnection,
 };
+use crate::domain::webrtc::media::repository::MediaRepository;
+use crate::domain::webrtc::media::value_object::MediaConnectionId;
 use crate::error;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,10 +75,10 @@ impl Service for AnswerService {
 mod test_answer {
     use super::*;
     use crate::di::MediaAnswerServiceContainer;
-    use crate::domain::webrtc::media::repository::MockMediaRepository;
-    use crate::domain::webrtc::media::value_object::{
+    use crate::domain::webrtc::media::entity::{
         AnswerResponse, AnswerResponseParams, AnswerResult, Constraints, MediaConnectionStatus,
     };
+    use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::error;
     use crate::prelude::MediaConnectionId;

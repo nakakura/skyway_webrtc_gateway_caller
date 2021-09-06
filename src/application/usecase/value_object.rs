@@ -5,11 +5,11 @@ use serde_json::Value;
 use crate::domain::webrtc::data::entity::{
     DataConnectionIdWrapper, DataConnectionStatus, DataSocket,
 };
-use crate::domain::webrtc::media::value_object::{
+use crate::domain::webrtc::media::entity::{
     AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaConnectionStatus,
     MediaSocket, RtcpSocket,
 };
-use crate::domain::webrtc::media::value_object::{MediaIdWrapper, RtcpIdWrapper};
+use crate::domain::webrtc::media::entity::{MediaIdWrapper, RtcpIdWrapper};
 use crate::domain::webrtc::peer::value_object::PeerStatusMessage;
 use crate::domain::webrtc::peer::value_object::{PeerEventEnum, PeerInfo};
 use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};

@@ -2,10 +2,11 @@ use async_trait::async_trait;
 use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::media::value_object::{
+use crate::domain::webrtc::media::entity::{
     AnswerQuery, AnswerResponse, CallQuery, CallResponse, MediaConnectionEventEnum,
-    MediaConnectionId, MediaConnectionStatus, MediaId, RtcpId,
+    MediaConnectionStatus,
 };
+use crate::domain::webrtc::media::value_object::{MediaConnectionId, MediaId, RtcpId};
 use crate::error;
 
 #[cfg(test)]

@@ -8,10 +8,9 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
+use crate::domain::webrtc::media::entity::{MediaConnection, MediaConnectionEventEnum};
 use crate::domain::webrtc::media::repository::MediaRepository;
-use crate::domain::webrtc::media::value_object::{
-    MediaConnection, MediaConnectionEventEnum, MediaConnectionId,
-};
+use crate::domain::webrtc::media::value_object::MediaConnectionId;
 use crate::prelude::MediaConnectionIdWrapper;
 
 // Serviceの具象Struct
@@ -89,10 +88,8 @@ impl EventListener for EventService {
 mod test_delete_media {
     use super::*;
     use crate::di::MediaEventServiceContainer;
+    use crate::domain::webrtc::media::entity::MediaConnectionStatus;
     use crate::domain::webrtc::media::repository::MockMediaRepository;
-    use crate::domain::webrtc::media::value_object::{
-        MediaConnectionId, MediaConnectionIdWrapper, MediaConnectionStatus,
-    };
     use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 

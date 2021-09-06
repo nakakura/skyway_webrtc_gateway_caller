@@ -3,11 +3,12 @@ use shaku::*;
 use skyway_webrtc_gateway_api::media;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::media::repository::MediaRepository;
-use crate::domain::webrtc::media::value_object::{
+use crate::domain::webrtc::media::entity::{
     AnswerQuery, AnswerResponse, CallQuery, CallResponse, MediaConnectionEventEnum,
-    MediaConnectionId, MediaConnectionStatus, MediaId, RtcpId,
+    MediaConnectionStatus,
 };
+use crate::domain::webrtc::media::repository::MediaRepository;
+use crate::domain::webrtc::media::value_object::{MediaConnectionId, MediaId, RtcpId};
 use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ

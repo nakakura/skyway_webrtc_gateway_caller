@@ -6,10 +6,8 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::domain::webrtc::media::entity::{CallQuery, MediaConnection, MediaConnectionIdWrapper};
 use crate::domain::webrtc::media::repository::MediaRepository;
-use crate::domain::webrtc::media::value_object::{
-    CallQuery, MediaConnection, MediaConnectionIdWrapper,
-};
 use crate::error;
 
 // Serviceの具象Struct
@@ -38,10 +36,9 @@ impl Service for CallService {
 mod test_create_media {
     use super::*;
     use crate::di::MediaCallServiceContainer;
+    use crate::domain::webrtc::media::entity::{CallResponse, MediaConnectionIdWrapper};
     use crate::domain::webrtc::media::repository::MockMediaRepository;
-    use crate::domain::webrtc::media::value_object::{
-        CallResponse, MediaConnectionId, MediaConnectionIdWrapper,
-    };
+    use crate::domain::webrtc::media::value_object::MediaConnectionId;
     use crate::domain::webrtc::peer::value_object::{PeerId, Token};
 
     #[tokio::test]

@@ -6,8 +6,8 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::domain::webrtc::media::entity::RtcpSocket;
 use crate::domain::webrtc::media::repository::MediaRepository;
-use crate::domain::webrtc::media::value_object::RtcpSocket;
 use crate::error;
 
 // Serviceの具象Struct
