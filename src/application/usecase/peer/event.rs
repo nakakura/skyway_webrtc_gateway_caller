@@ -105,7 +105,8 @@ mod test_peer_event {
 
     use super::*;
     use crate::di::PeerEventServiceContainer;
-    use crate::domain::webrtc::data::value_object::*;
+    use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
+    use crate::domain::webrtc::data::value_object::DataConnectionId;
     use crate::domain::webrtc::peer::value_object::{
         PeerCloseEvent, PeerConnectionEvent, PeerStatusMessage,
     };

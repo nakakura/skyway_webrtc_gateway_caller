@@ -8,10 +8,9 @@ use tokio::sync::mpsc;
 use crate::application::usecase::service::EventListener;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
+use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
 use crate::domain::webrtc::data::repository::DataRepository;
-use crate::domain::webrtc::data::value_object::{
-    DataConnection, DataConnectionId, DataConnectionIdWrapper,
-};
+use crate::domain::webrtc::data::value_object::DataConnectionId;
 use crate::prelude::DataConnectionEventEnum;
 
 // Serviceの具象Struct

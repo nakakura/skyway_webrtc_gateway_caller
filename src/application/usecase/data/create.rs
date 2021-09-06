@@ -6,8 +6,8 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::domain::webrtc::data::entity::DataSocket;
 use crate::domain::webrtc::data::repository::DataRepository;
-use crate::domain::webrtc::data::value_object::DataSocket;
 use crate::error;
 
 // Serviceの具象Struct

@@ -2,10 +2,11 @@ use async_trait::async_trait;
 use shaku::Interface;
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::data::value_object::{
-    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionStatus, DataId,
-    RedirectDataParams, RedirectDataResponse,
+use crate::domain::webrtc::data::entity::{
+    ConnectQuery, DataConnectionEventEnum, DataConnectionStatus, RedirectDataParams,
+    RedirectDataResponse,
 };
+use crate::domain::webrtc::data::value_object::{DataConnectionId, DataId};
 use crate::error;
 
 #[cfg(test)]

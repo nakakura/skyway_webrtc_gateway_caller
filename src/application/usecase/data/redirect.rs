@@ -8,10 +8,9 @@ use shaku::*;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
+use crate::domain::webrtc::data::entity::{DataIdWrapper, RedirectDataParams};
 use crate::domain::webrtc::data::repository::DataRepository;
-use crate::domain::webrtc::data::value_object::{
-    DataConnectionId, DataIdWrapper, RedirectDataParams,
-};
+use crate::domain::webrtc::data::value_object::DataConnectionId;
 use crate::error;
 use crate::prelude::DataConnectionIdWrapper;
 
@@ -59,10 +58,10 @@ mod test_redirect_data {
     use super::*;
     use crate::di::DataRedirectServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
+    use crate::domain::webrtc::data::entity::{DataConnectionIdWrapper, RedirectDataResponse};
     use crate::domain::webrtc::data::repository::MockDataRepository;
-    use crate::domain::webrtc::data::value_object::{DataId, RedirectDataResponse};
+    use crate::domain::webrtc::data::value_object::DataId;
     use crate::error;
-    use crate::prelude::{DataConnectionId, DataConnectionIdWrapper};
 
     #[tokio::test]
     async fn success() {

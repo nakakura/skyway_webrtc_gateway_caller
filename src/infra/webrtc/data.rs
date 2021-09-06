@@ -4,10 +4,11 @@ use skyway_webrtc_gateway_api::data;
 use skyway_webrtc_gateway_api::data::{DataConnectionStatus, RedirectDataParams};
 
 use crate::domain::webrtc::common::value_object::SocketInfo;
-use crate::domain::webrtc::data::repository::DataRepository;
-use crate::domain::webrtc::data::value_object::{
-    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataId, RedirectDataResponse,
+use crate::domain::webrtc::data::entity::{
+    ConnectQuery, DataConnectionEventEnum, RedirectDataResponse,
 };
+use crate::domain::webrtc::data::repository::DataRepository;
+use crate::domain::webrtc::data::value_object::{DataConnectionId, DataId};
 use crate::error;
 
 // skyway_webrtc_gateway_apiの関数の単純なラッパ

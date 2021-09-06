@@ -2,7 +2,7 @@ use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
-use crate::domain::webrtc::data::value_object::{
+use crate::domain::webrtc::data::entity::{
     DataConnectionIdWrapper, DataConnectionStatus, DataSocket,
 };
 use crate::domain::webrtc::media::value_object::{

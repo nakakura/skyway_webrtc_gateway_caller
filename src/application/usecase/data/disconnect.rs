@@ -6,8 +6,8 @@ use shaku::*;
 
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
 use crate::domain::webrtc::data::repository::DataRepository;
-use crate::domain::webrtc::data::value_object::{DataConnection, DataConnectionIdWrapper};
 use crate::error;
 
 // Serviceの具象Struct
@@ -40,7 +40,7 @@ mod test_create_data {
     use super::*;
     use crate::di::DataDisconnectServiceContainer;
     use crate::domain::webrtc::data::repository::MockDataRepository;
-    use crate::domain::webrtc::data::value_object::{DataConnectionId, DataConnectionIdWrapper};
+    use crate::domain::webrtc::data::value_object::DataConnectionId;
     use crate::error;
 
     #[tokio::test]
