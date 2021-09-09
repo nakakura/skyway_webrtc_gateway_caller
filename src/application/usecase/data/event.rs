@@ -5,8 +5,8 @@ use serde_json::Value;
 use shaku::*;
 use tokio::sync::mpsc;
 
+use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
 use crate::domain::webrtc::data::repository::DataRepository;
@@ -90,12 +90,13 @@ mod test_data_event {
 
     use once_cell::sync::Lazy;
 
-    use super::*;
     use crate::di::DataEventServiceContainer;
     use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
     use crate::prelude::*;
+
+    use super::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

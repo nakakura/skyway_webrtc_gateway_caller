@@ -4,13 +4,14 @@ use serde::Serialize;
 use serde_json::Value;
 use shaku::HasComponent;
 
-use crate::application::dto::{DataServiceParams, MediaServiceParams, PeerServiceParams};
-use crate::application::dto::{Parameter, ServiceParams};
-use crate::application::usecase::service::{EventListener, Service};
-use crate::application::usecase::value_object::{
+use crate::application::dto::request_message::{
+    DataServiceParams, MediaServiceParams, Parameter, PeerServiceParams, ServiceParams,
+};
+use crate::application::dto::response_message::{
     DataResponseMessageBodyEnum, MediaResponseMessageBodyEnum, PeerResponseMessageBodyEnum,
     ResponseMessageBodyEnum,
 };
+use crate::application::usecase::service::{EventListener, Service};
 
 fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
     param: V,

@@ -1,5 +1,6 @@
 use tokio::sync::mpsc;
 
+use response_message::*;
 use rust_module::prelude::*;
 
 use crate::common::ControlMessage;
@@ -19,7 +20,7 @@ pub async fn create_media(
         }}"#,
         is_video
     );
-    let body = serde_json::from_str::<ServiceParams>(&body_json);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&body_json);
     // 処理を開始
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
@@ -43,7 +44,7 @@ pub async fn create_rtcp(message_tx: &mpsc::Sender<ControlMessage>, is_video: bo
         }}"#,
         is_video
     );
-    let body = serde_json::from_str::<ServiceParams>(&body_json);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&body_json);
     // 処理を開始
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
@@ -79,7 +80,7 @@ pub async fn call(
     };
 
     let json_message = serde_json::to_string(&paramter).unwrap();
-    let body = serde_json::from_str::<ServiceParams>(&json_message);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&json_message);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
@@ -123,7 +124,7 @@ pub async fn answer(
         },
     };
     let json_message = serde_json::to_string(&param).unwrap();
-    let body = serde_json::from_str::<ServiceParams>(&json_message);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&json_message);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;

@@ -1,6 +1,7 @@
 use serde::Serialize;
 use tokio::sync::mpsc;
 
+use response_message::*;
 use rust_module::prelude::*;
 
 use super::ControlMessage;
@@ -13,7 +14,7 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> DataSocke
         "params": ""
     }"#
     .to_string();
-    let body = serde_json::from_str::<ServiceParams>(&body_json);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&body_json);
     // 処理を開始
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
@@ -40,7 +41,7 @@ pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: Dat
         }}"#,
         data_id.as_str()
     );
-    let body = serde_json::from_str::<ServiceParams>(&body_json);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&body_json);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
@@ -72,7 +73,7 @@ pub async fn connect(
         params: query,
     };
     let body_json = serde_json::to_value(&message).unwrap();
-    let body = serde_json::from_value::<ServiceParams>(body_json).unwrap();
+    let body = serde_json::from_value::<request_message::ServiceParams>(body_json).unwrap();
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body)).await;
@@ -111,7 +112,7 @@ pub async fn redirect(
     };
 
     let body_json = serde_json::to_value(&message).unwrap();
-    let body = serde_json::from_value::<ServiceParams>(body_json).unwrap();
+    let body = serde_json::from_value::<request_message::ServiceParams>(body_json).unwrap();
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body)).await;
     match rx.await {

@@ -3,8 +3,8 @@ use serde_json::Value;
 use shaku::Interface;
 use tokio::sync::mpsc::Sender;
 
-use crate::application::dto::Parameter;
-use crate::application::usecase::value_object::ResponseMessage;
+use crate::application::dto::request_message::Parameter;
+use crate::application::dto::response_message::ResponseMessage;
 use crate::error;
 
 #[cfg(test)]

@@ -5,8 +5,8 @@ use serde_json::Value;
 use shaku::*;
 use tokio::sync::mpsc;
 
+use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::media::entity::{MediaConnection, MediaConnectionEventEnum};
 use crate::domain::webrtc::media::repository::MediaRepository;
@@ -86,12 +86,13 @@ impl EventListener for EventService {
 
 #[cfg(test)]
 mod test_delete_media {
-    use super::*;
     use crate::di::MediaEventServiceContainer;
     use crate::domain::webrtc::media::entity::MediaConnectionStatus;
     use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
+
+    use super::*;
 
     // eventはcloseが発火するか、stateがfalseを返すまで繰り返される
     // このケースはcloseが発火するまでイベントの取得を続ける

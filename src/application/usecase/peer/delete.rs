@@ -1,19 +1,18 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+#[cfg(test)]
+use mockall_double::double;
 use shaku::*;
 
-use crate::application::dto::Parameter;
+use crate::application::dto::request_message::Parameter;
+use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::entity::Peer;
 use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
-
-#[cfg(test)]
-use mockall_double::double;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -42,10 +41,11 @@ impl Service for DeleteService {
 
 #[cfg(test)]
 mod test_delete_peer {
-    use super::*;
     use crate::di::PeerDeleteServiceContainer;
     use crate::domain::webrtc::peer::entity::PeerStatusMessage;
     use crate::error;
+
+    use super::*;
 
     #[tokio::test]
     async fn success() {

@@ -1,5 +1,6 @@
 use tokio::sync::mpsc;
 
+use response_message::*;
 use rust_module::prelude::*;
 
 use super::ControlMessage;
@@ -27,7 +28,7 @@ pub async fn create_peer(
             }}"#,
         api_key, peer_id,
     );
-    let message = serde_json::from_str::<ServiceParams>(&message).unwrap();
+    let message = serde_json::from_str::<request_message::ServiceParams>(&message).unwrap();
 
     // create callback
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
@@ -61,7 +62,7 @@ pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &
         peer_info.peer_id().as_str(),
         peer_info.token().as_str()
     );
-    let message = serde_json::from_str::<ServiceParams>(&message).unwrap();
+    let message = serde_json::from_str::<request_message::ServiceParams>(&message).unwrap();
 
     // create callback
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();

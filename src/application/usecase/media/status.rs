@@ -3,9 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use shaku::*;
 
-use crate::application::dto::Parameter;
+use crate::application::dto::request_message::Parameter;
+use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::MediaConnection;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
@@ -33,12 +33,13 @@ impl Service for StatusService {
 
 #[cfg(test)]
 mod test_create_media {
-    use super::*;
     use crate::di::MediaStatusServiceContainer;
     use crate::domain::webrtc::media::entity::{MediaConnectionIdWrapper, MediaConnectionStatus};
     use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::MediaConnectionId;
     use crate::domain::webrtc::peer::value_object::PeerId;
+
+    use super::*;
 
     #[tokio::test]
     async fn success() {

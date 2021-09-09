@@ -1,6 +1,8 @@
 use std::sync::Mutex;
 
 use mockito::mock;
+
+use response_message::*;
 use rust_module::prelude::*;
 use rust_module::*;
 

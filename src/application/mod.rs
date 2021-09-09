@@ -1,10 +1,10 @@
 use usecase::factory::service_factory;
 
-use crate::application::usecase::value_object::ResponseMessage;
-use dto::ServiceParams;
-
 pub(crate) mod dto;
 pub(crate) mod usecase;
+
+use dto::request_message::ServiceParams;
+use dto::response_message::ResponseMessage;
 
 pub(crate) async fn run(params: ServiceParams) -> ResponseMessage {
     // 与えられたパラメータに応じて、各UseCaseをサービスとして生成し、同時にパラメータも生成する

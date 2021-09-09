@@ -4,9 +4,9 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use shaku::*;
 
-use crate::application::dto::Parameter;
+use crate::application::dto::request_message::Parameter;
+use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::MediaSocket;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
@@ -37,12 +37,13 @@ impl Service for CreateMediaService {
 
 #[cfg(test)]
 mod test_create_media {
-    use super::*;
     use crate::di::MediaContentCreateServiceContainer;
     use crate::domain::webrtc::common::value_object::{SerializableSocket, SocketInfo};
     use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::MediaId;
     use crate::error;
+
+    use super::*;
 
     #[tokio::test]
     async fn success() {

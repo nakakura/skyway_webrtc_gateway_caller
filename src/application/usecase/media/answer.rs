@@ -4,9 +4,9 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use shaku::*;
 
-use crate::application::dto::Parameter;
+use crate::application::dto::request_message::Parameter;
+use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::{
     AnswerQuery, AnswerResponseParams, AnswerResult, MediaConnection,
 };
@@ -72,7 +72,6 @@ impl Service for AnswerService {
 
 #[cfg(test)]
 mod test_answer {
-    use super::*;
     use crate::di::MediaAnswerServiceContainer;
     use crate::domain::webrtc::media::entity::{
         AnswerResponse, AnswerResponseParams, AnswerResult, Constraints, MediaConnectionStatus,
@@ -81,6 +80,8 @@ mod test_answer {
     use crate::domain::webrtc::peer::value_object::PeerId;
     use crate::error;
     use crate::prelude::MediaConnectionId;
+
+    use super::*;
 
     #[tokio::test]
     async fn success() {

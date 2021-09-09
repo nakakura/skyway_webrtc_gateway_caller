@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+#[cfg(test)]
+use mockall_double::double;
 use serde_json::Value;
 use shaku::*;
 use tokio::sync::mpsc;
 
+use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
-use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::state::ApplicationState;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::entity::Peer;
@@ -14,9 +16,6 @@ use crate::domain::webrtc::peer::entity::PeerEventEnum;
 use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::error;
-
-#[cfg(test)]
-use mockall_double::double;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -104,7 +103,6 @@ impl EventListener for EventService {
 mod test_peer_event {
     use std::sync::Mutex;
 
-    use super::*;
     use crate::di::PeerEventServiceContainer;
     use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
     use crate::domain::webrtc::data::value_object::DataConnectionId;
@@ -113,6 +111,8 @@ mod test_peer_event {
     };
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
+
+    use super::*;
 
     // 成功する場合
     #[tokio::test]

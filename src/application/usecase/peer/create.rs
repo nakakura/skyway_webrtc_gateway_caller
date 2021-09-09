@@ -5,9 +5,9 @@ use async_trait::async_trait;
 use mockall_double::double;
 use shaku::*;
 
-use crate::application::dto::Parameter;
+use crate::application::dto::request_message::Parameter;
+use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::peer::entity::CreatePeerParams;
 #[cfg_attr(test, double)]
 use crate::domain::webrtc::peer::entity::Peer;
@@ -38,9 +38,10 @@ mod test_create_peer {
 
     use once_cell::sync::Lazy;
 
-    use super::*;
     use crate::di::PeerCreateServiceContainer;
     use crate::domain::webrtc::peer::value_object::PeerInfo;
+
+    use super::*;
 
     // Lock to prevent tests from running simultaneously
     static LOCKER: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));

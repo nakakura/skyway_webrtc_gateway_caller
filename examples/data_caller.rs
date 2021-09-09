@@ -1,12 +1,13 @@
-mod common;
-
-use rust_module::prelude::*;
-use rust_module::run;
 use tokio::sync::mpsc;
 
 use common::data;
 use common::peer;
 use common::terminal;
+use response_message::*;
+use rust_module::prelude::*;
+use rust_module::run;
+
+mod common;
 
 #[tokio::main]
 async fn main() {
