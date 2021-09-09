@@ -3,10 +3,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall_double::double;
-use serde_json::Value;
 use shaku::*;
 use tokio::sync::mpsc;
 
+use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
@@ -15,7 +15,6 @@ use crate::domain::webrtc::peer::entity::Peer;
 use crate::domain::webrtc::peer::entity::PeerEventEnum;
 use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
-use crate::error;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -69,15 +68,14 @@ impl EventListener for EventService {
     async fn execute(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
-        params: Value,
+        params: Parameter,
     ) -> ResponseMessage {
         // peer_infoのvalidation
-        let peer_info = serde_json::from_value::<PeerInfo>(params.clone())
-            .map_err(|e| error::Error::SerdeError { error: e });
+        let peer_info = params.deserialize::<PeerInfo>();
         if peer_info.is_err() {
             let message = format!(
                 "Error in EventListener for Peer. invalid peer_info: {:?}",
-                params
+                peer_info.err()
             );
             return ResponseMessage::Error(message);
         }
@@ -189,7 +187,10 @@ mod test_peer_event {
 
         // execute
         let result = event_service
-            .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
+            .execute(
+                event_tx,
+                Parameter(serde_json::to_value(&peer_info).unwrap()),
+            )
             .await;
 
         // clear context
@@ -257,7 +258,10 @@ mod test_peer_event {
 
         // execute
         let result = event_service
-            .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
+            .execute(
+                event_tx,
+                Parameter(serde_json::to_value(&peer_info).unwrap()),
+            )
             .await;
 
         // clear context
@@ -274,7 +278,7 @@ mod test_peer_event {
     #[tokio::test]
     async fn invalid_json() {
         // event_serviceの引数は、JSON化されたPeerInfoとevent senderであるが、なぜかbool値が入ってきた
-        let param = serde_json::Value::Bool(true);
+        let param = Parameter(serde_json::Value::Bool(true));
         let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // event_serviceを生成
@@ -287,7 +291,7 @@ mod test_peer_event {
         if let ResponseMessage::Error(message) = result {
             assert_eq!(
                 &message,
-                "Error in EventListener for Peer. invalid peer_info: Bool(true)"
+                "Error in EventListener for Peer. invalid peer_info: Some(SerdeError { error: Error(\"invalid type: boolean `true`, expected struct PeerInfo\", line: 0, column: 0) })"
             );
         } else {
             assert!(false);
@@ -329,7 +333,10 @@ mod test_peer_event {
 
         // execute
         let result = event_service
-            .execute(event_tx, serde_json::to_value(&peer_info).unwrap())
+            .execute(
+                event_tx,
+                Parameter(serde_json::to_value(&peer_info).unwrap()),
+            )
             .await;
 
         // clear context

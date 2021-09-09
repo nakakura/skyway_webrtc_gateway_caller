@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 use tokio::sync::mpsc;
 
+use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
@@ -68,10 +68,9 @@ impl EventListener for EventService {
     async fn execute(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
-        params: Value,
+        params: Parameter,
     ) -> ResponseMessage {
-        let media_connection_id_wrapper =
-            serde_json::from_value::<MediaConnectionIdWrapper>(params);
+        let media_connection_id_wrapper = params.deserialize::<MediaConnectionIdWrapper>();
         if media_connection_id_wrapper.is_err() {
             let message = format!(
                 "invalid media_connection_id {:?}",
@@ -155,7 +154,7 @@ mod test_delete_media {
         let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
 
         //実行
-        let result = event_service.execute(event_tx, param).await;
+        let result = event_service.execute(event_tx, Parameter(param)).await;
 
         // CLOSE Eventが発火した場合は最後にCLOSE EVENTが帰る
         assert_eq!(
@@ -236,7 +235,7 @@ mod test_delete_media {
         let param = MediaConnectionIdWrapper {
             media_connection_id: media_connection_id.clone(),
         };
-        let param = serde_json::to_value(param).unwrap();
+        let param = Parameter(serde_json::to_value(param).unwrap());
 
         //実行
         let result = event_service.execute(event_tx, param).await;
@@ -263,12 +262,12 @@ mod test_delete_media {
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
         let result = event_service
-            .execute(event_tx, serde_json::Value::Bool(true))
+            .execute(event_tx, Parameter(serde_json::Value::Bool(true)))
             .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る
         if let ResponseMessage::Error(message) = result {
-            assert_eq!(&message, "invalid media_connection_id Some(Error(\"invalid type: boolean `true`, expected struct MediaConnectionIdWrapper\", line: 0, column: 0))");
+            assert_eq!(&message, "invalid media_connection_id Some(SerdeError { error: Error(\"invalid type: boolean `true`, expected struct MediaConnectionIdWrapper\", line: 0, column: 0) })");
         } else {
             assert!(false);
         }

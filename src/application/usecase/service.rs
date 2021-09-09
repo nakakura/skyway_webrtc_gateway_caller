@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::Interface;
 use tokio::sync::mpsc::Sender;
 
@@ -27,5 +26,9 @@ pub(crate) trait Service: Interface {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait EventListener: Interface {
-    async fn execute(&self, event_tx: Sender<ResponseMessage>, params: Value) -> ResponseMessage;
+    async fn execute(
+        &self,
+        event_tx: Sender<ResponseMessage>,
+        params: Parameter,
+    ) -> ResponseMessage;
 }

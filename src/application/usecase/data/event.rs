@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 use tokio::sync::mpsc;
 
+use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
@@ -68,9 +68,9 @@ impl EventListener for EventService {
     async fn execute(
         &self,
         event_tx: mpsc::Sender<ResponseMessage>,
-        params: Value,
+        params: Parameter,
     ) -> ResponseMessage {
-        let data_connection_id_wrapper = serde_json::from_value::<DataConnectionIdWrapper>(params);
+        let data_connection_id_wrapper = params.deserialize::<DataConnectionIdWrapper>();
         if data_connection_id_wrapper.is_err() {
             let message = format!(
                 "invalid data_connection_id {:?}",
@@ -130,10 +130,12 @@ mod test_data_event {
         let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
 
         // 実行
-        let param = serde_json::to_value(DataConnectionIdWrapper {
-            data_connection_id: data_connection_id.clone(),
-        })
-        .unwrap();
+        let param = Parameter(
+            serde_json::to_value(DataConnectionIdWrapper {
+                data_connection_id: data_connection_id.clone(),
+            })
+            .unwrap(),
+        );
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataEventServiceContainer::builder()
@@ -198,10 +200,12 @@ mod test_data_event {
         let event_service: &dyn EventListener = module.resolve_ref();
 
         // 実行
-        let param = serde_json::to_value(DataConnectionIdWrapper {
-            data_connection_id: data_connection_id.clone(),
-        })
-        .unwrap();
+        let param = Parameter(
+            serde_json::to_value(DataConnectionIdWrapper {
+                data_connection_id: data_connection_id.clone(),
+            })
+            .unwrap(),
+        );
 
         // event_serviceはループを抜けるときに最後のEVENTを返す
         // ERRORが発生してループを抜けたErrorが帰ってくる
@@ -254,7 +258,7 @@ mod test_data_event {
 
         // event_serviceはループを抜けるときに最後のEVENTを返す
         // Application Stateがfalseを返すことによってループを抜けた場合は、TIMEOUTが帰ってくる
-        let message = event_service.execute(event_tx, param).await;
+        let message = event_service.execute(event_tx, Parameter(param)).await;
         assert_eq!(
             message,
             DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)

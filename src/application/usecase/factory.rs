@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use serde_json::Value;
 use shaku::HasComponent;
 
 use crate::application::dto::request_message::{
@@ -16,15 +15,15 @@ use crate::application::usecase::service::{EventListener, Service};
 fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
     param: V,
     component: T,
-) -> (Value, Arc<dyn EventListener>) {
+) -> (Parameter, Arc<dyn EventListener>) {
     // paramsはserializeをimplementしているので、エラーが出ることはなく、unwrapで問題ない
     let value = serde_json::to_value(&param).unwrap();
-    (value, component.resolve())
+    (Parameter(value), component.resolve())
 }
 
 fn peer_event_factory(
     params: PeerResponseMessageBodyEnum,
-) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     use crate::di::*;
 
     match params {
@@ -38,7 +37,7 @@ fn peer_event_factory(
 
 fn data_event_factory(
     params: DataResponseMessageBodyEnum,
-) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     use crate::di::*;
 
     match params {
@@ -56,7 +55,7 @@ fn data_event_factory(
 
 fn media_event_factory(
     params: MediaResponseMessageBodyEnum,
-) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     use crate::di::*;
 
     match params {
@@ -75,7 +74,7 @@ fn media_event_factory(
 // FIXME: no test
 pub(crate) fn event_factory(
     message: ResponseMessageBodyEnum,
-) -> Option<(Value, std::sync::Arc<dyn EventListener>)> {
+) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     match message {
         ResponseMessageBodyEnum::Peer(params) => peer_event_factory(params),
         ResponseMessageBodyEnum::Data(params) => data_event_factory(params),
@@ -146,7 +145,7 @@ fn media_service_factory(params: MediaServiceParams) -> (Parameter, Arc<dyn Serv
             let module = MediaRtcpCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             // この値は使わないので何でも良い
-            (Parameter(Value::Null), service)
+            (Parameter(serde_json::Value::Null), service)
         }
         MediaServiceParams::Call { params } => {
             let module = MediaCallServiceContainer::builder().build();
