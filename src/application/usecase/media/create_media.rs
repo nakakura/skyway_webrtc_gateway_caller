@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::MediaSocket;
@@ -28,10 +28,9 @@ pub(crate) struct CreateMediaService {
 
 #[async_trait]
 impl Service for CreateMediaService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let is_video: IsVideo =
-            serde_json::from_value(params).map_err(|e| error::Error::SerdeError { error: e })?;
-        let socket = MediaSocket::try_create(self.api.clone(), is_video.is_video).await?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let is_video = params.deserialize::<IsVideo>()?.is_video;
+        let socket = MediaSocket::try_create(self.api.clone(), is_video).await?;
         Ok(MediaResponseMessageBodyEnum::ContentCreate(socket).create_response_message())
     }
 }
@@ -73,7 +72,7 @@ mod test_create_media {
         // execute
         let param = IsVideo { is_video: true };
         let result = create_service
-            .execute(serde_json::to_value(&param).unwrap())
+            .execute(Parameter(serde_json::to_value(&param).unwrap()))
             .await
             .unwrap();
 
@@ -96,7 +95,7 @@ mod test_create_media {
 
         // execute
         let result = create_service
-            .execute(serde_json::Value::String("foo".into()))
+            .execute(Parameter(serde_json::Value::String("foo".into())))
             .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る

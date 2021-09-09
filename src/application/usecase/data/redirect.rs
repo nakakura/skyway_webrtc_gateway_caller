@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
@@ -33,9 +33,8 @@ pub(crate) struct RedirectService {
 
 #[async_trait]
 impl Service for RedirectService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let params = serde_json::from_value::<RedirectParams>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let params = params.deserialize::<RedirectParams>()?;
         let data_connection_id = params.data_connection_id;
         let redirect_data_params = RedirectDataParams {
             feed_params: params.feed_params,
@@ -101,7 +100,7 @@ mod test_redirect_data {
         let redirect_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = redirect_service.execute(param).await.unwrap();
+        let result = redirect_service.execute(Parameter(param)).await.unwrap();
 
         // evaluate
         assert_eq!(result, expected);
@@ -120,7 +119,7 @@ mod test_redirect_data {
 
         // execute
         let result = redirect_service
-            .execute(serde_json::Value::Bool(true))
+            .execute(Parameter(serde_json::Value::Bool(true)))
             .await;
 
         // evaluate

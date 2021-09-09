@@ -72,7 +72,8 @@ use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
-pub use application::usecase::value_object::{ResponseMessage, ServiceParams};
+pub use application::dto::ServiceParams;
+pub use application::usecase::value_object::ResponseMessage;
 pub use domain::webrtc::peer::entity::PeerEventEnum;
 pub use domain::webrtc::peer::value_object::{PeerId, PeerInfo, Token};
 

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::MediaIdWrapper;
@@ -22,10 +22,8 @@ pub(crate) struct DeleteMediaService {
 
 #[async_trait]
 impl Service for DeleteMediaService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let media_id = serde_json::from_value::<MediaIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
-            .media_id;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let media_id = params.deserialize::<MediaIdWrapper>()?.media_id;
         let _ = MediaSocket::try_delete(self.api.clone(), &media_id).await?;
         Ok(
             MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id })
@@ -70,7 +68,7 @@ mod test_delete_media {
             media_id: media_id.clone(),
         };
         let result = delete_service
-            .execute(serde_json::to_value(&media_id).unwrap())
+            .execute(Parameter(serde_json::to_value(&media_id).unwrap()))
             .await
             .unwrap();
 
@@ -92,7 +90,9 @@ mod test_delete_media {
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = delete_service.execute(serde_json::Value::Bool(true)).await;
+        let result = delete_service
+            .execute(Parameter(serde_json::Value::Bool(true)))
+            .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る
         if let Err(error::Error::SerdeError { error: _ }) = result {

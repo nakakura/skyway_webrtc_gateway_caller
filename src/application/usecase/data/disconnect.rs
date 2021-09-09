@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
@@ -21,9 +21,9 @@ pub(crate) struct DisconnectService {
 
 #[async_trait]
 impl Service for DisconnectService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let data_connection_id = serde_json::from_value::<DataConnectionIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let data_connection_id = params
+            .deserialize::<DataConnectionIdWrapper>()?
             .data_connection_id;
         let _ = DataConnection::try_delete(self.api.clone(), &data_connection_id).await?;
         Ok(
@@ -68,7 +68,7 @@ mod test_create_data {
         let message = DataConnectionIdWrapper {
             data_connection_id: data_connection_id.clone(),
         };
-        let message = serde_json::to_value(message).unwrap();
+        let message = Parameter(serde_json::to_value(message).unwrap());
 
         //実行
         let result = disconnect_service.execute(message).await.unwrap();
@@ -89,7 +89,9 @@ mod test_create_data {
         let connect_service: Arc<dyn Service> = module.resolve();
 
         // 適当な値で実行
-        let result = connect_service.execute(serde_json::Value::Bool(true)).await;
+        let result = connect_service
+            .execute(Parameter(serde_json::Value::Bool(true)))
+            .await;
 
         // evaluate
         if let Err(error::Error::SerdeError { error: _ }) = result {

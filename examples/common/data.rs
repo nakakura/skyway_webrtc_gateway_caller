@@ -1,6 +1,7 @@
-use rust_module::prelude::*;
 use serde::Serialize;
 use tokio::sync::mpsc;
+
+use rust_module::prelude::*;
 
 use super::ControlMessage;
 

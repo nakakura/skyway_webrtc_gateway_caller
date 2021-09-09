@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
@@ -23,9 +23,9 @@ impl StatusService {}
 
 #[async_trait]
 impl Service for StatusService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let data_connection_id = serde_json::from_value::<DataConnectionIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let data_connection_id = params
+            .deserialize::<DataConnectionIdWrapper>()?
             .data_connection_id;
         let (_connection, status) =
             DataConnection::find(self.api.clone(), data_connection_id).await?;
@@ -77,7 +77,7 @@ mod test_create_data {
         let param = serde_json::to_value(data_connection_id_wrapper).unwrap();
 
         // 実行
-        let result = status_service.execute(param).await.unwrap();
+        let result = status_service.execute(Parameter(param)).await.unwrap();
 
         // evaluate
         assert_eq!(result, expected);
@@ -95,7 +95,9 @@ mod test_create_data {
         let status_service: Arc<dyn Service> = module.resolve();
 
         // 適当なパラメータで実行
-        let result = status_service.execute(serde_json::Value::Bool(true)).await;
+        let result = status_service
+            .execute(Parameter(serde_json::Value::Bool(true)))
+            .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る
         if let Err(error::Error::SerdeError { error: _ }) = result {

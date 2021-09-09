@@ -3,9 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall_double::double;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::peer::entity::CreatePeerParams;
@@ -25,9 +25,8 @@ pub(crate) struct CreateService {
 
 #[async_trait]
 impl Service for CreateService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let params = serde_json::from_value::<CreatePeerParams>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let params = params.deserialize::<CreatePeerParams>()?;
         let peer = Peer::try_create(self.repository.clone(), params).await?;
         Ok(PeerResponseMessageBodyEnum::Create(peer.peer_info().clone()).create_response_message())
     }
@@ -74,7 +73,7 @@ mod test_create_peer {
             "peer_id": "peer_id",
             "turn": true
         }"#;
-        let message = serde_json::from_str::<Value>(message).unwrap();
+        let message = serde_json::from_str::<Parameter>(message).unwrap();
 
         // diでサービスを作成
         let module = PeerCreateServiceContainer::builder().build();
@@ -101,7 +100,7 @@ mod test_create_peer {
             "key": "api_key",
             "turn": true
         }"#;
-        let message = serde_json::from_str::<Value>(message).unwrap();
+        let message = serde_json::from_str::<Parameter>(message).unwrap();
 
         // diでサービスを作成
         let module = PeerCreateServiceContainer::builder().build();
@@ -137,7 +136,7 @@ mod test_create_peer {
             "peer_id": "peer_id",
             "turn": true
         }"#;
-        let message = serde_json::from_str::<Value>(message).unwrap();
+        let message = serde_json::from_str::<Parameter>(message).unwrap();
 
         // diでサービスを作成
         let module = PeerCreateServiceContainer::builder().build();

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::{
@@ -31,9 +31,8 @@ pub(crate) struct AnswerService {
 
 #[async_trait]
 impl Service for AnswerService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let answer_parameters = serde_json::from_value::<AnswerParameters>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let answer_parameters = params.deserialize::<AnswerParameters>()?;
         let (media_connection, status) = MediaConnection::find(
             self.api.clone(),
             answer_parameters.media_connection_id.clone(),
@@ -144,7 +143,7 @@ mod test_answer {
         };
         // 実行
         let result = answer_service
-            .execute(serde_json::to_value(params).unwrap())
+            .execute(Parameter(serde_json::to_value(params).unwrap()))
             .await
             .unwrap();
 
@@ -201,7 +200,7 @@ mod test_answer {
         };
         // 実行
         let result = answer_service
-            .execute(serde_json::to_value(params).unwrap())
+            .execute(Parameter(serde_json::to_value(params).unwrap()))
             .await
             .unwrap();
 
@@ -227,7 +226,7 @@ mod test_answer {
 
         // 間違ったパラメータで実行
         let result = answer_service
-            .execute(serde_json::value::Value::Bool(true))
+            .execute(Parameter(serde_json::value::Value::Bool(true)))
             .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る

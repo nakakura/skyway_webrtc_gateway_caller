@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::entity::{ConnectQuery, DataConnection, DataConnectionIdWrapper};
@@ -21,9 +21,8 @@ pub(crate) struct ConnectService {
 
 #[async_trait]
 impl Service for ConnectService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let query = serde_json::from_value::<ConnectQuery>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let query = params.deserialize::<ConnectQuery>()?;
         let connection = DataConnection::try_create(self.api.clone(), query).await?;
         let wrapper = DataConnectionIdWrapper {
             data_connection_id: connection.data_connection_id().clone(),
@@ -75,7 +74,7 @@ mod test_create_data {
         let message = serde_json::to_value(message).unwrap();
 
         //実行
-        let result = connect_service.execute(message).await.unwrap();
+        let result = connect_service.execute(Parameter(message)).await.unwrap();
 
         // evaluate
         assert_eq!(result, expected);
@@ -93,7 +92,9 @@ mod test_create_data {
         let connect_service: Arc<dyn Service> = module.resolve();
 
         // 間違った値で実行
-        let result = connect_service.execute(serde_json::Value::Bool(true)).await;
+        let result = connect_service
+            .execute(Parameter(serde_json::Value::Bool(true)))
+            .await;
 
         // 削除済みの場合エラーが帰る
         if let Err(error::Error::SerdeError { error: _ }) = result {

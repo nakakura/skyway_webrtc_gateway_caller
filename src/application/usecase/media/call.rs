@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
-use crate::domain::webrtc::media::entity::{CallQuery, MediaConnection, MediaConnectionIdWrapper};
+use crate::domain::webrtc::media::entity::{MediaConnection, MediaConnectionIdWrapper};
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
 
@@ -21,9 +21,8 @@ pub(crate) struct CallService {
 
 #[async_trait]
 impl Service for CallService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let call_query = serde_json::from_value::<CallQuery>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let call_query = params.deserialize()?;
         let result = MediaConnection::try_create(self.api.clone(), call_query).await?;
         let wrapper = MediaConnectionIdWrapper {
             media_connection_id: result.params.media_connection_id,
@@ -36,7 +35,7 @@ impl Service for CallService {
 mod test_create_media {
     use super::*;
     use crate::di::MediaCallServiceContainer;
-    use crate::domain::webrtc::media::entity::{CallResponse, MediaConnectionIdWrapper};
+    use crate::domain::webrtc::media::entity::{CallQuery, CallResponse, MediaConnectionIdWrapper};
     use crate::domain::webrtc::media::repository::MockMediaRepository;
     use crate::domain::webrtc::media::value_object::MediaConnectionId;
     use crate::domain::webrtc::peer::value_object::{PeerId, Token};
@@ -79,7 +78,7 @@ mod test_create_media {
 
         // execute
         let result = call_service
-            .execute(serde_json::to_value(call_query).unwrap())
+            .execute(Parameter(serde_json::to_value(call_query).unwrap()))
             .await
             .unwrap();
 
@@ -99,7 +98,9 @@ mod test_create_media {
 
         // 適当な値を与えて実行
         let result = call_service
-            .execute(serde_json::to_value(serde_json::Value::Bool(true)).unwrap())
+            .execute(Parameter(
+                serde_json::to_value(serde_json::Value::Bool(true)).unwrap(),
+            ))
             .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::entity::DataSocket;
@@ -23,7 +23,7 @@ impl CreateService {}
 
 #[async_trait]
 impl Service for CreateService {
-    async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, _params: Parameter) -> Result<ResponseMessage, error::Error> {
         let data_sock = DataSocket::try_create(self.api.clone()).await?;
         Ok(DataResponseMessageBodyEnum::Create(data_sock).create_response_message())
     }
@@ -65,7 +65,7 @@ mod test_create_data {
         // execute
         // 引数は利用しないので何でも良い
         let result = create_service
-            .execute(serde_json::Value::Bool(true))
+            .execute(Parameter(serde_json::Value::Bool(true)))
             .await
             .unwrap();
 

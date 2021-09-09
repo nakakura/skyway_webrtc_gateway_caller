@@ -1,5 +1,6 @@
-use rust_module::prelude::*;
 use tokio::sync::mpsc;
+
+use rust_module::prelude::*;
 
 use super::ControlMessage;
 

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::data::entity::{DataIdWrapper, DataSocket};
@@ -21,10 +21,8 @@ pub(crate) struct DeleteService {
 
 #[async_trait]
 impl Service for DeleteService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let data_id = serde_json::from_value::<DataIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
-            .data_id;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let data_id = params.deserialize::<DataIdWrapper>()?.data_id;
 
         let _ = DataSocket::try_delete(self.api.clone(), &data_id).await?;
         Ok(
@@ -70,7 +68,7 @@ mod test_create_data {
             data_id: DataId::try_create(data_id_str).unwrap(),
         };
         let result = delete_service
-            .execute(serde_json::to_value(message).unwrap())
+            .execute(Parameter(serde_json::to_value(message).unwrap()))
             .await
             .unwrap();
 
@@ -99,7 +97,7 @@ mod test_create_data {
             }}"#,
             data_id_str
         );
-        let message = serde_json::from_str::<Value>(&message).unwrap();
+        let message = serde_json::from_str::<Parameter>(&message).unwrap();
         let result = delete_service.execute(message).await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る

@@ -4,12 +4,13 @@ use serde::Serialize;
 use serde_json::Value;
 use shaku::HasComponent;
 
+use crate::application::dto::{DataServiceParams, MediaServiceParams, PeerServiceParams};
+use crate::application::dto::{Parameter, ServiceParams};
 use crate::application::usecase::service::{EventListener, Service};
 use crate::application::usecase::value_object::{
-    DataResponseMessageBodyEnum, DataServiceParams, MediaResponseMessageBodyEnum,
-    MediaServiceParams, PeerResponseMessageBodyEnum, PeerServiceParams, ResponseMessageBodyEnum,
+    DataResponseMessageBodyEnum, MediaResponseMessageBodyEnum, PeerResponseMessageBodyEnum,
+    ResponseMessageBodyEnum,
 };
-use crate::ServiceParams;
 
 fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
     param: V,
@@ -81,7 +82,7 @@ pub(crate) fn event_factory(
     }
 }
 
-fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) {
+fn peer_service_factory(params: PeerServiceParams) -> (Parameter, Arc<dyn Service>) {
     use crate::di::*;
 
     match params {
@@ -103,7 +104,7 @@ fn peer_service_factory(params: PeerServiceParams) -> (Value, Arc<dyn Service>) 
     }
 }
 
-fn data_service_factory(params: DataServiceParams) -> (Value, Arc<dyn Service>) {
+fn data_service_factory(params: DataServiceParams) -> (Parameter, Arc<dyn Service>) {
     use crate::di::*;
 
     match params {
@@ -131,7 +132,7 @@ fn data_service_factory(params: DataServiceParams) -> (Value, Arc<dyn Service>) 
     }
 }
 
-fn media_service_factory(params: MediaServiceParams) -> (Value, Arc<dyn Service>) {
+fn media_service_factory(params: MediaServiceParams) -> (Parameter, Arc<dyn Service>) {
     use crate::di::*;
 
     match params {
@@ -143,7 +144,8 @@ fn media_service_factory(params: MediaServiceParams) -> (Value, Arc<dyn Service>
         MediaServiceParams::RtcpCreate { params: _ } => {
             let module = MediaRtcpCreateServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
-            (Value::Null, service)
+            // この値は使わないので何でも良い
+            (Parameter(Value::Null), service)
         }
         MediaServiceParams::Call { params } => {
             let module = MediaCallServiceContainer::builder().build();
@@ -160,7 +162,7 @@ fn media_service_factory(params: MediaServiceParams) -> (Value, Arc<dyn Service>
 }
 
 // FIXME: no unit test
-pub(crate) fn service_factory(params: ServiceParams) -> (Value, Arc<dyn Service>) {
+pub(crate) fn service_factory(params: ServiceParams) -> (Parameter, Arc<dyn Service>) {
     match params {
         ServiceParams::Peer(params) => peer_service_factory(params),
         ServiceParams::Data(params) => data_service_factory(params),

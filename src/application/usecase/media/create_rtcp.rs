@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::RtcpSocket;
@@ -21,7 +21,7 @@ pub(crate) struct CreateRtcpService {
 
 #[async_trait]
 impl Service for CreateRtcpService {
-    async fn execute(&self, _params: Value) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, _params: Parameter) -> Result<ResponseMessage, error::Error> {
         let socket = RtcpSocket::try_create(self.api.clone()).await?;
         Ok(MediaResponseMessageBodyEnum::RtcpCreate(socket).create_response_message())
     }
@@ -62,7 +62,7 @@ mod test_create_rtcp {
 
         // execute
         let result = create_service
-            .execute(serde_json::Value::Bool(true))
+            .execute(Parameter(serde_json::Value::Bool(true)))
             .await
             .unwrap();
 

@@ -3,9 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall_double::double;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 #[cfg_attr(test, double)]
@@ -25,9 +25,8 @@ pub(crate) struct StatusService {
 
 #[async_trait]
 impl Service for StatusService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let params = serde_json::from_value::<PeerInfo>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let params = params.deserialize::<PeerInfo>()?;
         let (_, status) = Peer::find(self.repository.clone(), params).await?;
         Ok(PeerResponseMessageBodyEnum::Status(status).create_response_message())
     }
@@ -70,7 +69,7 @@ mod test_create_peer {
 
         // 実行時の引数(エンドユーザから与えられるはずの値)を生成
         let message = serde_json::to_string(&peer_info).unwrap();
-        let message = serde_json::from_str::<Value>(&message).unwrap();
+        let message = serde_json::from_str::<Parameter>(&message).unwrap();
 
         // diでサービスを作成
         let module = PeerStatusServiceContainer::builder().build();
@@ -95,7 +94,7 @@ mod test_create_peer {
         let message = r#"{
             "peer_id": "peer_id"
         }"#;
-        let message = serde_json::from_str::<Value>(message).unwrap();
+        let message = serde_json::from_str::<Parameter>(message).unwrap();
 
         // diでサービスを作成
         let module = PeerStatusServiceContainer::builder().build();
@@ -128,7 +127,7 @@ mod test_create_peer {
 
         // 実行時の引数(エンドユーザから与えられるはずの値)を生成
         let message = serde_json::to_string(&peer_info).unwrap();
-        let message = serde_json::from_str::<Value>(&message).unwrap();
+        let message = serde_json::from_str::<Parameter>(&message).unwrap();
 
         // diでサービスを作成
         let module = PeerStatusServiceContainer::builder().build();

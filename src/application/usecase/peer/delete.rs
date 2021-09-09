@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{PeerResponseMessageBodyEnum, ResponseMessage};
 #[cfg_attr(test, double)]
@@ -26,9 +26,8 @@ pub(crate) struct DeleteService {
 
 #[async_trait]
 impl Service for DeleteService {
-    async fn execute(&self, param: Value) -> Result<ResponseMessage, error::Error> {
-        let peer_info: PeerInfo =
-            serde_json::from_value(param).map_err(|e| error::Error::SerdeError { error: e })?;
+    async fn execute(&self, param: Parameter) -> Result<ResponseMessage, error::Error> {
+        let peer_info = param.deserialize::<PeerInfo>()?;
         let (peer, status) = Peer::find(self.repository.clone(), peer_info).await?;
         if !status.disconnected {
             let result = peer.try_delete().await?;
@@ -57,7 +56,7 @@ mod test_delete_peer {
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         // サービスに与えるパラメータ化
-        let param = serde_json::to_value(&peer_info).unwrap();
+        let param = Parameter(serde_json::to_value(&peer_info).unwrap());
 
         // 待値を生成
         let expected =
@@ -105,7 +104,7 @@ mod test_delete_peer {
         let message = r#"{
             "peer_id": "peer_id"
         }"#;
-        let message = serde_json::from_str::<Value>(message).unwrap();
+        let message = serde_json::from_str::<Parameter>(message).unwrap();
 
         // Mockを埋め込んだEventServiceを生成
         let module = PeerDeleteServiceContainer::builder().build();
@@ -131,7 +130,7 @@ mod test_delete_peer {
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         // サービスに与えるパラメータ化
-        let param = serde_json::to_value(&peer_info).unwrap();
+        let param = Parameter(serde_json::to_value(&peer_info).unwrap());
 
         // deleteが成功するかのように振る舞うMockを作成
         let ret_value = peer_info.clone();
@@ -179,7 +178,7 @@ mod test_delete_peer {
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         // サービスに与えるパラメータ化
-        let param = serde_json::to_value(&peer_info).unwrap();
+        let param = Parameter(serde_json::to_value(&peer_info).unwrap());
 
         // deleteが成功するかのように振る舞うMockを作成
         let mut peer_mock = Peer::default();

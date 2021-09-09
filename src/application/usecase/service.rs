@@ -3,6 +3,7 @@ use serde_json::Value;
 use shaku::Interface;
 use tokio::sync::mpsc::Sender;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::value_object::ResponseMessage;
 use crate::error;
 
@@ -16,7 +17,7 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error>;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error>;
 }
 
 // WebRTC Gatewayのイベントを監視する

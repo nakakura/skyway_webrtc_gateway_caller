@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use shaku::*;
 
+use crate::application::dto::Parameter;
 use crate::application::usecase::service::Service;
 use crate::application::usecase::value_object::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::domain::webrtc::media::entity::{RtcpIdWrapper, RtcpSocket};
@@ -21,10 +21,8 @@ pub(crate) struct DeleteRtcpService {
 
 #[async_trait]
 impl Service for DeleteRtcpService {
-    async fn execute(&self, params: Value) -> Result<ResponseMessage, error::Error> {
-        let rtcp_id = serde_json::from_value::<RtcpIdWrapper>(params)
-            .map_err(|e| error::Error::SerdeError { error: e })?
-            .rtcp_id;
+    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        let rtcp_id = params.deserialize::<RtcpIdWrapper>()?.rtcp_id;
 
         let _ = RtcpSocket::try_delete(self.api.clone(), &rtcp_id).await?;
         Ok(
@@ -62,10 +60,12 @@ mod test_delete_media {
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let param = serde_json::to_value(RtcpIdWrapper {
-            rtcp_id: rtcp_id.clone(),
-        })
-        .unwrap();
+        let param = Parameter(
+            serde_json::to_value(RtcpIdWrapper {
+                rtcp_id: rtcp_id.clone(),
+            })
+            .unwrap(),
+        );
         let result = delete_service.execute(param).await.unwrap();
 
         // evaluate
@@ -86,7 +86,9 @@ mod test_delete_media {
         let delete_service: Arc<dyn Service> = module.resolve();
 
         // execute
-        let result = delete_service.execute(serde_json::Value::Bool(true)).await;
+        let result = delete_service
+            .execute(Parameter(serde_json::Value::Bool(true)))
+            .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る
         if let Err(error::Error::SerdeError { error: _ }) = result {

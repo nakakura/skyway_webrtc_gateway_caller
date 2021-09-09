@@ -1,8 +1,9 @@
 use usecase::factory::service_factory;
 
 use crate::application::usecase::value_object::ResponseMessage;
-use crate::application::usecase::value_object::ServiceParams;
+use dto::ServiceParams;
 
+pub(crate) mod dto;
 pub(crate) mod usecase;
 
 pub(crate) async fn run(params: ServiceParams) -> ResponseMessage {

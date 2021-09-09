@@ -1,6 +1,5 @@
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
-use serde_json::Value;
 
 use crate::domain::webrtc::data::entity::{
     DataConnectionIdWrapper, DataConnectionStatus, DataSocket,
@@ -14,114 +13,6 @@ use crate::domain::webrtc::peer::entity::PeerEventEnum;
 use crate::domain::webrtc::peer::entity::PeerStatusMessage;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
 use crate::prelude::{DataConnectionEventEnum, DataIdWrapper};
-
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "command")]
-pub enum PeerServiceParams {
-    #[serde(rename = "CREATE")]
-    Create { params: Value },
-    #[serde(rename = "STATUS")]
-    Status { params: Value },
-    #[serde(rename = "DELETE")]
-    Delete { params: Value },
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "command")]
-pub enum DataServiceParams {
-    #[serde(rename = "CREATE")]
-    Create { params: Value },
-    #[serde(rename = "DELETE")]
-    Delete { params: Value },
-    #[serde(rename = "CONNECT")]
-    Connect { params: Value },
-    #[serde(rename = "REDIRECT")]
-    Redirect { params: Value },
-    #[serde(rename = "DISCONNECT")]
-    Disconnect { params: Value },
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "command")]
-pub enum MediaServiceParams {
-    #[serde(rename = "CONTENT_CREATE")]
-    ContentCreate { params: Value },
-    #[serde(rename = "CONTENT_DELETE")]
-    ContentDelete { params: Value },
-    #[serde(rename = "RTCP_CREATE")]
-    RtcpCreate { params: Option<Value> },
-    #[serde(rename = "CALL")]
-    Call { params: Value },
-    #[serde(rename = "ANSWER")]
-    Answer { params: Value },
-}
-
-// JSONでクライアントから受け取るメッセージ
-// JSONとしてなので、キャメルケースではなくスネークケースで受け取る
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type")]
-pub enum ServiceParams {
-    #[serde(rename = "PEER")]
-    Peer(PeerServiceParams),
-    #[serde(rename = "DATA")]
-    Data(DataServiceParams),
-    #[serde(rename = "MEDIA")]
-    Media(MediaServiceParams),
-}
-
-#[cfg(test)]
-mod service_params_deserialize {
-    use crate::application::usecase::value_object::{PeerServiceParams, ServiceParams};
-    use crate::domain::webrtc::peer::entity::CreatePeerParams;
-    use crate::prelude::PeerInfo;
-
-    #[test]
-    fn create_message() {
-        let message = r#"{
-            "type": "PEER",
-            "command": "CREATE",
-            "params": {
-                "base_url": "http://localhost:8000",
-                "key": "api_key",
-                "domain": "localhost",
-                "peer_id": "peer_id",
-                "turn": true
-            }
-        }"#;
-
-        let create_message = serde_json::from_str::<ServiceParams>(message);
-        if let Ok(ServiceParams::Peer(PeerServiceParams::Create { params })) = create_message {
-            let _ = serde_json::from_value::<CreatePeerParams>(params).unwrap();
-            assert!(true);
-        } else {
-            assert!(false);
-        }
-    }
-
-    #[test]
-    fn delete_message() {
-        let message = r#"{
-            "type": "PEER",
-            "command": "DELETE",
-            "params": {
-                "peer_id": "my_peer_id",
-                "token": "pt-9749250e-d157-4f80-9ee2-359ce8524308"
-             }
-        }"#;
-
-        let create_message = serde_json::from_str::<ServiceParams>(message);
-        if let Ok(ServiceParams::Peer(PeerServiceParams::Delete { params })) = create_message {
-            let _ = serde_json::from_value::<PeerInfo>(params).unwrap();
-            assert!(true);
-        } else {
-            assert!(false);
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "command")]
