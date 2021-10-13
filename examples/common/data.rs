@@ -60,20 +60,16 @@ pub async fn connect(
     message_tx: &mpsc::Sender<ControlMessage>,
     query: ConnectQuery,
 ) -> DataConnectionId {
-    // create message body
-    #[derive(Serialize)]
-    struct ConnectMessage {
-        r#type: String,
-        command: String,
-        params: ConnectQuery,
-    }
-    let message = ConnectMessage {
-        r#type: "DATA".into(),
-        command: "CONNECT".into(),
-        params: query,
-    };
-    let body_json = serde_json::to_value(&message).unwrap();
-    let body = serde_json::from_value::<request_message::ServiceParams>(body_json).unwrap();
+    let message = format!(
+        r#"{{
+            "type":"DATA",
+            "command":"CONNECT",
+            "params":{}
+        }}"#,
+        serde_json::to_string(&query).unwrap()
+    );
+
+    let body = serde_json::from_str::<request_message::ServiceParams>(&message).unwrap();
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body)).await;
@@ -99,20 +95,16 @@ pub async fn redirect(
     message_tx: &mpsc::Sender<ControlMessage>,
     params: RedirectParams,
 ) -> DataConnectionId {
-    #[derive(Serialize)]
-    struct Message {
-        r#type: String,
-        command: String,
-        params: RedirectParams,
-    }
-    let message = Message {
-        r#type: "DATA".into(),
-        command: "REDIRECT".into(),
-        params: params,
-    };
+    let message = format!(
+        r#"{{
+        "type":"DATA",
+        "command":"REDIRECT",
+        "params": {}
+    }}"#,
+        serde_json::to_string(&params).unwrap()
+    );
+    let body = serde_json::from_str::<request_message::ServiceParams>(&message).unwrap();
 
-    let body_json = serde_json::to_value(&message).unwrap();
-    let body = serde_json::from_value::<request_message::ServiceParams>(body_json).unwrap();
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body)).await;
     match rx.await {

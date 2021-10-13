@@ -64,23 +64,16 @@ pub async fn call(
     message_tx: &mpsc::Sender<ControlMessage>,
     query: CallQuery,
 ) -> MediaConnectionId {
-    use serde::Serialize;
+    let message = format!(
+        r#"{{
+        "type":"MEDIA",
+        "command":"CALL",
+        "params": {}
+    }}"#,
+        serde_json::to_string(&query).unwrap()
+    );
 
-    #[derive(Serialize)]
-    struct Parameter {
-        r#type: String,
-        command: String,
-        params: CallQuery,
-    }
-
-    let paramter = Parameter {
-        r#type: "MEDIA".into(),
-        command: "CALL".into(),
-        params: query,
-    };
-
-    let json_message = serde_json::to_string(&paramter).unwrap();
-    let body = serde_json::from_str::<request_message::ServiceParams>(&json_message);
+    let body = serde_json::from_str::<request_message::ServiceParams>(&message);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
@@ -100,31 +93,19 @@ pub async fn answer(
     media_connection_id: MediaConnectionId,
     answer_query: AnswerQuery,
 ) -> AnswerResult {
-    use serde::Serialize;
-
-    #[derive(Serialize)]
-    struct AnswerParameter {
-        r#type: String,
-        command: String,
-        params: InternalParams,
-    }
-
-    #[derive(Serialize)]
-    struct InternalParams {
-        media_connection_id: MediaConnectionId,
-        answer_query: AnswerQuery,
-    }
-
-    let param = AnswerParameter {
-        r#type: "MEDIA".into(),
-        command: "ANSWER".into(),
-        params: InternalParams {
-            media_connection_id,
-            answer_query,
-        },
-    };
-    let json_message = serde_json::to_string(&param).unwrap();
-    let body = serde_json::from_str::<request_message::ServiceParams>(&json_message);
+    let message = format!(
+        r#"{{
+        "type":"MEDIA",
+        "command":"ANSWER",
+        "params":{{
+            "media_connection_id": "{}",
+            "answer_query": {}
+        }}
+    }}"#,
+        media_connection_id.as_str(),
+        serde_json::to_string(&answer_query).unwrap()
+    );
+    let body = serde_json::from_str::<request_message::ServiceParams>(&message);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     let _ = message_tx.send((tx, body.unwrap())).await;
