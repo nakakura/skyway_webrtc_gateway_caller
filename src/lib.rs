@@ -72,6 +72,7 @@ use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
+use crate::presentation::serialize_service_params;
 pub use application::dto::request_message::ServiceParams;
 pub use application::dto::response_message::ResponseMessage;
 pub use domain::webrtc::peer::entity::PeerEventEnum;
@@ -92,7 +93,7 @@ pub(crate) mod presentation;
 pub async fn run(
     base_url: &str,
 ) -> (
-    mpsc::Sender<(oneshot::Sender<ResponseMessage>, String)>,
+    mpsc::Sender<(oneshot::Sender<String>, String)>,
     std::pin::Pin<Box<dyn futures::Stream<Item = String>>>,
 ) {
     // skyway-webrtc-gateway crateにbase_urlを与え、初期化する
@@ -101,7 +102,7 @@ pub async fn run(
     // End-Userに渡すSenderの生成
     // End-UserはServiceParamsと、oneshotチャネルをこのSenderで与える。
     // 本crateはServiceParamsに対応したUseCaseでの処理を開始し、`一次的な結果`をoneshotチャネルへ返す。
-    let (message_tx, message_rx) = mpsc::channel::<(oneshot::Sender<ResponseMessage>, String)>(10);
+    let (message_tx, message_rx) = mpsc::channel::<(oneshot::Sender<String>, String)>(10);
     // End-Userに渡すReceiverの生成
     // UseCaseでの処理の結果が`一次的な結果`に留まらず、副作用としてイベント監視の必要性が生じた場合は、
     // このReceiverを介してイベントをEnd-Userに返す。
@@ -125,7 +126,7 @@ pub async fn run(
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
 pub async fn skyway_control_service_observe(
-    receiver: mpsc::Receiver<(oneshot::Sender<ResponseMessage>, String)>,
+    receiver: mpsc::Receiver<(oneshot::Sender<String>, String)>,
     event_tx: mpsc::Sender<ResponseMessage>,
 ) {
     // FIXME
@@ -146,7 +147,7 @@ pub async fn skyway_control_service_observe(
                     "#,
                         e
                     ));
-                    let _ = message_response_tx.send(message);
+                    let _ = message_response_tx.send(serialize_service_params(&message));
                     return event_tx;
                 }
 
@@ -155,7 +156,7 @@ pub async fn skyway_control_service_observe(
 
                 // oneshot channelを介してサービス実行によって得られた `一次的な結果` を返す。
                 // サービスの実行結果がエラーの場合でも、エラーを示すJSONメッセージが返される(ResponseMessage::ERROR)のでそのままPresentation層へ渡す
-                let _ = message_response_tx.send(result.clone());
+                let _ = message_response_tx.send(serialize_service_params(&result));
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // まずイベント監視する必要があるのは、サービス実行に成功したケースのみである

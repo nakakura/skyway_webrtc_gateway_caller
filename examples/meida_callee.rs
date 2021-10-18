@@ -58,107 +58,108 @@ async fn main() {
     let event_fut = async {
         println!("waiting connection from a neighbour");
         while let Some(message) = event_rx.next().await {
-            let event = serde_json::from_str(&message).unwrap();
-            match event {
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::ERROR(error_event),
-                )) => {
-                    eprintln!("error recv: {:?}", error_event);
-                }
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::CALL(call_event),
-                )) => {
-                    let media_connection_id = call_event.call_params.media_connection_id;
-                    let answer_params = AnswerQuery {
-                        constraints: Constraints {
-                            video: true,
-                            videoReceiveEnabled: Some(true),
-                            audio: true,
-                            audioReceiveEnabled: Some(true),
-                            video_params: Some(MediaParams {
-                                band_width: 1500,
-                                codec: "H264".to_string(),
-                                media_id: media_socket_video.get_id().unwrap(),
-                                rtcp_id: rtcp_socket.get_id(),
-                                payload_type: None,
-                                sampling_rate: None,
-                            }),
-                            audio_params: Some(MediaParams {
-                                band_width: 1500,
-                                codec: "OPUS".to_string(),
-                                media_id: media_socket_audio.get_id().unwrap(),
-                                rtcp_id: None,
-                                payload_type: None,
-                                sampling_rate: None,
-                            }),
-                            metadata: None,
-                        },
-                        redirect_params: Some(RedirectParameters {
-                            video: Some(video_recv_sock.clone()),
-                            video_rtcp: Some(video_rtcp_recv_sock.clone()),
-                            audio: Some(audio_recv_sock.clone()),
-                            audio_rtcp: Some(audio_rtcp_recv_sock.clone()),
-                        }),
-                    };
-
-                    let _result =
-                        media::answer(&message_tx, media_connection_id, answer_params).await;
-                }
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::CLOSE(close_event),
-                )) => {
-                    println!("{:?} has been deleted. \nExiting Program", close_event);
-                    break;
-                }
-                ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
-                    println!("media event \n {:?}", event);
-                    match event {
-                        MediaConnectionEventEnum::READY(_) => {
-                            // send info
-                            println!(
-                                "you can send video to: {}:{}",
-                                media_socket_video.ip(),
-                                media_socket_video.port()
-                            );
-                            println!(
-                                "you can send video rtcp to: {}:{}",
-                                rtcp_socket.ip(),
-                                rtcp_socket.port()
-                            );
-                            println!(
-                                "you can send audio to: {}:{}",
-                                media_socket_audio.ip(),
-                                media_socket_audio.port()
-                            );
-                            println!("you don't set audio rtcp forwarding config");
-
-                            // redirect info
-                            println!(
-                                "The received video will be transferred to {}:{}",
-                                video_recv_sock.ip(),
-                                video_recv_sock.port()
-                            );
-                            println!(
-                                "The received video rtcp will be transferred to {}:{}",
-                                video_rtcp_recv_sock.ip(),
-                                video_rtcp_recv_sock.port()
-                            );
-                            println!(
-                                "The received audio will be transferred to {}:{}",
-                                audio_recv_sock.ip(),
-                                audio_recv_sock.port()
-                            );
-                            println!(
-                                "The received audio rtcp will be transferred to {}:{}",
-                                audio_rtcp_recv_sock.ip(),
-                                audio_rtcp_recv_sock.port()
-                            );
-                        }
-                        _ => {}
+            if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
+                match event {
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::ERROR(error_event),
+                    )) => {
+                        eprintln!("error recv: {:?}", error_event);
                     }
-                }
-                message => {
-                    panic!("{:?}", message);
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::CALL(call_event),
+                    )) => {
+                        let media_connection_id = call_event.call_params.media_connection_id;
+                        let answer_params = AnswerQuery {
+                            constraints: Constraints {
+                                video: true,
+                                videoReceiveEnabled: Some(true),
+                                audio: true,
+                                audioReceiveEnabled: Some(true),
+                                video_params: Some(MediaParams {
+                                    band_width: 1500,
+                                    codec: "H264".to_string(),
+                                    media_id: media_socket_video.get_id().unwrap(),
+                                    rtcp_id: rtcp_socket.get_id(),
+                                    payload_type: None,
+                                    sampling_rate: None,
+                                }),
+                                audio_params: Some(MediaParams {
+                                    band_width: 1500,
+                                    codec: "OPUS".to_string(),
+                                    media_id: media_socket_audio.get_id().unwrap(),
+                                    rtcp_id: None,
+                                    payload_type: None,
+                                    sampling_rate: None,
+                                }),
+                                metadata: None,
+                            },
+                            redirect_params: Some(RedirectParameters {
+                                video: Some(video_recv_sock.clone()),
+                                video_rtcp: Some(video_rtcp_recv_sock.clone()),
+                                audio: Some(audio_recv_sock.clone()),
+                                audio_rtcp: Some(audio_rtcp_recv_sock.clone()),
+                            }),
+                        };
+
+                        let _result =
+                            media::answer(&message_tx, media_connection_id, answer_params).await;
+                    }
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::CLOSE(close_event),
+                    )) => {
+                        println!("{:?} has been deleted. \nExiting Program", close_event);
+                        break;
+                    }
+                    ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
+                        println!("media event \n {:?}", event);
+                        match event {
+                            MediaConnectionEventEnum::READY(_) => {
+                                // send info
+                                println!(
+                                    "you can send video to: {}:{}",
+                                    media_socket_video.ip(),
+                                    media_socket_video.port()
+                                );
+                                println!(
+                                    "you can send video rtcp to: {}:{}",
+                                    rtcp_socket.ip(),
+                                    rtcp_socket.port()
+                                );
+                                println!(
+                                    "you can send audio to: {}:{}",
+                                    media_socket_audio.ip(),
+                                    media_socket_audio.port()
+                                );
+                                println!("you don't set audio rtcp forwarding config");
+
+                                // redirect info
+                                println!(
+                                    "The received video will be transferred to {}:{}",
+                                    video_recv_sock.ip(),
+                                    video_recv_sock.port()
+                                );
+                                println!(
+                                    "The received video rtcp will be transferred to {}:{}",
+                                    video_rtcp_recv_sock.ip(),
+                                    video_rtcp_recv_sock.port()
+                                );
+                                println!(
+                                    "The received audio will be transferred to {}:{}",
+                                    audio_recv_sock.ip(),
+                                    audio_recv_sock.port()
+                                );
+                                println!(
+                                    "The received audio rtcp will be transferred to {}:{}",
+                                    audio_rtcp_recv_sock.ip(),
+                                    audio_rtcp_recv_sock.port()
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                    message => {
+                        panic!("{:?}", message);
+                    }
                 }
             }
         }

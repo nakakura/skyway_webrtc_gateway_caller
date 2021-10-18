@@ -58,68 +58,69 @@ async fn main() {
     // eventを出力する
     let event_fut = async {
         while let Some(message) = event_rx.next().await {
-            let event = serde_json::from_str(&message).unwrap();
-            match event {
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::ERROR(error_event),
-                )) => {
-                    eprintln!("error recv: {:?}", error_event);
-                }
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::CLOSE(close_event),
-                )) => {
-                    println!("{:?} has been deleted. \nExiting Program", close_event);
-                    break;
-                }
-                ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
-                    println!("media event \n {:?}", event);
-                    match event {
-                        MediaConnectionEventEnum::READY(_) => {
-                            // send info
-                            println!(
-                                "you can send video to: {}:{}",
-                                media_socket_video.ip(),
-                                media_socket_video.port()
-                            );
-                            println!(
-                                "you can send video rtcp to: {}:{}",
-                                rtcp_socket.ip(),
-                                rtcp_socket.port()
-                            );
-                            println!(
-                                "you can send audio to: {}:{}",
-                                media_socket_audio.ip(),
-                                media_socket_audio.port()
-                            );
-                            println!("you don't set audio rtcp forwarding config");
-
-                            // redirect info
-                            println!(
-                                "The received video will be transferred to {}:{}",
-                                video_recv_sock.ip(),
-                                video_recv_sock.port()
-                            );
-                            println!(
-                                "The received video rtcp will be transferred to {}:{}",
-                                video_rtcp_recv_sock.ip(),
-                                video_rtcp_recv_sock.port()
-                            );
-                            println!(
-                                "The received audio will be transferred to {}:{}",
-                                audio_recv_sock.ip(),
-                                audio_recv_sock.port()
-                            );
-                            println!(
-                                "The received audio rtcp will be transferred to {}:{}",
-                                audio_rtcp_recv_sock.ip(),
-                                audio_rtcp_recv_sock.port()
-                            );
-                        }
-                        _ => {}
+            if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
+                match event {
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::ERROR(error_event),
+                    )) => {
+                        eprintln!("error recv: {:?}", error_event);
                     }
-                }
-                message => {
-                    panic!("{:?}", message);
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::CLOSE(close_event),
+                    )) => {
+                        println!("{:?} has been deleted. \nExiting Program", close_event);
+                        break;
+                    }
+                    ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
+                        println!("media event \n {:?}", event);
+                        match event {
+                            MediaConnectionEventEnum::READY(_) => {
+                                // send info
+                                println!(
+                                    "you can send video to: {}:{}",
+                                    media_socket_video.ip(),
+                                    media_socket_video.port()
+                                );
+                                println!(
+                                    "you can send video rtcp to: {}:{}",
+                                    rtcp_socket.ip(),
+                                    rtcp_socket.port()
+                                );
+                                println!(
+                                    "you can send audio to: {}:{}",
+                                    media_socket_audio.ip(),
+                                    media_socket_audio.port()
+                                );
+                                println!("you don't set audio rtcp forwarding config");
+
+                                // redirect info
+                                println!(
+                                    "The received video will be transferred to {}:{}",
+                                    video_recv_sock.ip(),
+                                    video_recv_sock.port()
+                                );
+                                println!(
+                                    "The received video rtcp will be transferred to {}:{}",
+                                    video_rtcp_recv_sock.ip(),
+                                    video_rtcp_recv_sock.port()
+                                );
+                                println!(
+                                    "The received audio will be transferred to {}:{}",
+                                    audio_recv_sock.ip(),
+                                    audio_recv_sock.port()
+                                );
+                                println!(
+                                    "The received audio rtcp will be transferred to {}:{}",
+                                    audio_rtcp_recv_sock.ip(),
+                                    audio_rtcp_recv_sock.port()
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                    message => {
+                        panic!("{:?}", message);
+                    }
                 }
             }
         }

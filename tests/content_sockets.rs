@@ -45,7 +45,7 @@ async fn test_create_data() {
     let (message_tx, _event_rx) = run(&mockito::server_url()).await;
 
     // 操作の結果を受け取るためのチャンネル
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     // 操作指示を生成
     let message = create_data_message();
 
@@ -55,7 +55,7 @@ async fn test_create_data() {
     let result = rx.await.unwrap();
 
     // evaluate
-    assert_eq!(serde_json::to_string(&result).unwrap(),
+    assert_eq!(result,
                "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"CREATE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\",\"ip_v4\":\"127.0.0.1\",\"port\":10001}}");
 }
 
@@ -76,7 +76,7 @@ async fn test_delete_data() {
     let (message_tx, _event_rx) = run(&mockito::server_url()).await;
 
     // 操作の結果を受け取るためのチャンネル
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     // 操作指示を生成
     let message = delete_data_message(data_id);
 
@@ -87,7 +87,7 @@ async fn test_delete_data() {
 
     // evaluate
     assert_eq!(
-        serde_json::to_string(&result).unwrap(),
+        result,
         "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"DELETE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\"}}"
     );
 }

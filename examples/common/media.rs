@@ -20,15 +20,23 @@ pub async fn create_media(
         }}"#,
         is_video
     );
-    // 処理を開始
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("craete data socket failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
             MediaResponseMessageBodyEnum::ContentCreate(socket),
         ))) => socket,
         message => {
-            panic!("media socket open failed{:?}", message);
+            panic!("craete data socket failed{:?}", message);
         }
     }
 }
@@ -43,15 +51,23 @@ pub async fn create_rtcp(message_tx: &mpsc::Sender<ControlMessage>, is_video: bo
         }}"#,
         is_video
     );
-    // 処理を開始
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("create rtcp failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
             MediaResponseMessageBodyEnum::RtcpCreate(socket),
         ))) => socket,
         message => {
-            panic!("data socket open failed{:?}", message);
+            panic!("create rtcp failed{:?}", message);
         }
     }
 }
@@ -70,14 +86,22 @@ pub async fn call(
         serde_json::to_string(&query).unwrap()
     );
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("call failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
             MediaResponseMessageBodyEnum::Call(response),
         ))) => response.media_connection_id,
         message => {
-            panic!("data socket open failed{:?}", message);
+            panic!("call failed{:?}", message);
         }
     }
 }
@@ -101,14 +125,22 @@ pub async fn answer(
         serde_json::to_string(&answer_query).unwrap()
     );
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("answer failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
             MediaResponseMessageBodyEnum::Answer(response),
         ))) => response,
         message => {
-            panic!("data socket open failed{:?}", message);
+            panic!("answer failed{:?}", message);
         }
     }
 }

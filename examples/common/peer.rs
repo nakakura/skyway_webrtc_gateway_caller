@@ -30,10 +30,16 @@ pub async fn create_peer(
     );
 
     // create callback
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("peer create failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
             PeerResponseMessageBodyEnum::Create(result),
         ))) => result,
@@ -63,10 +69,16 @@ pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &
     );
 
     // create callback
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("peer delete failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
             PeerResponseMessageBodyEnum::Delete(result),
         ))) => {

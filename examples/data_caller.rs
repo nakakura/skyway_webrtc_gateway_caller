@@ -60,43 +60,44 @@ async fn main() {
     // eventを出力する
     let event_fut = async {
         while let Some(message) = event_rx.next().await {
-            let event = serde_json::from_str(&message).unwrap();
-            match event {
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::ERROR(error_event),
-                )) => {
-                    eprintln!("error recv: {:?}", error_event);
-                }
-                ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                    PeerEventEnum::CLOSE(close_event),
-                )) => {
-                    println!("{:?} has been deleted. \nExiting Program", close_event);
-                    break;
-                }
-                ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(
-                    DataConnectionEventEnum::OPEN(data_connection_id),
-                )) => {
-                    // DataConnectionの確立に成功
-                    println!(
-                        "data connection has been opened: {}",
-                        data_connection_id.as_str()
-                    );
-                    println!(
-                        "you can send data to: {}:{}",
-                        data_socket.ip(),
-                        data_socket.port()
-                    );
-                    println!(
-                        "you can receive data at: {}:{}",
-                        recv_socket.ip(),
-                        recv_socket.port()
-                    );
-                }
-                ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(event)) => {
-                    println!("data event: {:?}", event);
-                }
-                event => {
-                    println!("recv event: {:?}", event);
+            if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
+                match event {
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::ERROR(error_event),
+                    )) => {
+                        eprintln!("error recv: {:?}", error_event);
+                    }
+                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
+                        PeerEventEnum::CLOSE(close_event),
+                    )) => {
+                        println!("{:?} has been deleted. \nExiting Program", close_event);
+                        break;
+                    }
+                    ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(
+                        DataConnectionEventEnum::OPEN(data_connection_id),
+                    )) => {
+                        // DataConnectionの確立に成功
+                        println!(
+                            "data connection has been opened: {}",
+                            data_connection_id.as_str()
+                        );
+                        println!(
+                            "you can send data to: {}:{}",
+                            data_socket.ip(),
+                            data_socket.port()
+                        );
+                        println!(
+                            "you can receive data at: {}:{}",
+                            recv_socket.ip(),
+                            recv_socket.port()
+                        );
+                    }
+                    ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(event)) => {
+                        println!("data event: {:?}", event);
+                    }
+                    event => {
+                        println!("recv event: {:?}", event);
+                    }
                 }
             }
         }

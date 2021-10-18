@@ -177,9 +177,15 @@ async fn test_create_peer() {
         );
 
         // call create peer api
-        let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+        let (tx, rx) = tokio::sync::oneshot::channel::<String>();
         let _ = message_tx.send((tx, body)).await;
         let result = rx.await;
+        if result.is_err() {
+            assert!(false);
+            unreachable!();
+        }
+
+        let result = ResponseMessage::from_str(&result.unwrap());
 
         // serverが呼ばれたかチェックする
         mock_create_peer.assert();

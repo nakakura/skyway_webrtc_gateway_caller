@@ -16,9 +16,17 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> DataSocke
     .to_string();
     // 処理を開始
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("data socket open failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Create(socket),
         ))) => socket,
@@ -41,9 +49,17 @@ pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: Dat
         data_id.as_str()
     );
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("data socket close failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id }),
         ))) => data_id,
@@ -67,14 +83,22 @@ pub async fn connect(
         serde_json::to_string(&query).unwrap()
     );
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("connect failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Connect(connection_id_wrapper),
         ))) => connection_id_wrapper.data_connection_id,
         _ => {
-            panic!("data socket close failed")
+            panic!("connect failed")
         }
     }
 }
@@ -100,9 +124,17 @@ pub async fn redirect(
         serde_json::to_string(&params).unwrap()
     );
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
+    // create callback
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let _ = message_tx.send((tx, message)).await;
-    match rx.await {
+    let result = rx.await;
+    if result.is_err() {
+        panic!("data redirect failed{:?}", result.err());
+    }
+
+    let response_message = ResponseMessage::from_str(&result.unwrap());
+
+    match response_message {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Redirect(connection_id_wrapper),
         ))) => connection_id_wrapper.data_connection_id,

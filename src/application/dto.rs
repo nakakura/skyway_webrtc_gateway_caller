@@ -125,6 +125,7 @@ pub mod request_message {
 pub mod response_message {
     use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize, Serializer};
+    use serde_json::Value;
 
     use crate::domain::webrtc::data::entity::{
         DataConnectionEventEnum, DataConnectionIdWrapper, DataConnectionStatus, DataIdWrapper,
@@ -135,6 +136,7 @@ pub mod response_message {
         MediaIdWrapper, MediaSocket, RtcpIdWrapper, RtcpSocket,
     };
     use crate::domain::webrtc::peer::entity::PeerStatusMessage;
+    use crate::error;
     use crate::{PeerEventEnum, PeerInfo};
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -265,11 +267,34 @@ pub mod response_message {
 
     // JSONでクライアントから受け取るメッセージ
     // JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
-    #[derive(Deserialize, Debug, Clone, PartialEq)]
-    #[serde(untagged)]
+    #[derive(Debug, Clone, PartialEq)]
     pub enum ResponseMessage {
         Success(ResponseMessageBodyEnum),
         Error(String),
+    }
+
+    impl ResponseMessage {
+        pub fn from_str(json: &str) -> Result<ResponseMessage, error::Error> {
+            #[derive(Deserialize)]
+            struct ResponseMessageStruct {
+                is_success: bool,
+                result: Value,
+            }
+            let value = serde_json::from_str::<ResponseMessageStruct>(json)
+                .map_err(|e| error::Error::SerdeError { error: e })?;
+            match value.is_success {
+                true => {
+                    let content: ResponseMessageBodyEnum = serde_json::from_value(value.result)
+                        .map_err(|e| error::Error::SerdeError { error: e })?;
+                    Ok(ResponseMessage::Success(content))
+                }
+                _ => {
+                    let content: String = serde_json::from_value(value.result)
+                        .map_err(|e| error::Error::SerdeError { error: e })?;
+                    Ok(ResponseMessage::Error(content))
+                }
+            }
+        }
     }
 
     impl Serialize for ResponseMessage {
@@ -296,18 +321,14 @@ pub mod response_message {
     }
 
     #[cfg(test)]
-    mod response_message_serialize {
-        use serde_json::Value;
-
+    mod response_message_serialize_deserialize {
         use crate::application::dto::response_message::{
             PeerResponseMessageBodyEnum, ResponseMessage, ResponseMessageBodyEnum,
         };
         use crate::domain::webrtc::peer::value_object::PeerInfo;
 
         #[test]
-        fn create_message() {
-            let expected = serde_json::from_str::<Value>("{\"is_success\":true,\"result\":{\"peer_id\":\"peer_id\",\"token\":\"pt-9749250e-d157-4f80-9ee2-359ce8524308\", \"type\": \"PEER\", \"command\": \"CREATE\"}}");
-
+        fn serialize_deserialize() {
             // create a param
             let peer_info =
                 PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
@@ -318,11 +339,10 @@ pub mod response_message {
             // serialize
             let message = serde_json::to_string(&ret_message).unwrap();
 
+            let result = ResponseMessage::from_str(&message).unwrap();
+
             //evaluate
-            assert_eq!(
-                expected.unwrap(),
-                serde_json::from_str::<Value>(&message).unwrap(),
-            );
+            assert_eq!(result, ret_message);
         }
     }
 }
