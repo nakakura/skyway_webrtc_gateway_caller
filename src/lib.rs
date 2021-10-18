@@ -70,6 +70,7 @@
 
 use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
+use tokio_stream::wrappers::ReceiverStream;
 
 pub use application::dto::request_message::ServiceParams;
 pub use application::dto::response_message::ResponseMessage;
@@ -92,7 +93,7 @@ pub async fn run(
     base_url: &str,
 ) -> (
     mpsc::Sender<(oneshot::Sender<ResponseMessage>, String)>,
-    mpsc::Receiver<ResponseMessage>,
+    std::pin::Pin<Box<dyn futures::Stream<Item = String>>>,
 ) {
     // skyway-webrtc-gateway crateにbase_urlを与え、初期化する
     skyway_webrtc_gateway_api::initialize(base_url);
@@ -112,8 +113,10 @@ pub async fn run(
     // (例: peer objectを生成したらpeer eventの監視を合わせて開始する)
     tokio::spawn(skyway_control_service_observe(message_rx, event_tx));
 
-    // Presentation層として動作するSender, ReceiverをEnd-Userへ渡す
-    (message_tx, event_rx)
+    // Presentation層の責務として、ObjectをJSONメッセージに変換して返す
+    let event_rx =
+        ReceiverStream::new(event_rx).map(|params| presentation::serialize_service_params(&params));
+    (message_tx, Box::pin(event_rx))
 }
 
 // End-Userからのメッセージ(ServiceParams)を監視し続ける
@@ -127,7 +130,6 @@ pub async fn skyway_control_service_observe(
 ) {
     // FIXME
     // jsonをどんどん受け取る
-    use tokio_stream::wrappers::ReceiverStream;
     let receiver = ReceiverStream::new(receiver);
     receiver
         .fold(

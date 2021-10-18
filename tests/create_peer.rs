@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 
 use mockito::mock;
+use tokio_stream::StreamExt;
 
 use response_message::*;
 use rust_module::prelude::*;
@@ -218,17 +219,18 @@ async fn test_create_peer() {
         params: peer_info.clone(),
     }))
     .create_response_message();
+    println!("{:?}", expected_close);
 
     // serverが呼ばれたかチェックする
     mock_event_api.assert();
 
     // 1つめのEVENTの取得
-    let result = event_rx.recv().await.unwrap();
-    assert_eq!(result, expected_connect);
+    let result = event_rx.next().await.unwrap();
+    assert_eq!(result, serde_json::to_string(&expected_connect).unwrap());
 
     // 2つめのEVENTの取得
-    let result = event_rx.recv().await.unwrap();
-    assert_eq!(result, expected_close);
+    let result = event_rx.next().await.unwrap();
+    assert_eq!(result, serde_json::to_string(&expected_close).unwrap());
 
     // 3つめは来ない
 
