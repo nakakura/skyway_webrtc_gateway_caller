@@ -48,10 +48,9 @@ async fn test_create_data() {
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     // 操作指示を生成
     let message = create_data_message();
-    let body = serde_json::from_str::<ServiceParams>(&message);
 
     // 処理を開始
-    let result = message_tx.send((tx, body.unwrap())).await;
+    let result = message_tx.send((tx, message)).await;
     assert!(result.is_ok());
     let result = rx.await.unwrap();
 
@@ -80,10 +79,9 @@ async fn test_delete_data() {
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
     // 操作指示を生成
     let message = delete_data_message(data_id);
-    let body = serde_json::from_str::<ServiceParams>(&message);
 
     // 処理を開始
-    let result = message_tx.send((tx, body.unwrap())).await;
+    let result = message_tx.send((tx, message)).await;
     assert!(result.is_ok());
     let result = rx.await.unwrap();
 

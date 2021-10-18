@@ -70,7 +70,6 @@
 
 use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
-use tokio_stream::wrappers::ReceiverStream;
 
 pub use application::dto::request_message::ServiceParams;
 pub use application::dto::response_message::ResponseMessage;
@@ -83,6 +82,7 @@ pub(crate) mod domain;
 pub mod error;
 pub(crate) mod infra;
 pub mod prelude;
+pub(crate) mod presentation;
 
 // Presentation層としてchannelを生成し、Application層以降のパイプラインを組み上げる関数。
 // 外部から直接的に呼ばれるのはこの関数のみである。
@@ -91,7 +91,7 @@ pub mod prelude;
 pub async fn run(
     base_url: &str,
 ) -> (
-    mpsc::Sender<(oneshot::Sender<ResponseMessage>, ServiceParams)>,
+    mpsc::Sender<(oneshot::Sender<ResponseMessage>, String)>,
     mpsc::Receiver<ResponseMessage>,
 ) {
     // skyway-webrtc-gateway crateにbase_urlを与え、初期化する
@@ -100,8 +100,7 @@ pub async fn run(
     // End-Userに渡すSenderの生成
     // End-UserはServiceParamsと、oneshotチャネルをこのSenderで与える。
     // 本crateはServiceParamsに対応したUseCaseでの処理を開始し、`一次的な結果`をoneshotチャネルへ返す。
-    let (message_tx, message_rx) =
-        mpsc::channel::<(oneshot::Sender<ResponseMessage>, ServiceParams)>(10);
+    let (message_tx, message_rx) = mpsc::channel::<(oneshot::Sender<ResponseMessage>, String)>(10);
     // End-Userに渡すReceiverの生成
     // UseCaseでの処理の結果が`一次的な結果`に留まらず、副作用としてイベント監視の必要性が生じた場合は、
     // このReceiverを介してイベントをEnd-Userに返す。
@@ -122,25 +121,44 @@ pub async fn run(
 // crate全体を通してステートレスに設計し、将来Stateが必要になった場合もこの関数内のfoldのみに留める
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
-async fn skyway_control_service_observe(
-    receiver: mpsc::Receiver<(oneshot::Sender<ResponseMessage>, ServiceParams)>,
+pub async fn skyway_control_service_observe(
+    receiver: mpsc::Receiver<(oneshot::Sender<ResponseMessage>, String)>,
     event_tx: mpsc::Sender<ResponseMessage>,
 ) {
+    // FIXME
+    // jsonをどんどん受け取る
+    use tokio_stream::wrappers::ReceiverStream;
     let receiver = ReceiverStream::new(receiver);
     receiver
         .fold(
             event_tx,
             |event_tx, (message_response_tx, message)| async move {
-                // UseCaseを生成し、実行する。
+                // JSONをパースし、アプリケーション層に渡す
+                // このJSONは呼び出されるべきサービスの情報を含んでおり、アプリケーション層で適切に呼び出す
+                let result = presentation::format_input_json(&message).await;
+                // jsonのパースに失敗した場合はエラーを返す
+                if let Err(e) = result {
+                    let message = ResponseMessage::Error(format!(
+                        r#"
+                        {:?}
+                    "#,
+                        e
+                    ));
+                    let _ = message_response_tx.send(message);
+                    return event_tx;
+                }
+
+                let message = result.unwrap();
                 let result = application::run(message).await;
-                // oneshot channelを介して`一次的な結果`を返す。
-                // エラーが生じた場合も、エラーを示すJSONメッセージが返される(ResponseMessage::ERROR)のでそのままPresentation層へ渡す
+
+                // oneshot channelを介してサービス実行によって得られた `一次的な結果` を返す。
+                // サービスの実行結果がエラーの場合でも、エラーを示すJSONメッセージが返される(ResponseMessage::ERROR)のでそのままPresentation層へ渡す
                 let _ = message_response_tx.send(result.clone());
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
-                // イベントはオブジェクトのCLOSE, ERRORと、ROS側の終了が検知されるまでは監視し続け、
-                // 適宜event_txへsendされる
+                // まずイベント監視する必要があるのは、サービス実行に成功したケースのみである
                 if let ResponseMessage::Success(message) = result {
+                    // event factoryに渡し、監視サービスが生成された場合
                     if let Some((value, service)) =
                         application::usecase::factory::event_factory(message)
                     {

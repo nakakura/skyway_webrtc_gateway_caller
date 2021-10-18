@@ -8,17 +8,16 @@ use super::ControlMessage;
 
 #[allow(dead_code)]
 pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> DataSocket {
-    let body_json = r#"{
+    let message = r#"{
         "type": "DATA",
         "command": "CREATE",
         "params": ""
     }"#
     .to_string();
-    let body = serde_json::from_str::<request_message::ServiceParams>(&body_json);
     // 処理を開始
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body.unwrap())).await;
+    let _ = message_tx.send((tx, message)).await;
     match rx.await {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Create(socket),
@@ -31,7 +30,7 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> DataSocke
 
 #[allow(dead_code)]
 pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: DataId) -> DataId {
-    let body_json = format!(
+    let message = format!(
         r#"{{
             "type": "DATA",
             "command": "DELETE",
@@ -41,10 +40,9 @@ pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: Dat
         }}"#,
         data_id.as_str()
     );
-    let body = serde_json::from_str::<request_message::ServiceParams>(&body_json);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body.unwrap())).await;
+    let _ = message_tx.send((tx, message)).await;
     match rx.await {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id }),
@@ -69,10 +67,8 @@ pub async fn connect(
         serde_json::to_string(&query).unwrap()
     );
 
-    let body = serde_json::from_str::<request_message::ServiceParams>(&message).unwrap();
-
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body)).await;
+    let _ = message_tx.send((tx, message)).await;
     match rx.await {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Connect(connection_id_wrapper),
@@ -103,10 +99,9 @@ pub async fn redirect(
     }}"#,
         serde_json::to_string(&params).unwrap()
     );
-    let body = serde_json::from_str::<request_message::ServiceParams>(&message).unwrap();
 
     let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-    let _ = message_tx.send((tx, body)).await;
+    let _ = message_tx.send((tx, message)).await;
     match rx.await {
         Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
             DataResponseMessageBodyEnum::Redirect(connection_id_wrapper),

@@ -177,7 +177,6 @@ async fn test_create_peer() {
 
         // call create peer api
         let (tx, rx) = tokio::sync::oneshot::channel::<ResponseMessage>();
-        let body = serde_json::from_str::<ServiceParams>(&body).unwrap();
         let _ = message_tx.send((tx, body)).await;
         let result = rx.await;
 

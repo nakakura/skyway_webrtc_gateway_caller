@@ -8,7 +8,4 @@ pub mod media;
 pub mod peer;
 pub mod terminal;
 
-pub type ControlMessage = (
-    oneshot::Sender<ResponseMessage>,
-    request_message::ServiceParams,
-);
+pub type ControlMessage = (oneshot::Sender<ResponseMessage>, String);
