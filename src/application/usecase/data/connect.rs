@@ -6,7 +6,7 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::data::entity::{ConnectQuery, DataConnection, DataConnectionIdWrapper};
+use crate::domain::webrtc::data::entity::{ConnectQuery, DataConnectionIdWrapper};
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
 
@@ -16,17 +16,15 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct ConnectService {
     #[shaku(inject)]
-    api: Arc<dyn DataRepository>,
+    repository: Arc<dyn DataRepository>,
 }
 
 #[async_trait]
 impl Service for ConnectService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
         let query = params.deserialize::<ConnectQuery>()?;
-        let connection = DataConnection::try_create(self.api.clone(), query).await?;
-        let wrapper = DataConnectionIdWrapper {
-            data_connection_id: connection.data_connection_id().clone(),
-        };
+        let data_connection_id = self.repository.connect(query).await?;
+        let wrapper = DataConnectionIdWrapper { data_connection_id };
         Ok(DataResponseMessageBodyEnum::Connect(wrapper).create_response_message())
     }
 }

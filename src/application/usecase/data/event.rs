@@ -8,7 +8,7 @@ use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
+use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::DataConnectionId;
 use crate::prelude::DataConnectionEventEnum;
@@ -19,7 +19,7 @@ use crate::prelude::DataConnectionEventEnum;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn DataRepository>,
+    repository: Arc<dyn DataRepository>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }
@@ -31,7 +31,7 @@ impl EventService {
         data_connection_id: DataConnectionId,
     ) -> ResponseMessage {
         while self.state.is_running() {
-            let event = DataConnection::try_event(self.api.clone(), &data_connection_id).await;
+            let event = self.repository.event(&data_connection_id).await;
             match event {
                 Ok(DataConnectionEventEnum::CLOSE(data_connection_id)) => {
                     let message = DataResponseMessageBodyEnum::Event(

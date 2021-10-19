@@ -7,7 +7,7 @@ use rust_module::prelude::*;
 use super::ControlMessage;
 
 #[allow(dead_code)]
-pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> DataSocket {
+pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInfo<DataId> {
     let message = r#"{
         "type": "DATA",
         "command": "CREATE",

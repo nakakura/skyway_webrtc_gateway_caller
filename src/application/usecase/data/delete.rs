@@ -6,7 +6,7 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::data::entity::{DataIdWrapper, DataSocket};
+use crate::domain::webrtc::data::entity::DataIdWrapper;
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
 
@@ -16,15 +16,16 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteService {
     #[shaku(inject)]
-    api: Arc<dyn DataRepository>,
+    repository: Arc<dyn DataRepository>,
 }
 
 #[async_trait]
 impl Service for DeleteService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        // アプリケーション層の責務として、JSONメッセージが適切なパラメータか確認する
         let data_id = params.deserialize::<DataIdWrapper>()?.data_id;
 
-        let _ = DataSocket::try_delete(self.api.clone(), &data_id).await?;
+        let _ = self.repository.delete(&data_id).await?;
         Ok(
             DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: data_id })
                 .create_response_message(),

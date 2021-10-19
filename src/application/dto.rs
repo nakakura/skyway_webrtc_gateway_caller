@@ -127,10 +127,11 @@ pub mod response_message {
     use serde::{Deserialize, Serialize, Serializer};
     use serde_json::Value;
 
+    use crate::domain::webrtc::common::value_object::SocketInfo;
     use crate::domain::webrtc::data::entity::{
         DataConnectionEventEnum, DataConnectionIdWrapper, DataConnectionStatus, DataIdWrapper,
-        DataSocket,
     };
+    use crate::domain::webrtc::data::value_object::DataId;
     use crate::domain::webrtc::media::entity::{
         AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaConnectionStatus,
         MediaIdWrapper, MediaSocket, RtcpIdWrapper, RtcpSocket,
@@ -174,7 +175,7 @@ pub mod response_message {
     #[serde(tag = "command")]
     pub enum DataResponseMessageBodyEnum {
         #[serde(rename = "CREATE")]
-        Create(DataSocket),
+        Create(SocketInfo<DataId>),
         #[serde(rename = "CONNECT")]
         Connect(DataConnectionIdWrapper),
         #[serde(rename = "DELETE")]

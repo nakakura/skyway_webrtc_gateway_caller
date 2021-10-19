@@ -6,7 +6,7 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::data::entity::{DataConnection, DataConnectionIdWrapper};
+use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
 
@@ -16,7 +16,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct DisconnectService {
     #[shaku(inject)]
-    api: Arc<dyn DataRepository>,
+    repository: Arc<dyn DataRepository>,
 }
 
 #[async_trait]
@@ -25,12 +25,10 @@ impl Service for DisconnectService {
         let data_connection_id = params
             .deserialize::<DataConnectionIdWrapper>()?
             .data_connection_id;
-        let _ = DataConnection::try_delete(self.api.clone(), &data_connection_id).await?;
+        let _ = self.repository.disconnect(&data_connection_id).await?;
         Ok(
-            DataResponseMessageBodyEnum::Disconnect(DataConnectionIdWrapper {
-                data_connection_id: data_connection_id,
-            })
-            .create_response_message(),
+            DataResponseMessageBodyEnum::Disconnect(DataConnectionIdWrapper { data_connection_id })
+                .create_response_message(),
         )
     }
 }

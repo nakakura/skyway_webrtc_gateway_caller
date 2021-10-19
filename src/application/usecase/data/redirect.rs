@@ -28,7 +28,7 @@ struct RedirectParams {
 #[shaku(interface = Service)]
 pub(crate) struct RedirectService {
     #[shaku(inject)]
-    api: Arc<dyn DataRepository>,
+    repository: Arc<dyn DataRepository>,
 }
 
 #[async_trait]
@@ -41,7 +41,7 @@ impl Service for RedirectService {
             redirect_params: params.redirect_params,
         };
         let _ = self
-            .api
+            .repository
             .redirect(&data_connection_id, &redirect_data_params)
             .await?;
         let wrapper = DataConnectionIdWrapper {

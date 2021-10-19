@@ -6,7 +6,6 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::data::entity::DataSocket;
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
 
@@ -16,7 +15,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct CreateService {
     #[shaku(inject)]
-    api: Arc<dyn DataRepository>,
+    repository: Arc<dyn DataRepository>,
 }
 
 impl CreateService {}
@@ -24,7 +23,8 @@ impl CreateService {}
 #[async_trait]
 impl Service for CreateService {
     async fn execute(&self, _params: Parameter) -> Result<ResponseMessage, error::Error> {
-        let data_sock = DataSocket::try_create(self.api.clone()).await?;
+        // create data APIはパラメータをとらない
+        let data_sock = self.repository.create().await?;
         Ok(DataResponseMessageBodyEnum::Create(data_sock).create_response_message())
     }
 }
@@ -48,8 +48,8 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected = DataResponseMessageBodyEnum::Create(DataSocket(data_id.clone()))
-            .create_response_message();
+        let expected =
+            DataResponseMessageBodyEnum::Create(data_id.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataRepository::default();
