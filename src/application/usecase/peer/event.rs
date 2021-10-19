@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-#[cfg(test)]
-use mockall_double::double;
 use shaku::*;
 use tokio::sync::mpsc;
 
@@ -10,8 +8,6 @@ use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
-#[cfg_attr(test, double)]
-use crate::domain::webrtc::peer::entity::Peer;
 use crate::domain::webrtc::peer::entity::PeerEventEnum;
 use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
@@ -22,19 +18,34 @@ use crate::domain::webrtc::peer::value_object::PeerInfo;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn PeerRepository>,
+    repository: Arc<dyn PeerRepository>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }
 
-impl EventService {
-    async fn listen_event(
+#[async_trait]
+impl EventListener for EventService {
+    async fn execute(
         &self,
-        peer: Peer,
         event_tx: mpsc::Sender<ResponseMessage>,
+        params: Parameter,
     ) -> ResponseMessage {
+        // 汎用的なDTOオブジェクトであるParameterから必要な値を取り出せるかチェックするのはアプリケーション層の責務である
+        let peer_info = params.deserialize::<PeerInfo>();
+        // パースエラーの場合はエラーを示すenumを返す
+        if peer_info.is_err() {
+            let message = format!("invalid peer_info {:?}", peer_info.err().unwrap());
+            let message = ResponseMessage::Error(message);
+            // イベントとして通知する
+            let _ = event_tx.send(message.clone()).await;
+            // 直接的な実行結果としても返しておく
+            return message;
+        }
+
+        let peer_info = peer_info.unwrap();
+
         while self.state.is_running() {
-            let event = peer.try_event().await;
+            let event = self.repository.event(peer_info.clone()).await;
             match event {
                 Ok(PeerEventEnum::CLOSE(event)) => {
                     let message =
@@ -63,40 +74,6 @@ impl EventService {
     }
 }
 
-#[async_trait]
-impl EventListener for EventService {
-    async fn execute(
-        &self,
-        event_tx: mpsc::Sender<ResponseMessage>,
-        params: Parameter,
-    ) -> ResponseMessage {
-        // peer_infoのvalidation
-        let peer_info = params.deserialize::<PeerInfo>();
-        if peer_info.is_err() {
-            let message = format!(
-                "Error in EventListener for Peer. invalid peer_info: {:?}",
-                peer_info.err()
-            );
-            return ResponseMessage::Error(message);
-        }
-        let peer_info = peer_info.unwrap();
-
-        match Peer::find(self.api.clone(), peer_info.clone()).await {
-            Err(e) => {
-                let message = format!("No Such Peer Object {:?}, returns error {:?}", peer_info, e);
-                return ResponseMessage::Error(message);
-            }
-            Ok((_, status)) if status.disconnected => {
-                let message = format!("Peer has been already deleted {:?}", peer_info);
-                return ResponseMessage::Error(message);
-            }
-            Ok((peer, _)) => {
-                return self.listen_event(peer, event_tx).await;
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod test_peer_event {
     use std::sync::Mutex;
@@ -104,9 +81,8 @@ mod test_peer_event {
     use crate::di::PeerEventServiceContainer;
     use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
     use crate::domain::webrtc::data::value_object::DataConnectionId;
-    use crate::domain::webrtc::peer::entity::{
-        PeerCloseEvent, PeerConnectionEvent, PeerStatusMessage,
-    };
+    use crate::domain::webrtc::peer::entity::{PeerCloseEvent, PeerConnectionEvent};
+    use crate::domain::webrtc::peer::repository::MockPeerRepository;
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
 
@@ -115,9 +91,6 @@ mod test_peer_event {
     // 成功する場合
     #[tokio::test]
     async fn success() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
-
         // いくつかのイベントを取得した後、CLOSEが発火すると監視終了
         // このテストでは、CONNECT, TIMEOUT, CLOSEの順に受信するものとする
 
@@ -126,6 +99,7 @@ mod test_peer_event {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // イベントの作成
+        // CONNECTイベント
         let connect_event = PeerEventEnum::CONNECTION(PeerConnectionEvent {
             params: peer_info.clone(),
             data_params: DataConnectionIdWrapper {
@@ -135,29 +109,24 @@ mod test_peer_event {
                 .unwrap(),
             },
         });
+        // CLOSEイベント
         let close_event = PeerEventEnum::CLOSE(PeerCloseEvent {
             params: peer_info.clone(),
         });
-        // CONNECTのイベント
+
+        // 期待値を生成しておく
+        // CONNECTのイベントの後受け取るであろう値
         let expected_connect =
             PeerResponseMessageBodyEnum::Event(connect_event.clone()).create_response_message();
-        // CLOSEのイベント
+        // CLOSEのイベントの後受け取るであろう値
         let expected_close =
             PeerResponseMessageBodyEnum::Event(close_event.clone()).create_response_message();
 
-        // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
-        let peer_info =
-            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
-
-        // event_serviceを生成
-        let module = &PeerEventServiceContainer::builder().build();
-        let event_service: &dyn EventListener = module.resolve_ref();
-
-        // 3つのイベントを返すmockを作成
+        // イベントを3つ返すmockを作成
+        // 3つの処理を分けるためのカウンタ
         let counter = Mutex::new(0u8);
-        let mut peer_mock = Peer::default();
-        peer_mock.expect_try_event().returning(move || {
+        let mut mock = MockPeerRepository::default();
+        mock.expect_event().returning(move |_| {
             let mut counter_ref = counter.lock().unwrap();
             *counter_ref += 1;
             match *counter_ref {
@@ -173,18 +142,17 @@ mod test_peer_event {
             }
         });
 
-        // 正しくstatusを返すようMockを設定
-        let ctx = Peer::find_context();
-        ctx.expect().return_once(|_, peer_info| {
-            Ok((
-                peer_mock,
-                PeerStatusMessage {
-                    peer_id: peer_info.peer_id().clone(),
-                    disconnected: false,
-                },
-            ))
-        });
+        // event_serviceを生成
+        let module = &PeerEventServiceContainer::builder()
+            .with_component_override::<dyn PeerRepository>(Box::new(mock))
+            .build();
+        let event_service: &dyn EventListener = module.resolve_ref();
 
+        // 実行のためのパラメータ生成
+        // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
         // execute
         let result = event_service
             .execute(
@@ -192,9 +160,6 @@ mod test_peer_event {
                 Parameter(serde_json::to_value(&peer_info).unwrap()),
             )
             .await;
-
-        // clear context
-        ctx.checkpoint();
 
         // CLOSEが発火してループを抜けた場合、最後はCLOSEを受信する
         assert_eq!(result, expected_close);
@@ -221,40 +186,31 @@ mod test_peer_event {
         assert!(result.is_none());
     }
 
-    // eventはcloseが発火するか、stateがfalseを返すまで繰り返される
-    // このケースは最初からstateがfalseを返すのでイベントを取得しに行かないパターン
+    // event apiはcloseが発火するか、stateがfalseを返すまで繰り返しアクセスされる
+    // 最初からstateがfalseを返すのでイベントを取得しに行かないパターンのテスト
     #[tokio::test]
     async fn exit_due_to_state() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
-
-        // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
-        let peer_info =
-            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
-
-        // このmockは呼ばれないので、初期化しないでよい
-        let peer_mock = Peer::default();
-        // 正しくstatusを返すようMockを設定
-        let ctx = Peer::find_context();
-        ctx.expect().return_once(|_, peer_info| {
-            Ok((
-                peer_mock,
-                PeerStatusMessage {
-                    peer_id: peer_info.peer_id().clone(),
-                    disconnected: false,
-                },
-            ))
+        // 呼ばれないことを確認するため、呼ばれたらクラッシュするモックを作成
+        let mut mock = MockPeerRepository::default();
+        mock.expect_event().returning(move |_| {
+            assert!(false);
+            unreachable!()
         });
 
         // EventServiceを生成
         // stateは必ずfalseを返すモックを挿入
         let module = &PeerEventServiceContainer::builder()
+            .with_component_override::<dyn PeerRepository>(Box::new(mock))
             .with_component_override::<dyn ApplicationState>(Box::new(
                 ApplicationStateAlwaysFalseImpl {},
             ))
             .build();
         let event_service: &dyn EventListener = module.resolve_ref();
+
+        // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
+        let peer_info =
+            PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
+        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // execute
         let result = event_service
@@ -263,9 +219,6 @@ mod test_peer_event {
                 Parameter(serde_json::to_value(&peer_info).unwrap()),
             )
             .await;
-
-        // clear context
-        ctx.checkpoint();
 
         // stateによりイベントループを抜けた場合、最後はTIMEOUTを返す
         assert_eq!(
@@ -277,13 +230,23 @@ mod test_peer_event {
     // エンドユーザから与えられたjsonが間違っており、イベントを取得できない場合
     #[tokio::test]
     async fn invalid_json() {
-        // event_serviceの引数は、JSON化されたPeerInfoとevent senderであるが、なぜかbool値が入ってきた
-        let param = Parameter(serde_json::Value::Bool(true));
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+        // 呼ばれないことを確認するため、呼ばれたらクラッシュするモックを作成
+        let mut mock = MockPeerRepository::default();
+        mock.expect_event().returning(move |_| {
+            assert!(false);
+            unreachable!()
+        });
 
         // event_serviceを生成
-        let module = &PeerEventServiceContainer::builder().build();
+        let module = &PeerEventServiceContainer::builder()
+            .with_component_override::<dyn PeerRepository>(Box::new(mock))
+            .build();
         let event_service: &dyn EventListener = module.resolve_ref();
+
+        // 実行時の引数を生成
+        // event_serviceの引数は、JSON化されたPeerInfoとevent senderであるが、なぜかbool値が入ってきたケース
+        let param = Parameter(serde_json::Value::Bool(true));
+        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
 
         // execute
         let result = event_service.execute(event_tx, param).await;
@@ -291,7 +254,7 @@ mod test_peer_event {
         if let ResponseMessage::Error(message) = result {
             assert_eq!(
                 &message,
-                "Error in EventListener for Peer. invalid peer_info: Some(SerdeError { error: Error(\"invalid type: boolean `true`, expected struct PeerInfo\", line: 0, column: 0) })"
+                "invalid peer_info SerdeError { error: Error(\"invalid type: boolean `true`, expected struct PeerInfo\", line: 0, column: 0) }"
             );
         } else {
             assert!(false);
@@ -301,35 +264,21 @@ mod test_peer_event {
     // APIがエラーを帰す場合
     #[tokio::test]
     async fn fail() {
-        // mockのcontextが上書きされてしまわないよう、並列実行を避ける
-        let _lock = crate::application::usecase::peer::PEER_FIND_MOCK_LOCKER.lock();
+        // errorを返すmockを作成
+        let mut mock = MockPeerRepository::default();
+        mock.expect_event()
+            .returning(move |_| return Err(error::Error::create_local_error("event error")));
+
+        // event_serviceを生成
+        let module = &PeerEventServiceContainer::builder()
+            .with_component_override::<dyn PeerRepository>(Box::new(mock))
+            .build();
+        let event_service: &dyn EventListener = module.resolve_ref();
 
         // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
         let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
-
-        // event_serviceを生成
-        let module = &PeerEventServiceContainer::builder().build();
-        let event_service: &dyn EventListener = module.resolve_ref();
-
-        // errorを返すmockを作成
-        let mut peer_mock = Peer::default();
-        peer_mock
-            .expect_try_event()
-            .returning(move || return Err(error::Error::create_local_error("try_event error")));
-
-        // 正しくstatusを返すようMockを設定
-        let ctx = Peer::find_context();
-        ctx.expect().return_once(|_, peer_info| {
-            Ok((
-                peer_mock,
-                PeerStatusMessage {
-                    peer_id: peer_info.peer_id().clone(),
-                    disconnected: false,
-                },
-            ))
-        });
 
         // execute
         let result = event_service
@@ -339,14 +288,11 @@ mod test_peer_event {
             )
             .await;
 
-        // clear context
-        ctx.checkpoint();
-
         // errorが帰ってくる
         if let ResponseMessage::Error(e) = result {
             assert_eq!(
                 e,
-                "error in EventService for Peer LocalError(\"try_event error\")"
+                "error in EventService for Peer LocalError(\"event error\")"
             );
         } else {
             assert!(false);

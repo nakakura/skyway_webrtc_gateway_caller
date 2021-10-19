@@ -12,15 +12,6 @@ fn create_params() -> (PeerId, Token) {
     let token = Token::try_create("pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
     (peer_id, token)
 }
-fn create_status_message(peer_id: &str) -> String {
-    format!(
-        r#"{{
-            "peer_id": "{}",
-            "disconnected": false
-        }}"#,
-        peer_id
-    )
-}
 
 fn create_open_message(peer_id: &str, token: &str) -> String {
     format!(
@@ -71,25 +62,6 @@ async fn test_create_peer() {
     let (message_tx, mut event_rx) = run(&mockito::server_url()).await;
     // set up parameters
     let (peer_id, token) = create_params();
-
-    // GET /peers/{peer_id}/statusに対応するmock
-    // 正常に生成されていることを示す
-    let mock_status_api = {
-        let message = create_status_message(peer_id.as_str());
-
-        // 参照) http://35.200.46.204/#/1.peers/peer_status
-        let bind_url = format!(
-            "/peers/{}/status?token={}",
-            peer_id.as_str(),
-            token.as_str()
-        );
-
-        mock("GET", bind_url.as_str())
-            .with_status(reqwest::StatusCode::OK.as_u16() as usize)
-            .with_header("content-type", "application/json")
-            .with_body_from_fn(move |w| w.write_all(message.clone().as_bytes()))
-            .create()
-    };
 
     // GET /peers/{peer_id}/eventsに対応するmock
     // create peerの時点でOPENを返しているので、それ以外のイベントしか来ない
@@ -239,7 +211,4 @@ async fn test_create_peer() {
     assert_eq!(result, serde_json::to_string(&expected_close).unwrap());
 
     // 3つめは来ない
-
-    // event getの前にpeerをvalidationするため、statusが1回呼ばれる
-    mock_status_api.assert();
 }

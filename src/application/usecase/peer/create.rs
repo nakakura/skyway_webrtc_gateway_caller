@@ -26,6 +26,7 @@ pub(crate) struct CreateService {
 #[async_trait]
 impl Service for CreateService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+        // 汎用的なDTOオブジェクトであるParameterから必要な値を取り出せるかチェックするのはアプリケーション層の責務である
         let params = params.deserialize::<CreatePeerParams>()?;
         let peer = Peer::try_create(self.repository.clone(), params).await?;
         Ok(PeerResponseMessageBodyEnum::Create(peer.peer_info().clone()).create_response_message())
