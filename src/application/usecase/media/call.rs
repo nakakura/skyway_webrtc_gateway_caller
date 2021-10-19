@@ -6,7 +6,7 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::media::entity::{MediaConnection, MediaConnectionIdWrapper};
+use crate::domain::webrtc::media::entity::MediaConnectionIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
 
@@ -16,14 +16,14 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct CallService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
 impl Service for CallService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
         let call_query = params.deserialize()?;
-        let result = MediaConnection::try_create(self.api.clone(), call_query).await?;
+        let result = self.repository.call(call_query).await?;
         let wrapper = MediaConnectionIdWrapper {
             media_connection_id: result.params.media_connection_id,
         };

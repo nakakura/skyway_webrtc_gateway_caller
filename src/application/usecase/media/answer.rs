@@ -7,9 +7,7 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::media::entity::{
-    AnswerQuery, AnswerResponseParams, AnswerResult, MediaConnection,
-};
+use crate::domain::webrtc::media::entity::{AnswerQuery, AnswerResponseParams, AnswerResult};
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::MediaConnectionId;
 use crate::error;
@@ -26,22 +24,25 @@ struct AnswerParameters {
 #[shaku(interface = Service)]
 pub(crate) struct AnswerService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
 impl Service for AnswerService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
         let answer_parameters = params.deserialize::<AnswerParameters>()?;
-        let (media_connection, status) = MediaConnection::find(
-            self.api.clone(),
-            answer_parameters.media_connection_id.clone(),
-        )
-        .await?;
+        let status = self
+            .repository
+            .status(&answer_parameters.media_connection_id)
+            .await?;
         if !status.open {
             // MediaConnectionが確立前の場合のみanswerメソッドを実行する
-            let result = media_connection
-                .try_answer(&answer_parameters.answer_query)
+            let result = self
+                .repository
+                .answer(
+                    &answer_parameters.media_connection_id,
+                    &answer_parameters.answer_query,
+                )
                 .await?;
             let video_params = result.params.video_id;
             let audio_params = result.params.audio_id;
@@ -54,7 +55,7 @@ impl Service for AnswerService {
                 })
             };
             let result = AnswerResult {
-                media_connection_id: media_connection.media_connection_id().clone(),
+                media_connection_id: answer_parameters.media_connection_id.clone(),
                 send_sockets: send_socket,
                 recv_sockets: answer_parameters.answer_query.redirect_params,
             };
@@ -63,7 +64,7 @@ impl Service for AnswerService {
             // 確率後の場合はanswerは行わない
             let message = format!(
                 "MediaConnection {} has been already opened.",
-                media_connection.media_connection_id().as_str()
+                answer_parameters.media_connection_id.as_str()
             );
             Ok(ResponseMessage::Error(message))
         }

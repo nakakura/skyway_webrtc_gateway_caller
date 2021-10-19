@@ -134,8 +134,9 @@ pub mod response_message {
     use crate::domain::webrtc::data::value_object::DataId;
     use crate::domain::webrtc::media::entity::{
         AnswerResult, MediaConnectionEventEnum, MediaConnectionIdWrapper, MediaConnectionStatus,
-        MediaIdWrapper, MediaSocket, RtcpIdWrapper, RtcpSocket,
+        MediaIdWrapper, RtcpIdWrapper,
     };
+    use crate::domain::webrtc::media::value_object::{MediaId, RtcpId};
     use crate::domain::webrtc::peer::entity::PeerStatusMessage;
     use crate::error;
     use crate::{PeerEventEnum, PeerInfo};
@@ -216,11 +217,11 @@ pub mod response_message {
     #[serde(tag = "command")]
     pub enum MediaResponseMessageBodyEnum {
         #[serde(rename = "CONTENT_CREATE")]
-        ContentCreate(MediaSocket),
+        ContentCreate(SocketInfo<MediaId>),
         #[serde(rename = "CONTENT_DELETE")]
         ContentDelete(MediaIdWrapper),
         #[serde(rename = "RTCP_CREATE")]
-        RtcpCreate(RtcpSocket),
+        RtcpCreate(SocketInfo<RtcpId>),
         #[serde(rename = "RTCP_DELETE")]
         RtcpDelete(RtcpIdWrapper),
         #[serde(rename = "CALL")]

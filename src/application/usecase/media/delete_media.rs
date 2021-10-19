@@ -9,7 +9,6 @@ use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::entity::MediaIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
-use crate::prelude::MediaSocket;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -17,14 +16,14 @@ use crate::prelude::MediaSocket;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteMediaService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
 impl Service for DeleteMediaService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
         let media_id = params.deserialize::<MediaIdWrapper>()?.media_id;
-        let _ = MediaSocket::try_delete(self.api.clone(), &media_id).await?;
+        let _ = self.repository.delete_media(&media_id).await?;
         Ok(
             MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id })
                 .create_response_message(),

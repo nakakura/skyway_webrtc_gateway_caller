@@ -6,7 +6,6 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::media::entity::RtcpSocket;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
 
@@ -16,13 +15,13 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct CreateRtcpService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
 impl Service for CreateRtcpService {
     async fn execute(&self, _params: Parameter) -> Result<ResponseMessage, error::Error> {
-        let socket = RtcpSocket::try_create(self.api.clone()).await?;
+        let socket = self.repository.create_rtcp().await?;
         Ok(MediaResponseMessageBodyEnum::RtcpCreate(socket).create_response_message())
     }
 }
@@ -46,8 +45,8 @@ mod test_create_rtcp {
             10000,
         )
         .unwrap();
-        let expected = MediaResponseMessageBodyEnum::RtcpCreate(RtcpSocket(rtcp_id.clone()))
-            .create_response_message();
+        let expected =
+            MediaResponseMessageBodyEnum::RtcpCreate(rtcp_id.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();

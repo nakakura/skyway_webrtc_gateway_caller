@@ -8,7 +8,7 @@ use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::media::entity::{MediaConnection, MediaConnectionEventEnum};
+use crate::domain::webrtc::media::entity::MediaConnectionEventEnum;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::MediaConnectionId;
 use crate::prelude::MediaConnectionIdWrapper;
@@ -19,7 +19,7 @@ use crate::prelude::MediaConnectionIdWrapper;
 #[shaku(interface = EventListener)]
 pub(crate) struct EventService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
     #[shaku(inject)]
     state: Arc<dyn ApplicationState>,
 }
@@ -31,7 +31,7 @@ impl EventService {
         media_connection_id: MediaConnectionId,
     ) -> ResponseMessage {
         while self.state.is_running() {
-            let event = MediaConnection::try_event(self.api.clone(), &media_connection_id).await;
+            let event = self.repository.event(&media_connection_id).await;
             match event {
                 Ok(MediaConnectionEventEnum::CLOSE(media_connection_id)) => {
                     let message = MediaResponseMessageBodyEnum::Event(

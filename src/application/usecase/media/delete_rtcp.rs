@@ -6,7 +6,7 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::media::entity::{RtcpIdWrapper, RtcpSocket};
+use crate::domain::webrtc::media::entity::RtcpIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
 
@@ -16,7 +16,7 @@ use crate::error;
 #[shaku(interface = Service)]
 pub(crate) struct DeleteRtcpService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -24,7 +24,7 @@ impl Service for DeleteRtcpService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
         let rtcp_id = params.deserialize::<RtcpIdWrapper>()?.rtcp_id;
 
-        let _ = RtcpSocket::try_delete(self.api.clone(), &rtcp_id).await?;
+        let _ = self.repository.delete_rtcp(&rtcp_id).await?;
         Ok(
             MediaResponseMessageBodyEnum::RtcpDelete(RtcpIdWrapper { rtcp_id })
                 .create_response_message(),

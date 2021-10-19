@@ -9,7 +9,7 @@ use crate::common::ControlMessage;
 pub async fn create_media(
     message_tx: &mpsc::Sender<ControlMessage>,
     is_video: bool,
-) -> MediaSocket {
+) -> SocketInfo<MediaId> {
     let message = format!(
         r#"{{
             "type": "MEDIA",
@@ -42,7 +42,10 @@ pub async fn create_media(
 }
 
 #[allow(dead_code)]
-pub async fn create_rtcp(message_tx: &mpsc::Sender<ControlMessage>, is_video: bool) -> RtcpSocket {
+pub async fn create_rtcp(
+    message_tx: &mpsc::Sender<ControlMessage>,
+    is_video: bool,
+) -> SocketInfo<RtcpId> {
     let message = format!(
         r#"{{
             "type": "MEDIA",

@@ -6,7 +6,6 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::media::entity::MediaConnection;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
 use crate::prelude::MediaConnectionIdWrapper;
@@ -17,7 +16,7 @@ use crate::prelude::MediaConnectionIdWrapper;
 #[shaku(interface = Service)]
 pub(crate) struct StatusService {
     #[shaku(inject)]
-    api: Arc<dyn MediaRepository>,
+    repository: Arc<dyn MediaRepository>,
 }
 
 #[async_trait]
@@ -26,7 +25,7 @@ impl Service for StatusService {
         let media_connection_id = params
             .deserialize::<MediaConnectionIdWrapper>()?
             .media_connection_id;
-        let (_, status) = MediaConnection::find(self.api.clone(), media_connection_id).await?;
+        let status = self.repository.status(&media_connection_id).await?;
         Ok(MediaResponseMessageBodyEnum::Status(status).create_response_message())
     }
 }
