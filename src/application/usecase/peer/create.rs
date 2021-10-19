@@ -9,9 +9,9 @@ use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::peer::entity::CreatePeerParams;
-#[cfg_attr(test, double)]
-use crate::domain::webrtc::peer::entity::Peer;
 use crate::domain::webrtc::peer::repository::PeerRepository;
+#[cfg_attr(test, double)]
+use crate::domain::webrtc::peer::service::create;
 use crate::error;
 
 // Serviceの具象Struct
@@ -28,8 +28,8 @@ impl Service for CreateService {
     async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
         // 汎用的なDTOオブジェクトであるParameterから必要な値を取り出せるかチェックするのはアプリケーション層の責務である
         let params = params.deserialize::<CreatePeerParams>()?;
-        let peer = Peer::try_create(self.repository.clone(), params).await?;
-        Ok(PeerResponseMessageBodyEnum::Create(peer.peer_info().clone()).create_response_message())
+        let peer_info = create::execute(self.repository.clone(), params).await?;
+        Ok(PeerResponseMessageBodyEnum::Create(peer_info).create_response_message())
     }
 }
 
@@ -58,14 +58,10 @@ mod test_create_peer {
         let expected =
             PeerResponseMessageBodyEnum::Create(peer_info.clone()).create_response_message();
 
-        // mockが返す値を生成
         let ret_peer_info = peer_info.clone();
-        // 正常終了して値を返すmockを生成
-        let mut peer_mock = Peer::default();
-        peer_mock.expect_peer_info().return_const(ret_peer_info);
-        // Peer::try_createでmock objectを返すように設定
-        let ctx = Peer::try_create_context();
-        ctx.expect().return_once(|_, _| Ok(peer_mock));
+        let ctx = create::execute_context();
+        ctx.expect()
+            .return_once(move |_, _| Ok(ret_peer_info.clone()));
 
         // 実行時の引数(エンドユーザから与えられるはずの値)を生成
         let message = r#"{
@@ -126,7 +122,7 @@ mod test_create_peer {
         let _lock = LOCKER.lock();
 
         // Peer::try_createが失敗するケース
-        let ctx = Peer::try_create_context();
+        let ctx = create::execute_context();
         ctx.expect()
             .return_once(|_, _| Err(error::Error::create_local_error("peer生成失敗")));
 
