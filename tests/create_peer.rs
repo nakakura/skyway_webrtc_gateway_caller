@@ -4,8 +4,8 @@ use mockito::mock;
 use tokio_stream::StreamExt;
 
 use response_message::*;
-use rust_module::prelude::*;
-use rust_module::*;
+use module::prelude::*;
+use module::*;
 
 fn create_params() -> (PeerId, Token) {
     let peer_id = PeerId::new("hoge");

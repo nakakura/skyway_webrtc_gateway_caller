@@ -1,7 +1,7 @@
 use tokio::sync::mpsc;
 
 use response_message::*;
-use rust_module::prelude::*;
+use module::prelude::*;
 
 use crate::common::ControlMessage;
 

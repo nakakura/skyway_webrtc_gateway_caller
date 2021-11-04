@@ -2,7 +2,7 @@ use serde::Serialize;
 use tokio::sync::mpsc;
 
 use response_message::*;
-use rust_module::prelude::*;
+use module::prelude::*;
 
 use super::ControlMessage;
 

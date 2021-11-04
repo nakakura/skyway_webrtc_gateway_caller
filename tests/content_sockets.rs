@@ -1,5 +1,5 @@
 use mockito::mock;
-use rust_module::*;
+use module::*;
 
 fn create_data_message() -> String {
     r#"{

@@ -1,12 +1,17 @@
 [package]
-name = "rust_module"
+name = "module"
 version = "0.0.1"
 authors = ["Toshiya Nakakura <nakakura@me.com>"]
 edition = "2018"
 
 [lib]
-name = "rust_module"
+crate-type = ["staticlib", "rlib"]
+name = "module"
 path = "src/lib.rs"
+
+[profile.release]
+lto = true
+opt-level = 3
 
 [dependencies]
 async-trait = "0.1.48"

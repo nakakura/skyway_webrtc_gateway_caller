@@ -1,4 +1,4 @@
-use rust_module::*;
+use module::*;
 
 #[tokio::test]
 async fn test_create_peer() {

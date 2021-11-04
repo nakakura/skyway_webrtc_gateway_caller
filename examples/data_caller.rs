@@ -5,8 +5,8 @@ use common::data;
 use common::peer;
 use common::terminal;
 use response_message::*;
-use rust_module::prelude::*;
-use rust_module::run;
+use module::prelude::*;
+use module::run;
 
 mod common;
 
