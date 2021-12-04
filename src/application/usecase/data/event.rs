@@ -111,8 +111,12 @@ mod test_data_event {
         // create params
         let data_connection_id =
             DataConnectionId::try_create("dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
-        let open_event = DataConnectionEventEnum::OPEN(data_connection_id.clone());
-        let close_event = DataConnectionEventEnum::CLOSE(data_connection_id.clone());
+        let open_event = DataConnectionEventEnum::OPEN(DataConnectionIdWrapper {
+            data_connection_id: data_connection_id.clone(),
+        });
+        let close_event = DataConnectionEventEnum::CLOSE(DataConnectionIdWrapper {
+            data_connection_id: data_connection_id.clone(),
+        });
 
         // 1回目はOPEN, 2回目はCLOSEイベントを返すMockを作る
         let mut counter = 0;
@@ -149,7 +153,9 @@ mod test_data_event {
         assert_eq!(
             message,
             DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
-                data_connection_id.clone()
+                DataConnectionIdWrapper {
+                    data_connection_id: data_connection_id.clone()
+                }
             ))
             .create_response_message()
         );
@@ -160,7 +166,9 @@ mod test_data_event {
         assert_eq!(
             event,
             DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::OPEN(
-                data_connection_id.clone()
+                DataConnectionIdWrapper {
+                    data_connection_id: data_connection_id.clone()
+                }
             ))
             .create_response_message()
         );
@@ -170,8 +178,10 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(data_connection_id))
-                .create_response_message()
+            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
+                DataConnectionIdWrapper { data_connection_id }
+            ))
+            .create_response_message()
         );
     }
 

@@ -4,9 +4,9 @@ use tokio_stream::StreamExt;
 use common::data;
 use common::peer;
 use common::terminal;
-use response_message::*;
 use module::prelude::*;
 use module::run;
+use response_message::*;
 
 mod common;
 
@@ -78,11 +78,11 @@ async fn main() {
                         break;
                     }
                     ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(
-                        DataConnectionEventEnum::OPEN(data_connection_id),
+                        DataConnectionEventEnum::OPEN(data_connection_id_wrapper),
                     )) => {
                         println!(
                             "data connection has been opened: {}",
-                            data_connection_id.as_str()
+                            data_connection_id_wrapper.data_connection_id.as_str()
                         );
                         println!(
                             "you can send data to: {}:{}",

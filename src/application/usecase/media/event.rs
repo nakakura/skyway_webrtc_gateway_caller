@@ -102,8 +102,12 @@ mod test_delete_media {
             MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
 
         // 発火させるイベントの準備
-        let ready_event = MediaConnectionEventEnum::READY(media_connection_id.clone());
-        let close_event = MediaConnectionEventEnum::CLOSE(media_connection_id.clone());
+        let ready_event = MediaConnectionEventEnum::READY(MediaConnectionIdWrapper {
+            media_connection_id: media_connection_id.clone(),
+        });
+        let close_event = MediaConnectionEventEnum::CLOSE(MediaConnectionIdWrapper {
+            media_connection_id: media_connection_id.clone(),
+        });
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();
@@ -160,7 +164,9 @@ mod test_delete_media {
         assert_eq!(
             result,
             MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                media_connection_id.clone()
+                MediaConnectionIdWrapper {
+                    media_connection_id: media_connection_id.clone()
+                }
             ))
             .create_response_message()
         );
@@ -172,7 +178,9 @@ mod test_delete_media {
             assert_eq!(
                 result_close_event,
                 MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
-                    media_connection_id.clone()
+                    MediaConnectionIdWrapper {
+                        media_connection_id: media_connection_id.clone()
+                    }
                 ))
                 .create_response_message()
             );
@@ -186,7 +194,9 @@ mod test_delete_media {
             assert_eq!(
                 result_close_event,
                 MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                    media_connection_id.clone()
+                    MediaConnectionIdWrapper {
+                        media_connection_id: media_connection_id.clone()
+                    }
                 ))
                 .create_response_message()
             );
