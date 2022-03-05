@@ -117,7 +117,7 @@ pub async fn run(
     // Presentation層の責務として、ObjectをJSONメッセージに変換して返す
     let mut event_rx =
         ReceiverStream::new(event_rx).map(|params| presentation::serialize_service_params(&params));
-    let (tx, rx) = mpsc::channel::<String>(10);
+    let (tx, rx) = mpsc::channel::<String>(1000);
     tokio::spawn(async move {
         while let Some(item) = event_rx.next().await {
             if tx.send(item).await.is_err() {
