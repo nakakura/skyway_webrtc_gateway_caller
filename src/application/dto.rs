@@ -269,7 +269,7 @@ pub mod response_message {
 
     // JSONでクライアントから受け取るメッセージ
     // JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize)]
     pub enum ResponseMessage {
         Success(ResponseMessageBodyEnum),
         Error(String),
