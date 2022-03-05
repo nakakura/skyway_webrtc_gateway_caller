@@ -94,7 +94,7 @@ pub async fn run(
     base_url: &str,
 ) -> (
     mpsc::Sender<(oneshot::Sender<String>, String)>,
-    std::pin::Pin<Box<dyn futures::Stream<Item = String>>>,
+    mpsc::Receiver<String>,
 ) {
     // skyway-webrtc-gateway crateにbase_urlを与え、初期化する
     skyway_webrtc_gateway_api::initialize(base_url);
@@ -115,9 +115,17 @@ pub async fn run(
     tokio::spawn(skyway_control_service_observe(message_rx, event_tx));
 
     // Presentation層の責務として、ObjectをJSONメッセージに変換して返す
-    let event_rx =
+    let mut event_rx =
         ReceiverStream::new(event_rx).map(|params| presentation::serialize_service_params(&params));
-    (message_tx, Box::pin(event_rx))
+    let (tx, rx) = mpsc::channel::<String>(10);
+    tokio::spawn(async move {
+        while let Some(item) = event_rx.next().await {
+            if tx.send(item).await.is_err() {
+                break;
+            }
+        }
+    });
+    (message_tx, rx)
 }
 
 // End-Userからのメッセージ(ServiceParams)を監視し続ける
