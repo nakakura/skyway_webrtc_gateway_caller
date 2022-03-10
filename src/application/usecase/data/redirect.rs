@@ -1,26 +1,16 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
-use crate::domain::webrtc::data::entity::{DataIdWrapper, RedirectDataParams};
+use crate::domain::webrtc::data::entity::RedirectDataParams;
 use crate::domain::webrtc::data::repository::DataRepository;
-use crate::domain::webrtc::data::value_object::DataConnectionId;
 use crate::error;
 use crate::prelude::DataConnectionIdWrapper;
-
-// JSON Parse用の定義
-#[derive(Serialize, Deserialize)]
-struct RedirectParams {
-    pub data_connection_id: DataConnectionId,
-    pub feed_params: Option<DataIdWrapper>,
-    pub redirect_params: Option<SocketInfo<PhantomId>>,
-}
+use crate::prelude::RedirectParams;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
