@@ -1,12 +1,11 @@
 use tokio::sync::mpsc;
-use tokio_stream::StreamExt;
 
 use common::media;
 use common::peer;
 use common::terminal;
-use response_message::*;
 use module::prelude::*;
 use module::run;
+use response_message::*;
 
 mod common;
 
@@ -57,7 +56,7 @@ async fn main() {
 
     // eventを出力する
     let event_fut = async {
-        while let Some(message) = event_rx.next().await {
+        while let Some(message) = event_rx.recv().await {
             if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
                 match event {
                     ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(

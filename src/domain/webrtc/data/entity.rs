@@ -5,14 +5,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::prelude::DataConnectionId;
 use crate::prelude::PhantomId;
 use crate::prelude::SocketInfo;
 
 /// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
 pub use skyway_webrtc_gateway_api::data::{
-    ConnectQuery, DataConnectionEventEnum, DataConnectionIdWrapper, DataConnectionStatus,
-    DataIdWrapper, RedirectDataParams, RedirectDataResponse,
+    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper,
+    DataConnectionStatus, DataId, DataIdWrapper, RedirectDataParams, RedirectDataResponse,
 };
 
 // JSON Parse用の定義

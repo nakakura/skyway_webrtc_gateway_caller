@@ -1,11 +1,10 @@
 use std::sync::Mutex;
 
 use mockito::mock;
-use tokio_stream::StreamExt;
 
-use response_message::*;
 use module::prelude::*;
 use module::*;
+use response_message::*;
 
 fn create_params() -> (PeerId, Token) {
     let peer_id = PeerId::new("hoge");
@@ -203,11 +202,11 @@ async fn test_create_peer() {
     mock_event_api.assert();
 
     // 1つめのEVENTの取得
-    let result = event_rx.next().await.unwrap();
+    let result = event_rx.recv().await.unwrap();
     assert_eq!(result, serde_json::to_string(&expected_connect).unwrap());
 
     // 2つめのEVENTの取得
-    let result = event_rx.next().await.unwrap();
+    let result = event_rx.recv().await.unwrap();
     assert_eq!(result, serde_json::to_string(&expected_close).unwrap());
 
     // 3つめは来ない

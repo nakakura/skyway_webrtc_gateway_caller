@@ -6,11 +6,11 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
 use crate::application::usecase::service::Service;
-use crate::domain::webrtc::data::entity::RedirectDataParams;
+use crate::domain::webrtc::data::entity::{
+    DataConnectionIdWrapper, RedirectDataParams, RedirectParams,
+};
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
-use crate::prelude::DataConnectionIdWrapper;
-use crate::prelude::RedirectParams;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -46,7 +46,9 @@ impl Service for RedirectService {
 mod test_redirect_data {
     use crate::di::DataRedirectServiceContainer;
     use crate::domain::webrtc::common::value_object::SerializableId;
-    use crate::domain::webrtc::data::entity::{DataConnectionIdWrapper, RedirectDataResponse};
+    use crate::domain::webrtc::data::entity::{
+        DataConnectionId, DataConnectionIdWrapper, RedirectDataResponse,
+    };
     use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::domain::webrtc::data::value_object::DataId;
     use crate::error;
