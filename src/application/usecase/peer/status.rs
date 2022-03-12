@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{PeerResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
@@ -21,10 +21,10 @@ pub(crate) struct StatusService {
 
 #[async_trait]
 impl Service for StatusService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let peer_info = params.deserialize::<PeerInfo>()?;
         let status = self.repository.status(&peer_info).await?;
-        Ok(PeerResponseMessageBodyEnum::Status(status).create_response_message())
+        Ok(PeerResponse::Status(status).create_response_message())
     }
 }
 
@@ -44,8 +44,7 @@ mod test_create_peer {
             peer_id: peer_info.peer_id().clone(),
             disconnected: false,
         };
-        let expected =
-            PeerResponseMessageBodyEnum::Status(status.clone()).create_response_message();
+        let expected = PeerResponse::Status(status.clone()).create_response_message();
 
         // 削除に成功するケースのmockを作成
         let result_value = status.clone();

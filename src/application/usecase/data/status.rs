@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
 use crate::domain::webrtc::data::repository::DataRepository;
@@ -23,12 +23,12 @@ impl StatusService {}
 
 #[async_trait]
 impl Service for StatusService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let data_connection_id = params
             .deserialize::<DataConnectionIdWrapper>()?
             .data_connection_id;
         let status = self.repository.status(&data_connection_id).await?;
-        Ok(DataResponseMessageBodyEnum::Status(status).create_response_message())
+        Ok(DataResponse::Status(status).create_response_message())
     }
 }
 
@@ -55,8 +55,7 @@ mod test_create_data {
             r#type: "DATA".to_string(),
         };
         // 期待値を生成
-        let expected =
-            DataResponseMessageBodyEnum::Status(status.clone()).create_response_message();
+        let expected = DataResponse::Status(status.clone()).create_response_message();
 
         // statusの取得に成功する場合のMockを作成
         let mut mock = MockDataRepository::default();

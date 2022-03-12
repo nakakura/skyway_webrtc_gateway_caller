@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::entity::{
     DataConnectionIdWrapper, RedirectDataParams, RedirectParams,
@@ -23,7 +23,7 @@ pub(crate) struct RedirectService {
 
 #[async_trait]
 impl Service for RedirectService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let params = params.deserialize::<RedirectParams>()?;
         let data_connection_id = params.data_connection_id;
         let redirect_data_params = RedirectDataParams {
@@ -38,7 +38,7 @@ impl Service for RedirectService {
             data_connection_id: data_connection_id,
         };
 
-        Ok(DataResponseMessageBodyEnum::Redirect(wrapper).create_response_message())
+        Ok(DataResponse::Redirect(wrapper).create_response_message())
     }
 }
 
@@ -58,7 +58,7 @@ mod test_redirect_data {
     #[tokio::test]
     async fn success() {
         // 期待値を生成
-        let expected = DataResponseMessageBodyEnum::Redirect(DataConnectionIdWrapper {
+        let expected = DataResponse::Redirect(DataConnectionIdWrapper {
             data_connection_id: DataConnectionId::try_create(
                 "dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c",
             )

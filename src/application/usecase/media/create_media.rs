@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
@@ -27,10 +27,10 @@ pub(crate) struct CreateMediaService {
 
 #[async_trait]
 impl Service for CreateMediaService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let is_video = params.deserialize::<IsVideo>()?.is_video;
         let socket = self.repository.create_media(is_video).await?;
-        Ok(MediaResponseMessageBodyEnum::ContentCreate(socket).create_response_message())
+        Ok(MediaResponse::ContentCreate(socket).create_response_message())
     }
 }
 
@@ -53,8 +53,7 @@ mod test_create_media {
             10000,
         )
         .unwrap();
-        let expected = MediaResponseMessageBodyEnum::ContentCreate(media_socket.clone())
-            .create_response_message();
+        let expected = MediaResponse::ContentCreate(media_socket.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();

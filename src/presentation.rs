@@ -1,5 +1,5 @@
 use crate::application::dto::request_message::ServiceParams;
-use crate::{error, ResponseMessage};
+use crate::{error, ResponseResult};
 
 pub async fn format_input_json(json_str: &str) -> Result<ServiceParams, error::Error> {
     serde_json::from_str::<ServiceParams>(json_str).map_err(|e| {
@@ -44,6 +44,6 @@ mod format_input_json_test {
     }
 }
 
-pub fn serialize_service_params(params: &ResponseMessage) -> String {
+pub fn serialize_service_params(params: &ResponseResult) -> String {
     serde_json::to_string(params).unwrap()
 }

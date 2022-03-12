@@ -74,7 +74,7 @@ use tokio_stream::wrappers::ReceiverStream;
 
 use crate::presentation::serialize_service_params;
 pub use application::dto::request_message::ServiceParams;
-pub use application::dto::response_message::ResponseMessage;
+pub use application::dto::response_message::ResponseResult;
 pub use domain::webrtc::peer::entity::PeerEventEnum;
 pub use domain::webrtc::peer::value_object::{PeerId, PeerInfo, Token};
 
@@ -107,7 +107,7 @@ pub async fn run(
     // UseCaseでの処理の結果が`一次的な結果`に留まらず、副作用としてイベント監視の必要性が生じた場合は、
     // このReceiverを介してイベントをEnd-Userに返す。
     // TODO: タイムアウトの仕様を検討する
-    let (event_tx, event_rx) = mpsc::channel::<ResponseMessage>(10);
+    let (event_tx, event_rx) = mpsc::channel::<ResponseResult>(10);
 
     // Senderの監視を開始する。
     // 副作用としてイベントを返すケースのため、event_txも渡す
@@ -135,7 +135,7 @@ pub async fn run(
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
 pub async fn skyway_control_service_observe(
     receiver: mpsc::Receiver<(oneshot::Sender<String>, String)>,
-    event_tx: mpsc::Sender<ResponseMessage>,
+    event_tx: mpsc::Sender<ResponseResult>,
 ) {
     // FIXME
     // jsonをどんどん受け取る
@@ -149,7 +149,7 @@ pub async fn skyway_control_service_observe(
                 let result = presentation::format_input_json(&message).await;
                 // jsonのパースに失敗した場合はエラーを返す
                 if let Err(e) = result {
-                    let message = ResponseMessage::Error(format!(
+                    let message = ResponseResult::Error(format!(
                         r#"
                         {:?}
                     "#,
@@ -168,7 +168,7 @@ pub async fn skyway_control_service_observe(
 
                 // イベントを監視する必要が生じた場合は、イベントの監視を開始する
                 // まずイベント監視する必要があるのは、サービス実行に成功したケースのみである
-                if let ResponseMessage::Success(message) = result {
+                if let ResponseResult::Success(message) = result {
                     // event factoryに渡し、監視サービスが生成された場合
                     if let Some((value, service)) =
                         application::usecase::factory::event_factory(message)

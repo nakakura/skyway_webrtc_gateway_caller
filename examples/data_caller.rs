@@ -59,22 +59,22 @@ async fn main() {
     // eventを出力する
     let event_fut = async {
         while let Some(message) = event_rx.recv().await {
-            if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
+            if let ResponseResult::Success(event) = ResponseResult::from_str(&message).unwrap() {
                 match event {
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::ERROR(error_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::ERROR(
+                        error_event,
+                    ))) => {
                         eprintln!("error recv: {:?}", error_event);
                     }
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::CLOSE(close_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::CLOSE(
+                        close_event,
+                    ))) => {
                         println!("{:?} has been deleted. \nExiting Program", close_event);
                         break;
                     }
-                    ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(
-                        DataConnectionEventEnum::OPEN(data_connection_id_wrapper),
-                    )) => {
+                    ResponseMessage::Data(DataResponse::Event(DataConnectionEventEnum::OPEN(
+                        data_connection_id_wrapper,
+                    ))) => {
                         // DataConnectionの確立に成功
                         println!(
                             "data connection has been opened: {}",
@@ -91,7 +91,7 @@ async fn main() {
                             recv_socket.port()
                         );
                     }
-                    ResponseMessageBodyEnum::Data(DataResponseMessageBodyEnum::Event(event)) => {
+                    ResponseMessage::Data(DataResponse::Event(event)) => {
                         println!("data event: {:?}", event);
                     }
                     event => {

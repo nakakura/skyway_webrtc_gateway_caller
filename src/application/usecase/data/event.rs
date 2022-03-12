@@ -5,7 +5,7 @@ use shaku::*;
 use tokio::sync::mpsc;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
@@ -27,17 +27,16 @@ pub(crate) struct EventService {
 impl EventService {
     async fn listen(
         &self,
-        event_tx: mpsc::Sender<ResponseMessage>,
+        event_tx: mpsc::Sender<ResponseResult>,
         data_connection_id: DataConnectionId,
-    ) -> ResponseMessage {
+    ) -> ResponseResult {
         while self.state.is_running() {
             let event = self.repository.event(&data_connection_id).await;
             match event {
                 Ok(DataConnectionEventEnum::CLOSE(data_connection_id)) => {
-                    let message = DataResponseMessageBodyEnum::Event(
-                        DataConnectionEventEnum::CLOSE(data_connection_id),
-                    )
-                    .create_response_message();
+                    let message =
+                        DataResponse::Event(DataConnectionEventEnum::CLOSE(data_connection_id))
+                            .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -45,21 +44,19 @@ impl EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message =
-                        DataResponseMessageBodyEnum::Event(event.clone()).create_response_message();
+                    let message = DataResponse::Event(event.clone()).create_response_message();
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
                     let message = format!("error in EventListener for data. {:?}", e);
-                    let message = ResponseMessage::Error(message);
+                    let message = ResponseResult::Error(message);
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
             }
         }
 
-        DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
-            .create_response_message()
+        DataResponse::Event(DataConnectionEventEnum::TIMEOUT).create_response_message()
     }
 }
 
@@ -67,16 +64,16 @@ impl EventService {
 impl EventListener for EventService {
     async fn execute(
         &self,
-        event_tx: mpsc::Sender<ResponseMessage>,
+        event_tx: mpsc::Sender<ResponseResult>,
         params: Parameter,
-    ) -> ResponseMessage {
+    ) -> ResponseResult {
         let data_connection_id_wrapper = params.deserialize::<DataConnectionIdWrapper>();
         if data_connection_id_wrapper.is_err() {
             let message = format!(
                 "invalid data_connection_id {:?}",
                 data_connection_id_wrapper.err()
             );
-            return ResponseMessage::Error(message);
+            return ResponseResult::Error(message);
         }
 
         let data_connection_id = data_connection_id_wrapper.unwrap().data_connection_id;
@@ -131,7 +128,7 @@ mod test_data_event {
         });
 
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseResult>(10);
 
         // 実行
         let param = Parameter(
@@ -152,11 +149,9 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
-                DataConnectionIdWrapper {
-                    data_connection_id: data_connection_id.clone()
-                }
-            ))
+            DataResponse::Event(DataConnectionEventEnum::CLOSE(DataConnectionIdWrapper {
+                data_connection_id: data_connection_id.clone()
+            }))
             .create_response_message()
         );
 
@@ -165,11 +160,9 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::OPEN(
-                DataConnectionIdWrapper {
-                    data_connection_id: data_connection_id.clone()
-                }
-            ))
+            DataResponse::Event(DataConnectionEventEnum::OPEN(DataConnectionIdWrapper {
+                data_connection_id: data_connection_id.clone()
+            }))
             .create_response_message()
         );
 
@@ -178,9 +171,9 @@ mod test_data_event {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::CLOSE(
-                DataConnectionIdWrapper { data_connection_id }
-            ))
+            DataResponse::Event(DataConnectionEventEnum::CLOSE(DataConnectionIdWrapper {
+                data_connection_id
+            }))
             .create_response_message()
         );
     }
@@ -201,7 +194,7 @@ mod test_data_event {
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseResult>(10);
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataEventServiceContainer::builder()
@@ -222,14 +215,14 @@ mod test_data_event {
         let message = event_service.execute(event_tx, param).await;
         assert_eq!(
             message,
-            ResponseMessage::Error("error in EventListener for data. LocalError(\"error\")".into())
+            ResponseResult::Error("error in EventListener for data. LocalError(\"error\")".into())
         );
 
         // 発生したERRORを受け取る
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            ResponseMessage::Error("error in EventListener for data. LocalError(\"error\")".into())
+            ResponseResult::Error("error in EventListener for data. LocalError(\"error\")".into())
         );
     }
 
@@ -249,7 +242,7 @@ mod test_data_event {
             .returning(move |_| Err(error::Error::create_local_error("error")));
 
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseResult>(10);
 
         // Mockを埋め込んだEventServiceを生成
         let module = DataEventServiceContainer::builder()
@@ -271,8 +264,7 @@ mod test_data_event {
         let message = event_service.execute(event_tx, Parameter(param)).await;
         assert_eq!(
             message,
-            DataResponseMessageBodyEnum::Event(DataConnectionEventEnum::TIMEOUT)
-                .create_response_message()
+            DataResponse::Event(DataConnectionEventEnum::TIMEOUT).create_response_message()
         );
 
         // event発生前にApplicationStateによりloopを抜けている

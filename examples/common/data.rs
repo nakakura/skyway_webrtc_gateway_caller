@@ -1,8 +1,8 @@
 use serde::Serialize;
 use tokio::sync::mpsc;
 
-use response_message::*;
 use module::prelude::*;
+use response_message::*;
 
 use super::ControlMessage;
 
@@ -24,12 +24,10 @@ pub async fn create_data(message_tx: &mpsc::Sender<ControlMessage>) -> SocketInf
         panic!("data socket open failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Create(socket),
-        ))) => socket,
+        Ok(ResponseResult::Success(ResponseMessage::Data(DataResponse::Create(socket)))) => socket,
         _ => {
             panic!("data socket open failed")
         }
@@ -57,12 +55,12 @@ pub async fn delete_data(message_tx: &mpsc::Sender<ControlMessage>, data_id: Dat
         panic!("data socket close failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id }),
-        ))) => data_id,
+        Ok(ResponseResult::Success(ResponseMessage::Data(DataResponse::Delete(
+            DataIdWrapper { data_id },
+        )))) => data_id,
         _ => {
             panic!("data socket close failed")
         }
@@ -91,12 +89,12 @@ pub async fn connect(
         panic!("connect failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Connect(connection_id_wrapper),
-        ))) => connection_id_wrapper.data_connection_id,
+        Ok(ResponseResult::Success(ResponseMessage::Data(DataResponse::Connect(
+            connection_id_wrapper,
+        )))) => connection_id_wrapper.data_connection_id,
         _ => {
             panic!("connect failed")
         }
@@ -132,12 +130,12 @@ pub async fn redirect(
         panic!("data redirect failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Data(
-            DataResponseMessageBodyEnum::Redirect(connection_id_wrapper),
-        ))) => connection_id_wrapper.data_connection_id,
+        Ok(ResponseResult::Success(ResponseMessage::Data(DataResponse::Redirect(
+            connection_id_wrapper,
+        )))) => connection_id_wrapper.data_connection_id,
         _ => {
             panic!("data redirect failed")
         }

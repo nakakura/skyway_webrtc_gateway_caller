@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::entity::RtcpIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
@@ -21,14 +21,11 @@ pub(crate) struct DeleteRtcpService {
 
 #[async_trait]
 impl Service for DeleteRtcpService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let rtcp_id = params.deserialize::<RtcpIdWrapper>()?.rtcp_id;
 
         let _ = self.repository.delete_rtcp(&rtcp_id).await?;
-        Ok(
-            MediaResponseMessageBodyEnum::RtcpDelete(RtcpIdWrapper { rtcp_id })
-                .create_response_message(),
-        )
+        Ok(MediaResponse::RtcpDelete(RtcpIdWrapper { rtcp_id }).create_response_message())
     }
 }
 
@@ -45,7 +42,7 @@ mod test_delete_media {
     async fn success() {
         // 期待値を生成
         let rtcp_id = RtcpId::try_create("rc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = MediaResponseMessageBodyEnum::RtcpDelete(RtcpIdWrapper {
+        let expected = MediaResponse::RtcpDelete(RtcpIdWrapper {
             rtcp_id: rtcp_id.clone(),
         })
         .create_response_message();

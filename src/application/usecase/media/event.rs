@@ -5,7 +5,7 @@ use shaku::*;
 use tokio::sync::mpsc;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::media::entity::MediaConnectionEventEnum;
@@ -27,17 +27,16 @@ pub(crate) struct EventService {
 impl EventService {
     async fn listen(
         &self,
-        event_tx: mpsc::Sender<ResponseMessage>,
+        event_tx: mpsc::Sender<ResponseResult>,
         media_connection_id: MediaConnectionId,
-    ) -> ResponseMessage {
+    ) -> ResponseResult {
         while self.state.is_running() {
             let event = self.repository.event(&media_connection_id).await;
             match event {
                 Ok(MediaConnectionEventEnum::CLOSE(media_connection_id)) => {
-                    let message = MediaResponseMessageBodyEnum::Event(
-                        MediaConnectionEventEnum::CLOSE(media_connection_id),
-                    )
-                    .create_response_message();
+                    let message =
+                        MediaResponse::Event(MediaConnectionEventEnum::CLOSE(media_connection_id))
+                            .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -45,21 +44,19 @@ impl EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message =
-                        MediaResponseMessageBodyEnum::Event(event).create_response_message();
+                    let message = MediaResponse::Event(event).create_response_message();
                     let _ = event_tx.send(message).await;
                 }
                 Err(e) => {
                     let message = format!("error in EventListener for Media {:?}", e);
-                    let message = ResponseMessage::Error(message);
+                    let message = ResponseResult::Error(message);
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
             }
         }
 
-        MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
-            .create_response_message()
+        MediaResponse::Event(MediaConnectionEventEnum::TIMEOUT).create_response_message()
     }
 }
 
@@ -67,16 +64,16 @@ impl EventService {
 impl EventListener for EventService {
     async fn execute(
         &self,
-        event_tx: mpsc::Sender<ResponseMessage>,
+        event_tx: mpsc::Sender<ResponseResult>,
         params: Parameter,
-    ) -> ResponseMessage {
+    ) -> ResponseResult {
         let media_connection_id_wrapper = params.deserialize::<MediaConnectionIdWrapper>();
         if media_connection_id_wrapper.is_err() {
             let message = format!(
                 "invalid media_connection_id {:?}",
                 media_connection_id_wrapper.err()
             );
-            return ResponseMessage::Error(message);
+            return ResponseResult::Error(message);
         }
         let media_connection_id = media_connection_id_wrapper.unwrap().media_connection_id;
         self.listen(event_tx, media_connection_id).await
@@ -155,7 +152,7 @@ mod test_delete_media {
         };
         let param = serde_json::to_value(param).unwrap();
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseResult>(10);
 
         //実行
         let result = event_service.execute(event_tx, Parameter(param)).await;
@@ -163,11 +160,9 @@ mod test_delete_media {
         // CLOSE Eventが発火した場合は最後にCLOSE EVENTが帰る
         assert_eq!(
             result,
-            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                MediaConnectionIdWrapper {
-                    media_connection_id: media_connection_id.clone()
-                }
-            ))
+            MediaResponse::Event(MediaConnectionEventEnum::CLOSE(MediaConnectionIdWrapper {
+                media_connection_id: media_connection_id.clone()
+            }))
             .create_response_message()
         );
 
@@ -177,11 +172,9 @@ mod test_delete_media {
         if let Some(result_close_event) = result {
             assert_eq!(
                 result_close_event,
-                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::READY(
-                    MediaConnectionIdWrapper {
-                        media_connection_id: media_connection_id.clone()
-                    }
-                ))
+                MediaResponse::Event(MediaConnectionEventEnum::READY(MediaConnectionIdWrapper {
+                    media_connection_id: media_connection_id.clone()
+                }))
                 .create_response_message()
             );
         } else {
@@ -193,11 +186,9 @@ mod test_delete_media {
         if let Some(result_close_event) = result {
             assert_eq!(
                 result_close_event,
-                MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::CLOSE(
-                    MediaConnectionIdWrapper {
-                        media_connection_id: media_connection_id.clone()
-                    }
-                ))
+                MediaResponse::Event(MediaConnectionEventEnum::CLOSE(MediaConnectionIdWrapper {
+                    media_connection_id: media_connection_id.clone()
+                }))
                 .create_response_message()
             );
         } else {
@@ -217,7 +208,7 @@ mod test_delete_media {
             MediaConnectionId::try_create("mc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
 
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, _) = mpsc::channel::<ResponseResult>(10);
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();
@@ -253,15 +244,14 @@ mod test_delete_media {
         // loop exitの場合は最後にTIMEOUTが帰る
         assert_eq!(
             result,
-            MediaResponseMessageBodyEnum::Event(MediaConnectionEventEnum::TIMEOUT)
-                .create_response_message()
+            MediaResponse::Event(MediaConnectionEventEnum::TIMEOUT).create_response_message()
         );
     }
 
     #[tokio::test]
     async fn invalid_param() {
         // eventを受け取るためのチャンネルを作成
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, _) = mpsc::channel::<ResponseResult>(10);
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();
@@ -276,7 +266,7 @@ mod test_delete_media {
             .await;
 
         // 求められるJSONとは異なるのでSerdeErrorが帰る
-        if let ResponseMessage::Error(message) = result {
+        if let ResponseResult::Error(message) = result {
             assert_eq!(&message, "invalid media_connection_id Some(SerdeError { error: Error(\"invalid type: boolean `true`, expected struct MediaConnectionIdWrapper\", line: 0, column: 0) })");
         } else {
             assert!(false);

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
@@ -21,12 +21,12 @@ pub(crate) struct StatusService {
 
 #[async_trait]
 impl Service for StatusService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let media_connection_id = params
             .deserialize::<MediaConnectionIdWrapper>()?
             .media_connection_id;
         let status = self.repository.status(&media_connection_id).await?;
-        Ok(MediaResponseMessageBodyEnum::Status(status).create_response_message())
+        Ok(MediaResponse::Status(status).create_response_message())
     }
 }
 
@@ -49,8 +49,7 @@ mod test_create_media {
             remote_id: PeerId::new("peer_id"),
             ssrc: None,
         };
-        let expected =
-            MediaResponseMessageBodyEnum::Status(expected_status.clone()).create_response_message();
+        let expected = MediaResponse::Status(expected_status.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();

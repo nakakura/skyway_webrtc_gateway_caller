@@ -7,8 +7,7 @@ use crate::application::dto::request_message::{
     DataServiceParams, MediaServiceParams, Parameter, PeerServiceParams, ServiceParams,
 };
 use crate::application::dto::response_message::{
-    DataResponseMessageBodyEnum, MediaResponseMessageBodyEnum, PeerResponseMessageBodyEnum,
-    ResponseMessageBodyEnum,
+    DataResponse, MediaResponse, PeerResponse, ResponseMessage,
 };
 use crate::application::usecase::service::{EventListener, Service};
 
@@ -22,12 +21,12 @@ fn value<V: Serialize, T: HasComponent<dyn EventListener>>(
 }
 
 fn peer_event_factory(
-    params: PeerResponseMessageBodyEnum,
+    params: PeerResponse,
 ) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     use crate::di::*;
 
     match params {
-        PeerResponseMessageBodyEnum::Create(params) => {
+        PeerResponse::Create(params) => {
             let component = PeerEventServiceContainer::builder().build();
             Some(value(params, component))
         }
@@ -36,16 +35,16 @@ fn peer_event_factory(
 }
 
 fn data_event_factory(
-    params: DataResponseMessageBodyEnum,
+    params: DataResponse,
 ) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     use crate::di::*;
 
     match params {
-        DataResponseMessageBodyEnum::Connect(params) => {
+        DataResponse::Connect(params) => {
             let component = DataEventServiceContainer::builder().build();
             Some(value(params, component))
         }
-        DataResponseMessageBodyEnum::Redirect(params) => {
+        DataResponse::Redirect(params) => {
             let component = DataEventServiceContainer::builder().build();
             Some(value(params, component))
         }
@@ -54,16 +53,16 @@ fn data_event_factory(
 }
 
 fn media_event_factory(
-    params: MediaResponseMessageBodyEnum,
+    params: MediaResponse,
 ) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     use crate::di::*;
 
     match params {
-        MediaResponseMessageBodyEnum::Call(params) => {
+        MediaResponse::Call(params) => {
             let component = MediaEventServiceContainer::builder().build();
             Some(value(params, component))
         }
-        MediaResponseMessageBodyEnum::Answer(params) => {
+        MediaResponse::Answer(params) => {
             let component = MediaEventServiceContainer::builder().build();
             Some(value(params, component))
         }
@@ -73,12 +72,12 @@ fn media_event_factory(
 
 // FIXME: no test
 pub(crate) fn event_factory(
-    message: ResponseMessageBodyEnum,
+    message: ResponseMessage,
 ) -> Option<(Parameter, std::sync::Arc<dyn EventListener>)> {
     match message {
-        ResponseMessageBodyEnum::Peer(params) => peer_event_factory(params),
-        ResponseMessageBodyEnum::Data(params) => data_event_factory(params),
-        ResponseMessageBodyEnum::Media(params) => media_event_factory(params),
+        ResponseMessage::Peer(params) => peer_event_factory(params),
+        ResponseMessage::Data(params) => data_event_factory(params),
+        ResponseMessage::Media(params) => media_event_factory(params),
     }
 }
 

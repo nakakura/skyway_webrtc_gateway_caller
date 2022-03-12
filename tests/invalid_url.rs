@@ -30,11 +30,11 @@ async fn test_create_peer() {
         unreachable!();
     }
 
-    let result = ResponseMessage::from_str(&result.unwrap());
+    let result = ResponseResult::from_str(&result.unwrap());
 
     match result {
         // Errorが帰ってくるはず
-        Ok(ResponseMessage::Error(_)) => {
+        Ok(ResponseResult::Error(_)) => {
             assert!(true);
         }
         // それ以外のケースはバグが発生しているので、テストを失敗にする

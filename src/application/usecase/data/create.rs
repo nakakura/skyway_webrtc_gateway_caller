@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::error;
@@ -22,10 +22,10 @@ impl CreateService {}
 
 #[async_trait]
 impl Service for CreateService {
-    async fn execute(&self, _params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, _params: Parameter) -> Result<ResponseResult, error::Error> {
         // create data APIはパラメータをとらない
         let data_sock = self.repository.create().await?;
-        Ok(DataResponseMessageBodyEnum::Create(data_sock).create_response_message())
+        Ok(DataResponse::Create(data_sock).create_response_message())
     }
 }
 
@@ -48,8 +48,7 @@ mod test_create_data {
             10000,
         )
         .unwrap();
-        let expected =
-            DataResponseMessageBodyEnum::Create(data_id.clone()).create_response_message();
+        let expected = DataResponse::Create(data_id.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockDataRepository::default();

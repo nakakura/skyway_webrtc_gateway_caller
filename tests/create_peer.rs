@@ -156,16 +156,14 @@ async fn test_create_peer() {
             unreachable!();
         }
 
-        let result = ResponseMessage::from_str(&result.unwrap());
+        let result = ResponseResult::from_str(&result.unwrap());
 
         // serverが呼ばれたかチェックする
         mock_create_peer.assert();
 
         match result {
             // PeerCreateが帰ってきていればpeer_infoを取り出す
-            Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-                PeerResponseMessageBodyEnum::Create(peer_info),
-            ))) => {
+            Ok(ResponseResult::Success(ResponseMessage::Peer(PeerResponse::Create(peer_info)))) => {
                 assert!(true);
                 peer_info
             }
@@ -179,20 +177,19 @@ async fn test_create_peer() {
 
     // 期待値の生成
     // 1回目のevent listenerが取得するはずのCONNECT
-    let expected_connect =
-        PeerResponseMessageBodyEnum::Event(PeerEventEnum::CONNECTION(PeerConnectionEvent {
-            params: peer_info.clone(),
-            data_params: DataConnectionIdWrapper {
-                data_connection_id: DataConnectionId::try_create(
-                    "dc-102127d9-30de-413b-93f7-41a33e39d82b",
-                )
-                .unwrap(),
-            },
-        }))
-        .create_response_message();
+    let expected_connect = PeerResponse::Event(PeerEventEnum::CONNECTION(PeerConnectionEvent {
+        params: peer_info.clone(),
+        data_params: DataConnectionIdWrapper {
+            data_connection_id: DataConnectionId::try_create(
+                "dc-102127d9-30de-413b-93f7-41a33e39d82b",
+            )
+            .unwrap(),
+        },
+    }))
+    .create_response_message();
 
     // 2回目のevent listenerが取得するはずのCLOSE
-    let expected_close = PeerResponseMessageBodyEnum::Event(PeerEventEnum::CLOSE(PeerCloseEvent {
+    let expected_close = PeerResponse::Event(PeerEventEnum::CLOSE(PeerCloseEvent {
         params: peer_info.clone(),
     }))
     .create_response_message();

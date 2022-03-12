@@ -3,7 +3,7 @@ use shaku::Interface;
 use tokio::sync::mpsc::Sender;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::ResponseMessage;
+use crate::application::dto::response_message::ResponseResult;
 use crate::error;
 
 #[cfg(test)]
@@ -16,7 +16,7 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait Service: Interface {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error>;
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error>;
 }
 
 // WebRTC Gatewayのイベントを監視する
@@ -26,9 +26,5 @@ pub(crate) trait Service: Interface {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub(crate) trait EventListener: Interface {
-    async fn execute(
-        &self,
-        event_tx: Sender<ResponseMessage>,
-        params: Parameter,
-    ) -> ResponseMessage;
+    async fn execute(&self, event_tx: Sender<ResponseResult>, params: Parameter) -> ResponseResult;
 }

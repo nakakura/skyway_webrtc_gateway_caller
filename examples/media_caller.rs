@@ -57,20 +57,20 @@ async fn main() {
     // eventを出力する
     let event_fut = async {
         while let Some(message) = event_rx.recv().await {
-            if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
+            if let ResponseResult::Success(event) = ResponseResult::from_str(&message).unwrap() {
                 match event {
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::ERROR(error_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::ERROR(
+                        error_event,
+                    ))) => {
                         eprintln!("error recv: {:?}", error_event);
                     }
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::CLOSE(close_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::CLOSE(
+                        close_event,
+                    ))) => {
                         println!("{:?} has been deleted. \nExiting Program", close_event);
                         break;
                     }
-                    ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
+                    ResponseMessage::Media(MediaResponse::Event(event)) => {
                         println!("media event \n {:?}", event);
                         match event {
                             MediaConnectionEventEnum::READY(_) => {

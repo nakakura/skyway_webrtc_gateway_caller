@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
@@ -20,9 +20,9 @@ pub(crate) struct CreateRtcpService {
 
 #[async_trait]
 impl Service for CreateRtcpService {
-    async fn execute(&self, _params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, _params: Parameter) -> Result<ResponseResult, error::Error> {
         let socket = self.repository.create_rtcp().await?;
-        Ok(MediaResponseMessageBodyEnum::RtcpCreate(socket).create_response_message())
+        Ok(MediaResponse::RtcpCreate(socket).create_response_message())
     }
 }
 
@@ -45,8 +45,7 @@ mod test_create_rtcp {
             10000,
         )
         .unwrap();
-        let expected =
-            MediaResponseMessageBodyEnum::RtcpCreate(rtcp_id.clone()).create_response_message();
+        let expected = MediaResponse::RtcpCreate(rtcp_id.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();

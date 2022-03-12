@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::entity::MediaConnectionIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
@@ -21,13 +21,13 @@ pub(crate) struct CallService {
 
 #[async_trait]
 impl Service for CallService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let call_query = params.deserialize()?;
         let result = self.repository.call(call_query).await?;
         let wrapper = MediaConnectionIdWrapper {
             media_connection_id: result.params.media_connection_id,
         };
-        Ok(MediaResponseMessageBodyEnum::Call(wrapper).create_response_message())
+        Ok(MediaResponse::Call(wrapper).create_response_message())
     }
 }
 
@@ -46,7 +46,7 @@ mod test_create_media {
         // 期待値を生成
         let media_connection_id =
             MediaConnectionId::try_create("mc-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = MediaResponseMessageBodyEnum::Call(MediaConnectionIdWrapper {
+        let expected = MediaResponse::Call(MediaConnectionIdWrapper {
             media_connection_id: media_connection_id.clone(),
         })
         .create_response_message();

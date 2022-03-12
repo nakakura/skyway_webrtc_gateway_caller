@@ -143,7 +143,7 @@ pub mod response_message {
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
-    pub enum PeerResponseMessageBodyEnum {
+    pub enum PeerResponse {
         #[serde(rename = "CREATE")]
         Create(PeerInfo),
         #[serde(rename = "STATUS")]
@@ -154,9 +154,9 @@ pub mod response_message {
         Event(PeerEventEnum),
     }
 
-    impl PeerResponseMessageBodyEnum {
-        pub fn create_response_message(self) -> ResponseMessage {
-            ResponseMessage::Success(ResponseMessageBodyEnum::Peer(self))
+    impl PeerResponse {
+        pub fn create_response_message(self) -> ResponseResult {
+            ResponseResult::Success(ResponseMessage::Peer(self))
         }
     }
 
@@ -164,17 +164,17 @@ pub mod response_message {
     fn peer_response_message_body_enum_create_response_message() {
         let peer_id =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let body_enum = PeerResponseMessageBodyEnum::Create(peer_id);
+        let body_enum = PeerResponse::Create(peer_id);
         let response_message = body_enum.create_response_message();
         // 型システムによって守られているので、ミスの発生しうる余地はErrorでのラップのみである
-        if let ResponseMessage::Error(_) = response_message {
+        if let ResponseResult::Error(_) = response_message {
             assert!(false)
         }
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
-    pub enum DataResponseMessageBodyEnum {
+    pub enum DataResponse {
         #[serde(rename = "CREATE")]
         Create(SocketInfo<DataId>),
         #[serde(rename = "CONNECT")]
@@ -191,9 +191,9 @@ pub mod response_message {
         Status(DataConnectionStatus),
     }
 
-    impl DataResponseMessageBodyEnum {
-        pub fn create_response_message(self) -> ResponseMessage {
-            ResponseMessage::Success(ResponseMessageBodyEnum::Data(self))
+    impl DataResponse {
+        pub fn create_response_message(self) -> ResponseResult {
+            ResponseResult::Success(ResponseMessage::Data(self))
         }
     }
 
@@ -205,17 +205,17 @@ pub mod response_message {
         use crate::domain::webrtc::data::value_object::DataId;
 
         let data_id = DataId::try_create("da-4d053831-5dc2-461b-a358-d062d6115216").unwrap();
-        let body_enum = DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id });
+        let body_enum = DataResponse::Delete(DataIdWrapper { data_id });
         let response_message = body_enum.create_response_message();
         // 型システムによって守られているので、ミスの発生しうる余地はErrorでのラップのみである
-        if let ResponseMessage::Error(_) = response_message {
+        if let ResponseResult::Error(_) = response_message {
             assert!(false)
         }
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
-    pub enum MediaResponseMessageBodyEnum {
+    pub enum MediaResponse {
         #[serde(rename = "CONTENT_CREATE")]
         ContentCreate(SocketInfo<MediaId>),
         #[serde(rename = "CONTENT_DELETE")]
@@ -234,9 +234,9 @@ pub mod response_message {
         Status(MediaConnectionStatus),
     }
 
-    impl MediaResponseMessageBodyEnum {
-        pub fn create_response_message(self) -> ResponseMessage {
-            ResponseMessage::Success(ResponseMessageBodyEnum::Media(self))
+    impl MediaResponse {
+        pub fn create_response_message(self) -> ResponseResult {
+            ResponseResult::Success(ResponseMessage::Media(self))
         }
     }
 
@@ -248,35 +248,35 @@ pub mod response_message {
         use crate::domain::webrtc::media::value_object::MediaId;
 
         let media_id = MediaId::try_create("vi-4d053831-5dc2-461b-a358-d062d6115216").unwrap();
-        let body_enum = MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id });
+        let body_enum = MediaResponse::ContentDelete(MediaIdWrapper { media_id });
         let response_message = body_enum.create_response_message();
         // 型システムによって守られているので、ミスの発生しうる余地はErrorでのラップのみである
-        if let ResponseMessage::Error(_) = response_message {
+        if let ResponseResult::Error(_) = response_message {
             assert!(false)
         }
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "type")]
-    pub enum ResponseMessageBodyEnum {
+    pub enum ResponseMessage {
         #[serde(rename = "PEER")]
-        Peer(PeerResponseMessageBodyEnum),
+        Peer(PeerResponse),
         #[serde(rename = "DATA")]
-        Data(DataResponseMessageBodyEnum),
+        Data(DataResponse),
         #[serde(rename = "MEDIA")]
-        Media(MediaResponseMessageBodyEnum),
+        Media(MediaResponse),
     }
 
     // JSONでクライアントから受け取るメッセージ
     // JSONとしてなので、キャメルケースではなくスネークケースで渡せるように定義する
     #[derive(Debug, Clone, PartialEq, Deserialize)]
-    pub enum ResponseMessage {
-        Success(ResponseMessageBodyEnum),
+    pub enum ResponseResult {
+        Success(ResponseMessage),
         Error(String),
     }
 
-    impl ResponseMessage {
-        pub fn from_str(json: &str) -> Result<ResponseMessage, error::Error> {
+    impl ResponseResult {
+        pub fn from_str(json: &str) -> Result<ResponseResult, error::Error> {
             #[derive(Deserialize)]
             struct ResponseMessageStruct {
                 is_success: bool,
@@ -286,20 +286,20 @@ pub mod response_message {
                 .map_err(|e| error::Error::SerdeError { error: e })?;
             match value.is_success {
                 true => {
-                    let content: ResponseMessageBodyEnum = serde_json::from_value(value.result)
+                    let content: ResponseMessage = serde_json::from_value(value.result)
                         .map_err(|e| error::Error::SerdeError { error: e })?;
-                    Ok(ResponseMessage::Success(content))
+                    Ok(ResponseResult::Success(content))
                 }
                 _ => {
                     let content: String = serde_json::from_value(value.result)
                         .map_err(|e| error::Error::SerdeError { error: e })?;
-                    Ok(ResponseMessage::Error(content))
+                    Ok(ResponseResult::Error(content))
                 }
             }
         }
     }
 
-    impl Serialize for ResponseMessage {
+    impl Serialize for ResponseResult {
         fn serialize<S>(
             &self,
             serializer: S,
@@ -309,11 +309,11 @@ pub mod response_message {
         {
             let mut state = serializer.serialize_struct("Person", 2)?;
             match self {
-                ResponseMessage::Success(value) => {
+                ResponseResult::Success(value) => {
                     state.serialize_field("is_success", &true)?;
                     state.serialize_field("result", &value)?;
                 }
-                ResponseMessage::Error(value) => {
+                ResponseResult::Error(value) => {
                     state.serialize_field("is_success", &false)?;
                     state.serialize_field("result", &value)?;
                 }
@@ -325,7 +325,7 @@ pub mod response_message {
     #[cfg(test)]
     mod response_message_serialize_deserialize {
         use crate::application::dto::response_message::{
-            PeerResponseMessageBodyEnum, ResponseMessage, ResponseMessageBodyEnum,
+            PeerResponse, ResponseMessage, ResponseResult,
         };
         use crate::domain::webrtc::peer::value_object::PeerInfo;
 
@@ -334,14 +334,13 @@ pub mod response_message {
             // create a param
             let peer_info =
                 PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-            let ret_message = ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-                PeerResponseMessageBodyEnum::Create(peer_info),
-            ));
+            let ret_message =
+                ResponseResult::Success(ResponseMessage::Peer(PeerResponse::Create(peer_info)));
 
             // serialize
             let message = serde_json::to_string(&ret_message).unwrap();
 
-            let result = ResponseMessage::from_str(&message).unwrap();
+            let result = ResponseResult::from_str(&message).unwrap();
 
             //evaluate
             assert_eq!(result, ret_message);

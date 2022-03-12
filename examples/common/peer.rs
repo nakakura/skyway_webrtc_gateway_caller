@@ -1,7 +1,7 @@
 use tokio::sync::mpsc;
 
-use response_message::*;
 use module::prelude::*;
+use response_message::*;
 
 use super::ControlMessage;
 
@@ -37,13 +37,11 @@ pub async fn create_peer(
         panic!("peer create failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Create(result),
-        ))) => result,
-        Ok(ResponseMessage::Error(e)) => {
+        Ok(ResponseResult::Success(ResponseMessage::Peer(PeerResponse::Create(result)))) => result,
+        Ok(ResponseResult::Error(e)) => {
             panic!("{:?}", e);
         }
         _ => {
@@ -76,15 +74,13 @@ pub async fn delete_peer(message_tx: &mpsc::Sender<ControlMessage>, peer_info: &
         panic!("peer delete failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Peer(
-            PeerResponseMessageBodyEnum::Delete(result),
-        ))) => {
+        Ok(ResponseResult::Success(ResponseMessage::Peer(PeerResponse::Delete(result)))) => {
             println!("Peer {:?} is deleted", result);
         }
-        Ok(ResponseMessage::Error(e)) => {
+        Ok(ResponseResult::Error(e)) => {
             panic!("{:?}", e);
         }
         _ => {

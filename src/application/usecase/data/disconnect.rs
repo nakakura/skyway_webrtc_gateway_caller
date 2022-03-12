@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
 use crate::domain::webrtc::data::repository::DataRepository;
@@ -21,13 +21,13 @@ pub(crate) struct DisconnectService {
 
 #[async_trait]
 impl Service for DisconnectService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let data_connection_id = params
             .deserialize::<DataConnectionIdWrapper>()?
             .data_connection_id;
         let _ = self.repository.disconnect(&data_connection_id).await?;
         Ok(
-            DataResponseMessageBodyEnum::Disconnect(DataConnectionIdWrapper { data_connection_id })
+            DataResponse::Disconnect(DataConnectionIdWrapper { data_connection_id })
                 .create_response_message(),
         )
     }
@@ -51,7 +51,7 @@ mod test_create_data {
         let wrapper = DataConnectionIdWrapper {
             data_connection_id: data_connection_id.clone(),
         };
-        let expected = DataResponseMessageBodyEnum::Disconnect(wrapper).create_response_message();
+        let expected = DataResponse::Disconnect(wrapper).create_response_message();
 
         // CONNECTに成功する場合のMockを作成
         let mut mock = MockDataRepository::default();

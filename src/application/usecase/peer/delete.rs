@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{PeerResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::peer::repository::PeerRepository;
 use crate::domain::webrtc::peer::value_object::PeerInfo;
@@ -21,12 +21,12 @@ pub(crate) struct DeleteService {
 
 #[async_trait]
 impl Service for DeleteService {
-    async fn execute(&self, param: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, param: Parameter) -> Result<ResponseResult, error::Error> {
         // 汎用的なDTOオブジェクトであるParameterから必要な値を取り出せるかチェックするのはアプリケーション層の責務である
         let peer_info = param.deserialize::<PeerInfo>()?;
         let _ = self.repository.delete(&peer_info).await?;
         // APIは削除するのみでpeer_infoを返さないが、削除に成功した場合は、ユーザの不利便性のためにpeer_infoを返す
-        Ok(PeerResponseMessageBodyEnum::Delete(peer_info).create_response_message())
+        Ok(PeerResponse::Delete(peer_info).create_response_message())
     }
 }
 
@@ -44,8 +44,7 @@ mod test_delete_peer {
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
 
         // 待値を生成
-        let expected =
-            PeerResponseMessageBodyEnum::Delete(peer_info.clone()).create_response_message();
+        let expected = PeerResponse::Delete(peer_info.clone()).create_response_message();
 
         // 削除に成功するケースのmockを作成
         let mut mock = MockPeerRepository::default();

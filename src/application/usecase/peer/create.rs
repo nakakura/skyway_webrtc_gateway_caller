@@ -6,7 +6,7 @@ use mockall_double::double;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{PeerResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::peer::entity::CreatePeerParams;
 use crate::domain::webrtc::peer::repository::PeerRepository;
@@ -25,11 +25,11 @@ pub(crate) struct CreateService {
 
 #[async_trait]
 impl Service for CreateService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         // 汎用的なDTOオブジェクトであるParameterから必要な値を取り出せるかチェックするのはアプリケーション層の責務である
         let params = params.deserialize::<CreatePeerParams>()?;
         let peer_info = create::execute(self.repository.clone(), params).await?;
-        Ok(PeerResponseMessageBodyEnum::Create(peer_info).create_response_message())
+        Ok(PeerResponse::Create(peer_info).create_response_message())
     }
 }
 
@@ -55,8 +55,7 @@ mod test_create_peer {
         // 正常終了するケースとして値を生成
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let expected =
-            PeerResponseMessageBodyEnum::Create(peer_info.clone()).create_response_message();
+        let expected = PeerResponse::Create(peer_info.clone()).create_response_message();
 
         let ret_peer_info = peer_info.clone();
         let ctx = create::execute_context();

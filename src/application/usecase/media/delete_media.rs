@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::entity::MediaIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
@@ -21,13 +21,10 @@ pub(crate) struct DeleteMediaService {
 
 #[async_trait]
 impl Service for DeleteMediaService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let media_id = params.deserialize::<MediaIdWrapper>()?.media_id;
         let _ = self.repository.delete_media(&media_id).await?;
-        Ok(
-            MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper { media_id })
-                .create_response_message(),
-        )
+        Ok(MediaResponse::ContentDelete(MediaIdWrapper { media_id }).create_response_message())
     }
 }
 
@@ -45,7 +42,7 @@ mod test_delete_media {
     async fn success() {
         // 期待値を生成
         let media_id = MediaId::try_create("vi-50a32bab-b3d9-4913-8e20-f79c90a6a211").unwrap();
-        let expected = MediaResponseMessageBodyEnum::ContentDelete(MediaIdWrapper {
+        let expected = MediaResponse::ContentDelete(MediaIdWrapper {
             media_id: media_id.clone(),
         })
         .create_response_message();

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::entity::DataIdWrapper;
 use crate::domain::webrtc::data::repository::DataRepository;
@@ -21,15 +21,12 @@ pub(crate) struct DeleteService {
 
 #[async_trait]
 impl Service for DeleteService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         // アプリケーション層の責務として、JSONメッセージが適切なパラメータか確認する
         let data_id = params.deserialize::<DataIdWrapper>()?.data_id;
 
         let _ = self.repository.delete(&data_id).await?;
-        Ok(
-            DataResponseMessageBodyEnum::Delete(DataIdWrapper { data_id: data_id })
-                .create_response_message(),
-        )
+        Ok(DataResponse::Delete(DataIdWrapper { data_id: data_id }).create_response_message())
     }
 }
 
@@ -47,7 +44,7 @@ mod test_create_data {
         let data_id_str = "da-50a32bab-b3d9-4913-8e20-f79c90a6a211";
 
         // 期待値を生成
-        let expected = DataResponseMessageBodyEnum::Delete(DataIdWrapper {
+        let expected = DataResponse::Delete(DataIdWrapper {
             data_id: DataId::try_create(data_id_str).unwrap(),
         })
         .create_response_message();

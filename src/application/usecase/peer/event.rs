@@ -5,7 +5,7 @@ use shaku::*;
 use tokio::sync::mpsc;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{PeerResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{PeerResponse, ResponseResult};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
 use crate::domain::webrtc::peer::entity::PeerEventEnum;
@@ -27,15 +27,15 @@ pub(crate) struct EventService {
 impl EventListener for EventService {
     async fn execute(
         &self,
-        event_tx: mpsc::Sender<ResponseMessage>,
+        event_tx: mpsc::Sender<ResponseResult>,
         params: Parameter,
-    ) -> ResponseMessage {
+    ) -> ResponseResult {
         // 汎用的なDTOオブジェクトであるParameterから必要な値を取り出せるかチェックするのはアプリケーション層の責務である
         let peer_info = params.deserialize::<PeerInfo>();
         // パースエラーの場合はエラーを示すenumを返す
         if peer_info.is_err() {
             let message = format!("invalid peer_info {:?}", peer_info.err().unwrap());
-            let message = ResponseMessage::Error(message);
+            let message = ResponseResult::Error(message);
             // イベントとして通知する
             let _ = event_tx.send(message.clone()).await;
             // 直接的な実行結果としても返しておく
@@ -48,9 +48,8 @@ impl EventListener for EventService {
             let event = self.repository.event(peer_info.clone()).await;
             match event {
                 Ok(PeerEventEnum::CLOSE(event)) => {
-                    let message =
-                        PeerResponseMessageBodyEnum::Event(PeerEventEnum::CLOSE(event).clone())
-                            .create_response_message();
+                    let message = PeerResponse::Event(PeerEventEnum::CLOSE(event).clone())
+                        .create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
@@ -58,19 +57,18 @@ impl EventListener for EventService {
                     // TIMEOUTはユーザに通知する必要がない
                 }
                 Ok(event) => {
-                    let message =
-                        PeerResponseMessageBodyEnum::Event(event).create_response_message();
+                    let message = PeerResponse::Event(event).create_response_message();
                     let _ = event_tx.send(message.clone()).await;
                 }
                 Err(e) => {
                     let message = format!("error in EventService for Peer {:?}", e);
-                    let message = ResponseMessage::Error(message);
+                    let message = ResponseResult::Error(message);
                     let _ = event_tx.send(message.clone()).await;
                     return message;
                 }
             }
         }
-        PeerResponseMessageBodyEnum::Event(PeerEventEnum::TIMEOUT).create_response_message()
+        PeerResponse::Event(PeerEventEnum::TIMEOUT).create_response_message()
     }
 }
 
@@ -116,11 +114,9 @@ mod test_peer_event {
 
         // 期待値を生成しておく
         // CONNECTのイベントの後受け取るであろう値
-        let expected_connect =
-            PeerResponseMessageBodyEnum::Event(connect_event.clone()).create_response_message();
+        let expected_connect = PeerResponse::Event(connect_event.clone()).create_response_message();
         // CLOSEのイベントの後受け取るであろう値
-        let expected_close =
-            PeerResponseMessageBodyEnum::Event(close_event.clone()).create_response_message();
+        let expected_close = PeerResponse::Event(close_event.clone()).create_response_message();
 
         // イベントを3つ返すmockを作成
         // 3つの処理を分けるためのカウンタ
@@ -152,7 +148,7 @@ mod test_peer_event {
         // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let (event_tx, mut event_rx) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, mut event_rx) = mpsc::channel::<ResponseResult>(10);
         // execute
         let result = event_service
             .execute(
@@ -210,7 +206,7 @@ mod test_peer_event {
         // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, _) = mpsc::channel::<ResponseResult>(10);
 
         // execute
         let result = event_service
@@ -223,7 +219,7 @@ mod test_peer_event {
         // stateによりイベントループを抜けた場合、最後はTIMEOUTを返す
         assert_eq!(
             result,
-            PeerResponseMessageBodyEnum::Event(PeerEventEnum::TIMEOUT).create_response_message()
+            PeerResponse::Event(PeerEventEnum::TIMEOUT).create_response_message()
         );
     }
 
@@ -246,12 +242,12 @@ mod test_peer_event {
         // 実行時の引数を生成
         // event_serviceの引数は、JSON化されたPeerInfoとevent senderであるが、なぜかbool値が入ってきたケース
         let param = Parameter(serde_json::Value::Bool(true));
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, _) = mpsc::channel::<ResponseResult>(10);
 
         // execute
         let result = event_service.execute(event_tx, param).await;
 
-        if let ResponseMessage::Error(message) = result {
+        if let ResponseResult::Error(message) = result {
             assert_eq!(
                 &message,
                 "invalid peer_info SerdeError { error: Error(\"invalid type: boolean `true`, expected struct PeerInfo\", line: 0, column: 0) }"
@@ -266,8 +262,9 @@ mod test_peer_event {
     async fn fail() {
         // errorを返すmockを作成
         let mut mock = MockPeerRepository::default();
-        mock.expect_event()
-            .returning(move |_| return Err(error::Error::create_local_error("event error")));
+        mock.expect_event().returning(move |_| {
+            return Err(error::Error::create_local_error("event error"));
+        });
 
         // event_serviceを生成
         let module = &PeerEventServiceContainer::builder()
@@ -278,7 +275,7 @@ mod test_peer_event {
         // event_serviceの引数は、JSON化されたPeerInfoとevent senderである
         let peer_info =
             PeerInfo::try_create("peer_id", "pt-9749250e-d157-4f80-9ee2-359ce8524308").unwrap();
-        let (event_tx, _) = mpsc::channel::<ResponseMessage>(10);
+        let (event_tx, _) = mpsc::channel::<ResponseResult>(10);
 
         // execute
         let result = event_service
@@ -289,7 +286,7 @@ mod test_peer_event {
             .await;
 
         // errorが帰ってくる
-        if let ResponseMessage::Error(e) = result {
+        if let ResponseResult::Error(e) = result {
             assert_eq!(
                 e,
                 "error in EventService for Peer LocalError(\"event error\")"

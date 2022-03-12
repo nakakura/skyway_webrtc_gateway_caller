@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{MediaResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::media::entity::{AnswerQuery, AnswerResponseParams, AnswerResult};
 use crate::domain::webrtc::media::repository::MediaRepository;
@@ -29,7 +29,7 @@ pub(crate) struct AnswerService {
 
 #[async_trait]
 impl Service for AnswerService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let answer_parameters = params.deserialize::<AnswerParameters>()?;
         let status = self
             .repository
@@ -59,14 +59,14 @@ impl Service for AnswerService {
                 send_sockets: send_socket,
                 recv_sockets: answer_parameters.answer_query.redirect_params,
             };
-            Ok(MediaResponseMessageBodyEnum::Answer(result).create_response_message())
+            Ok(MediaResponse::Answer(result).create_response_message())
         } else {
             // 確率後の場合はanswerは行わない
             let message = format!(
                 "MediaConnection {} has been already opened.",
                 answer_parameters.media_connection_id.as_str()
             );
-            Ok(ResponseMessage::Error(message))
+            Ok(ResponseResult::Error(message))
         }
     }
 }
@@ -94,8 +94,7 @@ mod test_answer {
             send_sockets: None,
             recv_sockets: None,
         };
-        let expected =
-            MediaResponseMessageBodyEnum::Answer(params.clone()).create_response_message();
+        let expected = MediaResponse::Answer(params.clone()).create_response_message();
 
         // socketの生成に成功する場合のMockを作成
         let mut mock = MockMediaRepository::default();
@@ -207,7 +206,7 @@ mod test_answer {
             .unwrap();
 
         // evaluate
-        if let ResponseMessage::Error(message) = result {
+        if let ResponseResult::Error(message) = result {
             assert_eq!(message, expected);
         } else {
             assert!(false);

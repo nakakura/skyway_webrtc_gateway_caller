@@ -1,7 +1,7 @@
 use tokio::sync::mpsc;
 
-use response_message::*;
 use module::prelude::*;
+use response_message::*;
 
 use crate::common::ControlMessage;
 
@@ -29,12 +29,12 @@ pub async fn create_media(
         panic!("craete data socket failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::ContentCreate(socket),
-        ))) => socket,
+        Ok(ResponseResult::Success(ResponseMessage::Media(MediaResponse::ContentCreate(
+            socket,
+        )))) => socket,
         message => {
             panic!("craete data socket failed{:?}", message);
         }
@@ -63,12 +63,12 @@ pub async fn create_rtcp(
         panic!("create rtcp failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::RtcpCreate(socket),
-        ))) => socket,
+        Ok(ResponseResult::Success(ResponseMessage::Media(MediaResponse::RtcpCreate(socket)))) => {
+            socket
+        }
         message => {
             panic!("create rtcp failed{:?}", message);
         }
@@ -97,12 +97,12 @@ pub async fn call(
         panic!("call failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::Call(response),
-        ))) => response.media_connection_id,
+        Ok(ResponseResult::Success(ResponseMessage::Media(MediaResponse::Call(response)))) => {
+            response.media_connection_id
+        }
         message => {
             panic!("call failed{:?}", message);
         }
@@ -136,12 +136,12 @@ pub async fn answer(
         panic!("answer failed{:?}", result.err());
     }
 
-    let response_message = ResponseMessage::from_str(&result.unwrap());
+    let response_message = ResponseResult::from_str(&result.unwrap());
 
     match response_message {
-        Ok(ResponseMessage::Success(ResponseMessageBodyEnum::Media(
-            MediaResponseMessageBodyEnum::Answer(response),
-        ))) => response,
+        Ok(ResponseResult::Success(ResponseMessage::Media(MediaResponse::Answer(response)))) => {
+            response
+        }
         message => {
             panic!("answer failed{:?}", message);
         }

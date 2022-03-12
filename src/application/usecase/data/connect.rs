@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use shaku::*;
 
 use crate::application::dto::request_message::Parameter;
-use crate::application::dto::response_message::{DataResponseMessageBodyEnum, ResponseMessage};
+use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::Service;
 use crate::domain::webrtc::data::entity::{ConnectQuery, DataConnectionIdWrapper};
 use crate::domain::webrtc::data::repository::DataRepository;
@@ -21,11 +21,11 @@ pub(crate) struct ConnectService {
 
 #[async_trait]
 impl Service for ConnectService {
-    async fn execute(&self, params: Parameter) -> Result<ResponseMessage, error::Error> {
+    async fn execute(&self, params: Parameter) -> Result<ResponseResult, error::Error> {
         let query = params.deserialize::<ConnectQuery>()?;
         let data_connection_id = self.repository.connect(query).await?;
         let wrapper = DataConnectionIdWrapper { data_connection_id };
-        Ok(DataResponseMessageBodyEnum::Connect(wrapper).create_response_message())
+        Ok(DataResponse::Connect(wrapper).create_response_message())
     }
 }
 
@@ -45,7 +45,7 @@ mod test_create_data {
             DataConnectionId::try_create("dc-4995f372-fb6a-4196-b30a-ce11e5c7f56c").unwrap();
 
         // 期待値を生成
-        let expected = DataResponseMessageBodyEnum::Connect(DataConnectionIdWrapper {
+        let expected = DataResponse::Connect(DataConnectionIdWrapper {
             data_connection_id: data_connection_id.clone(),
         })
         .create_response_message();

@@ -57,16 +57,14 @@ async fn main() {
     let event_fut = async {
         println!("waiting connection from a neighbour");
         while let Some(message) = event_rx.recv().await {
-            if let ResponseMessage::Success(event) = ResponseMessage::from_str(&message).unwrap() {
+            if let ResponseResult::Success(event) = ResponseResult::from_str(&message).unwrap() {
                 match event {
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::ERROR(error_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::ERROR(
+                        error_event,
+                    ))) => {
                         eprintln!("error recv: {:?}", error_event);
                     }
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::CALL(call_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::CALL(call_event))) => {
                         let media_connection_id = call_event.call_params.media_connection_id;
                         let answer_params = AnswerQuery {
                             constraints: Constraints {
@@ -103,13 +101,13 @@ async fn main() {
                         let _result =
                             media::answer(&message_tx, media_connection_id, answer_params).await;
                     }
-                    ResponseMessageBodyEnum::Peer(PeerResponseMessageBodyEnum::Event(
-                        PeerEventEnum::CLOSE(close_event),
-                    )) => {
+                    ResponseMessage::Peer(PeerResponse::Event(PeerEventEnum::CLOSE(
+                        close_event,
+                    ))) => {
                         println!("{:?} has been deleted. \nExiting Program", close_event);
                         break;
                     }
-                    ResponseMessageBodyEnum::Media(MediaResponseMessageBodyEnum::Event(event)) => {
+                    ResponseMessage::Media(MediaResponse::Event(event)) => {
                         println!("media event \n {:?}", event);
                         match event {
                             MediaConnectionEventEnum::READY(_) => {
