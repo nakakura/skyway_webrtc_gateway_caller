@@ -51,12 +51,16 @@ pub mod request_message {
         ContentDelete { params: Parameter },
         #[serde(rename = "RTCP_CREATE")]
         RtcpCreate { params: Option<Parameter> },
+        #[serde(rename = "RTCP_DELETE")]
+        RtcpDelete { params: Option<Parameter> },
         #[serde(rename = "CALL")]
         Call { params: Parameter },
         #[serde(rename = "ANSWER")]
         Answer { params: Parameter },
         #[serde(rename = "DISCONNECT")]
         Disconnect { params: Parameter },
+        #[serde(rename = "STATUS")]
+        Status { params: Parameter },
     }
 
     // JSONでクライアントから受け取るメッセージ
@@ -215,6 +219,7 @@ pub mod response_message {
         }
     }
 
+    // EventはこのEnumを利用しないので不要
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
     pub enum MediaResponse {

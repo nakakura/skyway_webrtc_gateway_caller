@@ -140,8 +140,19 @@ fn media_service_factory(params: MediaServiceParams) -> (Parameter, Arc<dyn Serv
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
+        MediaServiceParams::ContentDelete { params } => {
+            let module = MediaContentDeleteServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
         MediaServiceParams::RtcpCreate { params: _ } => {
             let module = MediaRtcpCreateServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            // この値は使わないので何でも良い
+            (Parameter(serde_json::Value::Null), service)
+        }
+        MediaServiceParams::RtcpDelete { params: _ } => {
+            let module = MediaRtcpDeleteServiceContainer::builder().build();
             let service: Arc<dyn Service> = module.resolve();
             // この値は使わないので何でも良い
             (Parameter(serde_json::Value::Null), service)
@@ -161,7 +172,11 @@ fn media_service_factory(params: MediaServiceParams) -> (Parameter, Arc<dyn Serv
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        _ => unreachable!(),
+        MediaServiceParams::Status { params } => {
+            let module = MediaStatusServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
     }
 }
 
