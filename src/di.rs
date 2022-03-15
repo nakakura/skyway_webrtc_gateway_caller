@@ -132,6 +132,13 @@ module! {
 }
 
 module! {
+    pub(crate) MediaDisconnectServiceContainer {
+        components = [media::disconnect::DisconnectService, MediaRepositoryImpl],
+        providers = []
+    }
+}
+
+module! {
     pub(crate) MediaEventServiceContainer {
         components = [media::event::EventService, MediaRepositoryImpl, ApplicationStateAlwaysTrueImpl],
         providers = []

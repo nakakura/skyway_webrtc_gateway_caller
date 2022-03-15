@@ -55,6 +55,8 @@ pub mod request_message {
         Call { params: Parameter },
         #[serde(rename = "ANSWER")]
         Answer { params: Parameter },
+        #[serde(rename = "DISCONNECT")]
+        Disconnect { params: Parameter },
     }
 
     // JSONでクライアントから受け取るメッセージ
@@ -228,6 +230,8 @@ pub mod response_message {
         Call(MediaConnectionIdWrapper),
         #[serde(rename = "ANSWER")]
         Answer(AnswerResult),
+        #[serde(rename = "DISCONNECT")]
+        Disconnect(Option<()>),
         #[serde(rename = "EVENT")]
         Event(MediaConnectionEventEnum),
         #[serde(rename = "STATUS")]

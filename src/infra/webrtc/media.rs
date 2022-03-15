@@ -53,6 +53,13 @@ impl MediaRepository for MediaRepositoryImpl {
         media::answer(media_connection_id, answer_query).await
     }
 
+    async fn disconnect(
+        &self,
+        media_connection_id: &MediaConnectionId,
+    ) -> Result<(), error::Error> {
+        media::disconnect(media_connection_id).await
+    }
+
     async fn event(
         &self,
         media_connection_id: &MediaConnectionId,

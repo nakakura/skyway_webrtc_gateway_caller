@@ -26,6 +26,8 @@ pub trait MediaRepository: Interface {
         media_connection_id: &MediaConnectionId,
         answer_query: &AnswerQuery,
     ) -> Result<AnswerResponse, error::Error>;
+    async fn disconnect(&self, media_connection_id: &MediaConnectionId)
+        -> Result<(), error::Error>;
     async fn event(
         &self,
         media_connection_id: &MediaConnectionId,

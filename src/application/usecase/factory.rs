@@ -156,6 +156,11 @@ fn media_service_factory(params: MediaServiceParams) -> (Parameter, Arc<dyn Serv
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
+        MediaServiceParams::Disconnect { params } => {
+            let module = MediaDisconnectServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
         _ => unreachable!(),
     }
 }
