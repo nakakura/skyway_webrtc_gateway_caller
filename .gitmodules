@@ -1,3 +1,0 @@
-[submodule "webrtc_gateway_controller"]
-	path = webrtc_gateway_controller
-	url = https://github.com/nakakura/webrtc_gateway_controller.git
