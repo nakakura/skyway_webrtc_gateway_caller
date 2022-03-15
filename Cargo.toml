@@ -14,19 +14,19 @@ lto = true
 opt-level = 3
 
 [dependencies]
-async-trait = "0.1.50"
-futures = "0.3.15"
-serde = { version = "1.0.126", features = ["derive"] }
-serde_json = { version = "1.0.64", default-features = false, features = ["alloc"] }
+async-trait = "0.1.52"
+futures = "0.3.21"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_json = { version = "1.0.79", default-features = false, features = ["alloc"] }
 shaku = "0.6.1"
 skyway-webrtc-gateway-api = "0.1.0"
-tokio = { version = "1.7.1", features = ["full"] }
-tokio-stream = "0.1.6"
+tokio = { version = "1.7.3", features = ["full"] }
+tokio-stream = "0.1.8"
 
 [dev-dependencies]
-mockall = "0.9.1"
+mockall = "0.11.0"
 mockall_double = "0.2.0"
-mockito = "0.30.0"
+mockito = "0.31.0"
 once_cell = "1.8.0"
 reqwest = { version = "0.11.4", features = ["json"] }
 
