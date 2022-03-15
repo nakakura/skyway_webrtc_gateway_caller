@@ -13,6 +13,7 @@ pub mod request_message {
         }
     }
 
+    // EventはこのEnumを利用しないので不要
     #[allow(non_camel_case_types)]
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
@@ -25,6 +26,7 @@ pub mod request_message {
         Delete { params: Parameter },
     }
 
+    // EventはこのEnumを利用しないので不要
     #[allow(non_camel_case_types)]
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
@@ -39,8 +41,11 @@ pub mod request_message {
         Redirect { params: Parameter },
         #[serde(rename = "DISCONNECT")]
         Disconnect { params: Parameter },
+        #[serde(rename = "STATUS")]
+        Status { params: Parameter },
     }
 
+    // EventはこのEnumを利用しないので不要
     #[allow(non_camel_case_types)]
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
@@ -183,14 +188,14 @@ pub mod response_message {
     pub enum DataResponse {
         #[serde(rename = "CREATE")]
         Create(SocketInfo<DataId>),
-        #[serde(rename = "CONNECT")]
-        Connect(DataConnectionIdWrapper),
         #[serde(rename = "DELETE")]
         Delete(DataIdWrapper),
-        #[serde(rename = "DISCONNECT")]
-        Disconnect(DataConnectionIdWrapper),
+        #[serde(rename = "CONNECT")]
+        Connect(DataConnectionIdWrapper),
         #[serde(rename = "REDIRECT")]
         Redirect(DataConnectionIdWrapper),
+        #[serde(rename = "DISCONNECT")]
+        Disconnect(DataConnectionIdWrapper),
         #[serde(rename = "EVENT")]
         Event(DataConnectionEventEnum),
         #[serde(rename = "STATUS")]
@@ -219,7 +224,6 @@ pub mod response_message {
         }
     }
 
-    // EventはこのEnumを利用しないので不要
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]
     pub enum MediaResponse {
