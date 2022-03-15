@@ -86,7 +86,7 @@ pub mod request_message {
     mod service_params_deserialize {
         use crate::application::dto::request_message::{PeerServiceParams, ServiceParams};
         use crate::domain::webrtc::peer::entity::CreatePeerParams;
-        use crate::prelude::PeerInfo;
+        use crate::domain::webrtc::peer::value_object::PeerInfo;
 
         #[test]
         fn create_message() {
@@ -138,7 +138,7 @@ pub mod response_message {
     use serde::{Deserialize, Serialize, Serializer};
     use serde_json::Value;
 
-    use crate::domain::webrtc::common::value_object::SocketInfo;
+    use crate::domain::webrtc::common::value_object::{PeerInfo, SocketInfo};
     use crate::domain::webrtc::data::entity::{
         DataConnectionEventEnum, DataConnectionIdWrapper, DataConnectionStatus, DataIdWrapper,
     };
@@ -148,9 +148,8 @@ pub mod response_message {
         MediaIdWrapper, RtcpIdWrapper,
     };
     use crate::domain::webrtc::media::value_object::{MediaId, RtcpId};
-    use crate::domain::webrtc::peer::entity::PeerStatusMessage;
+    use crate::domain::webrtc::peer::entity::{PeerEventEnum, PeerStatusMessage};
     use crate::error;
-    use crate::{PeerEventEnum, PeerInfo};
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(tag = "command")]

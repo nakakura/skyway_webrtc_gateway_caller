@@ -1,4 +1,6 @@
-use module::*;
+use skyway_webrtc_gateway_caller::prelude::peer::*;
+use skyway_webrtc_gateway_caller::prelude::response_parser::ResponseResult;
+use skyway_webrtc_gateway_caller::*;
 
 #[tokio::test]
 async fn test_create_peer() {

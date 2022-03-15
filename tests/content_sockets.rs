@@ -1,5 +1,5 @@
 use mockito::mock;
-use module::*;
+use skyway_webrtc_gateway_caller::*;
 
 fn create_data_message() -> String {
     r#"{

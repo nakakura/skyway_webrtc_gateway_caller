@@ -8,10 +8,9 @@ use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::media::entity::MediaConnectionEventEnum;
+use crate::domain::webrtc::media::entity::{MediaConnectionEventEnum, MediaConnectionIdWrapper};
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::domain::webrtc::media::value_object::MediaConnectionId;
-use crate::prelude::MediaConnectionIdWrapper;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる

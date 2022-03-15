@@ -1,3 +1,10 @@
+//! Skyway-webrtc-gateway-api crate was implemented as a simple REST API Wrapper for SkyWay WebRTC Gateway.
+//! The crate is not implemented for domain knowledge such as event subscribe,
+//! and can only be used by those who are familiar with the behavior of SkyWay WebRTC Gateway.
+//!
+//! This crate is EASY one for using SkyWay WebRTC Gateway.
+//! The user of this crate can use the SkyWay WebRTC Gateway by simply exchanging a few JSON messages with each of the Sender and Reciever channels.
+
 // # プログラムの全体構造
 // SkyWay WebRTC GatewayをコントロールするためのJSONメッセージのやりとりは、
 // skyway-webrtc-gateway-api crateを利用することでRustから実施することができるが、
@@ -72,17 +79,16 @@ use futures::stream::StreamExt;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
+use crate::application::dto::response_message::ResponseResult;
 use crate::presentation::serialize_service_params;
-pub use application::dto::request_message::ServiceParams;
-pub use application::dto::response_message::ResponseResult;
-pub use domain::webrtc::peer::entity::PeerEventEnum;
-pub use domain::webrtc::peer::value_object::{PeerId, PeerInfo, Token};
 
 pub(crate) mod application;
 pub(crate) mod di;
 pub(crate) mod domain;
+/// Error definition in this crate.
 pub mod error;
 pub(crate) mod infra;
+/// A "prelude" for crates using this crate.
 pub mod prelude;
 pub(crate) mod presentation;
 
@@ -90,6 +96,9 @@ pub(crate) mod presentation;
 // 外部から直接的に呼ばれるのはこの関数のみである。
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
+
+/// Start WebRTC Gateway operation.
+/// It provides a Sender to give JSON messages for operation and a Receiver to pass events.
 pub async fn run(
     base_url: &str,
 ) -> (
@@ -133,7 +142,7 @@ pub async fn run(
 // crate全体を通してステートレスに設計し、将来Stateが必要になった場合もこの関数内のfoldのみに留める
 //
 // なお、Unit Testは行わずIntegration Testでのみテストを行う
-pub async fn skyway_control_service_observe(
+async fn skyway_control_service_observe(
     receiver: mpsc::Receiver<(oneshot::Sender<String>, String)>,
     event_tx: mpsc::Sender<ResponseResult>,
 ) {

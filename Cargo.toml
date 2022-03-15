@@ -1,17 +1,16 @@
 [package]
-name = "module"
+name = "skyway-webrtc-gateway-caller"
 version = "0.0.1"
 authors = ["Toshiya Nakakura <nakakura@me.com>"]
 edition = "2018"
-
-[lib]
-crate-type = ["staticlib", "rlib"]
-name = "module"
-path = "src/lib.rs"
-
-[profile.release]
-lto = true
-opt-level = 3
+license = "MIT"
+description = "Easy crate for SkyWay WebRTC Gateway"
+repository = "https://github.com/nakakura/skyway_webrtc_gateway_caller"
+readme = "README.md"
+keywords = ["skyway", "webrtc", "gateway", "rtp"]
+documentation = "https://docs.rs/skyway-webrtc-gateway-caller"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+categories = ["api-bindings"]
 
 [dependencies]
 async-trait = "0.1.52"
@@ -20,15 +19,15 @@ serde = { version = "1.0.136", features = ["derive"] }
 serde_json = { version = "1.0.79", default-features = false, features = ["alloc"] }
 shaku = "0.6.1"
 skyway-webrtc-gateway-api = "0.1.0"
-tokio = { version = "1.7.3", features = ["full"] }
+tokio = { version = "1.17.0", features = ["full"] }
 tokio-stream = "0.1.8"
 
 [dev-dependencies]
 mockall = "0.11.0"
-mockall_double = "0.2.0"
+mockall_double = "0.2.1"
 mockito = "0.31.0"
-once_cell = "1.8.0"
-reqwest = { version = "0.11.4", features = ["json"] }
+once_cell = "1.10.0"
+reqwest = { version = "0.11.10", features = ["json"] }
 
 [[example]]
 name = "data_caller"

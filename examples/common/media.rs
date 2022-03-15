@@ -1,7 +1,8 @@
 use tokio::sync::mpsc;
 
-use module::prelude::*;
-use response_message::*;
+use skyway_webrtc_gateway_caller::prelude::common::*;
+use skyway_webrtc_gateway_caller::prelude::media::*;
+use skyway_webrtc_gateway_caller::prelude::response_parser::*;
 
 use crate::common::ControlMessage;
 

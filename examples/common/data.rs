@@ -1,8 +1,9 @@
 use serde::Serialize;
 use tokio::sync::mpsc;
 
-use module::prelude::*;
-use response_message::*;
+use skyway_webrtc_gateway_caller::prelude::common::*;
+use skyway_webrtc_gateway_caller::prelude::data::*;
+use skyway_webrtc_gateway_caller::prelude::response_parser::*;
 
 use super::ControlMessage;
 

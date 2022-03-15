@@ -3,9 +3,13 @@ use tokio::sync::mpsc;
 use common::data;
 use common::peer;
 use common::terminal;
-use module::prelude::*;
-use module::run;
-use response_message::*;
+use skyway_webrtc_gateway_caller::prelude::common::*;
+use skyway_webrtc_gateway_caller::prelude::data::*;
+use skyway_webrtc_gateway_caller::prelude::peer::PeerEventEnum;
+use skyway_webrtc_gateway_caller::prelude::response_parser::{
+    DataResponse, PeerResponse, ResponseMessage, ResponseResult,
+};
+use skyway_webrtc_gateway_caller::run;
 
 mod common;
 
@@ -21,7 +25,7 @@ async fn main() {
 
     // data socketの開放
     // データの送信のためのポートの割当
-    let data_socket = data::create_data(&message_tx).await;
+    let data_socket: SocketInfo<DataId> = data::create_data(&message_tx).await;
     // End User Programでデータを受信するポートを指定
     let recv_socket = SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 9000).unwrap();
 

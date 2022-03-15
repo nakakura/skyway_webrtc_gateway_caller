@@ -8,10 +8,9 @@ use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{DataResponse, ResponseResult};
 use crate::application::usecase::service::EventListener;
 use crate::domain::state::ApplicationState;
-use crate::domain::webrtc::data::entity::DataConnectionIdWrapper;
+use crate::domain::webrtc::data::entity::{DataConnectionEventEnum, DataConnectionIdWrapper};
 use crate::domain::webrtc::data::repository::DataRepository;
 use crate::domain::webrtc::data::value_object::DataConnectionId;
-use crate::prelude::DataConnectionEventEnum;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる
@@ -91,7 +90,6 @@ mod test_data_event {
     use crate::domain::webrtc::data::repository::MockDataRepository;
     use crate::error;
     use crate::infra::state::ApplicationStateAlwaysFalseImpl;
-    use crate::prelude::*;
 
     use super::*;
 

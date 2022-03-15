@@ -6,9 +6,9 @@ use shaku::*;
 use crate::application::dto::request_message::Parameter;
 use crate::application::dto::response_message::{MediaResponse, ResponseResult};
 use crate::application::usecase::service::Service;
+use crate::domain::webrtc::media::entity::MediaConnectionIdWrapper;
 use crate::domain::webrtc::media::repository::MediaRepository;
 use crate::error;
-use crate::prelude::MediaConnectionIdWrapper;
 
 // Serviceの具象Struct
 // DIコンテナからのみオブジェクトを生成できる

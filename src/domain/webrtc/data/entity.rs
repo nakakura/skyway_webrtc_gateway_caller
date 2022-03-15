@@ -5,14 +5,28 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::prelude::PhantomId;
-use crate::prelude::SocketInfo;
+use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
 
-/// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
-pub use skyway_webrtc_gateway_api::data::{
-    ConnectQuery, DataConnectionEventEnum, DataConnectionId, DataConnectionIdWrapper,
-    DataConnectionStatus, DataId, DataIdWrapper, RedirectDataParams, RedirectDataResponse,
-};
+// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
+
+/// Parameter for POST /data/connections API
+pub use skyway_webrtc_gateway_api::data::ConnectQuery;
+/// Enum represents events of DataConnection
+pub use skyway_webrtc_gateway_api::data::DataConnectionEventEnum;
+/// Id associated with DataConnection
+pub use skyway_webrtc_gateway_api::data::DataConnectionId;
+/// Wrapper to adapt to JSON format
+pub use skyway_webrtc_gateway_api::data::DataConnectionIdWrapper;
+/// Shows status of DataConnection
+pub use skyway_webrtc_gateway_api::data::DataConnectionStatus;
+/// Id associated with Data
+pub use skyway_webrtc_gateway_api::data::DataId;
+/// Wrapper to adapt to JSON format
+pub use skyway_webrtc_gateway_api::data::DataIdWrapper;
+/// Parameter for PUT /data/connections API
+pub use skyway_webrtc_gateway_api::data::RedirectDataParams;
+/// Response of PUT /data/connections API
+pub use skyway_webrtc_gateway_api::data::RedirectDataResponse;
 
 // JSON Parse用の定義
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]

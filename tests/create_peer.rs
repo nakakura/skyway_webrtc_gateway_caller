@@ -2,9 +2,12 @@ use std::sync::Mutex;
 
 use mockito::mock;
 
-use module::prelude::*;
-use module::*;
-use response_message::*;
+use skyway_webrtc_gateway_caller::prelude::data::*;
+use skyway_webrtc_gateway_caller::prelude::peer::*;
+use skyway_webrtc_gateway_caller::prelude::response_parser::{
+    PeerResponse, ResponseMessage, ResponseResult,
+};
+use skyway_webrtc_gateway_caller::*;
 
 fn create_params() -> (PeerId, Token) {
     let peer_id = PeerId::new("hoge");

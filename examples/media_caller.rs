@@ -3,9 +3,13 @@ use tokio::sync::mpsc;
 use common::media;
 use common::peer;
 use common::terminal;
-use module::prelude::*;
-use module::run;
-use response_message::*;
+use skyway_webrtc_gateway_caller::prelude::common::*;
+use skyway_webrtc_gateway_caller::prelude::media::*;
+use skyway_webrtc_gateway_caller::prelude::peer::PeerEventEnum;
+use skyway_webrtc_gateway_caller::prelude::response_parser::{
+    MediaResponse, PeerResponse, ResponseMessage, ResponseResult,
+};
+use skyway_webrtc_gateway_caller::run;
 
 mod common;
 
@@ -17,7 +21,7 @@ async fn main() {
     let (message_tx, mut event_rx) = run("http://localhost:8000").await;
 
     // peer objectを作成
-    let peer_info = peer::create_peer(&message_tx, api_key, "media_caller").await;
+    let peer_info: PeerInfo = peer::create_peer(&message_tx, api_key, "media_caller").await;
 
     // terminalの読み込み
     let (terminal_tx, mut terminal_rx) = mpsc::channel::<String>(10);
@@ -40,11 +44,11 @@ async fn main() {
 
     // media socketの開放
     // video送信用ポート
-    let media_socket_video = media::create_media(&message_tx, true).await;
+    let media_socket_video: SocketInfo<MediaId> = media::create_media(&message_tx, true).await;
     // audio送信用ポート
-    let media_socket_audio = media::create_media(&message_tx, false).await;
+    let media_socket_audio: SocketInfo<MediaId> = media::create_media(&message_tx, false).await;
     // rtcp送信用ポート
-    let rtcp_socket = media::create_rtcp(&message_tx, true).await;
+    let rtcp_socket: SocketInfo<RtcpId> = media::create_rtcp(&message_tx, true).await;
 
     // 受信用ポート
     let video_recv_sock = SocketInfo::<PhantomId>::try_create(None, "127.0.0.1", 13000).unwrap();

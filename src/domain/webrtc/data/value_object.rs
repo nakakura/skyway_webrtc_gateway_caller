@@ -3,6 +3,10 @@
 // このような再定義は、webrtcモジュール配下のentity, value_objectのみに留め、
 // その他のskyway-webrtc-gateway crateへの直接的な依存はinfra層に限定する
 
-/// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
-/// value objectとして使うべきものは、DataConnectionIdとDataIdのみである
-pub use skyway_webrtc_gateway_api::data::{DataConnectionId, DataId};
+// skyway-webrtc-gateway-apiで定義されているオブジェクトのうち、/data APIに関係するものを利用する。
+// value objectとして使うべきものは、DataConnectionIdとDataIdのみである
+
+/// Id associated with DataConnection
+pub use skyway_webrtc_gateway_api::data::DataConnectionId;
+/// Id associated with Data
+pub use skyway_webrtc_gateway_api::data::DataId;
