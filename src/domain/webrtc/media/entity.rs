@@ -53,6 +53,8 @@ pub struct RtcpIdWrapper {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AnswerResult {
     pub media_connection_id: MediaConnectionId,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub send_sockets: Option<AnswerResponseParams>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub recv_sockets: Option<RedirectParameters>,
 }
