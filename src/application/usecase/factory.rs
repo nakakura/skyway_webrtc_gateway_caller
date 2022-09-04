@@ -127,7 +127,16 @@ fn data_service_factory(params: DataServiceParams) -> (Parameter, Arc<dyn Servic
             let service: Arc<dyn Service> = module.resolve();
             (params, service)
         }
-        _ => unreachable!(),
+        DataServiceParams::Status { params } => {
+            let module = DataStatusServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
+        DataServiceParams::Disconnect { params } => {
+            let module = DataDisconnectServiceContainer::builder().build();
+            let service: Arc<dyn Service> = module.resolve();
+            (params, service)
+        }
     }
 }
 

@@ -1176,7 +1176,7 @@ dependencies = [
 
 [[package]]
 name = "skyway-webrtc-gateway-caller"
-version = "0.0.1"
+version = "0.0.3"
 dependencies = [
  "async-trait",
  "futures",

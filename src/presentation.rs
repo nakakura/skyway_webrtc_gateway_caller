@@ -25,7 +25,6 @@ mod format_input_json_test {
         }
     }"#;
 
-        println!("{:?}", json);
         let message = format_input_json(json).await;
         assert!(message.is_ok());
     }

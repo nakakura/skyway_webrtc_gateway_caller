@@ -269,7 +269,7 @@ pub mod response_message {
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-    #[serde(tag = "type")]
+    #[serde(tag = "request_type")]
     pub enum ResponseMessage {
         #[serde(rename = "PEER")]
         Peer(PeerResponse),
