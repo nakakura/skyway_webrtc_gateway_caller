@@ -56,7 +56,7 @@ async fn test_create_data() {
 
     // evaluate
     assert_eq!(result,
-               "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"CREATE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\",\"ip_v4\":\"127.0.0.1\",\"port\":10001}}");
+        "{\"is_success\":true,\"result\":{\"request_type\":\"DATA\",\"command\":\"CREATE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\",\"ip_v4\":\"127.0.0.1\",\"port\":10001}}");
 }
 
 #[tokio::test]
@@ -88,6 +88,5 @@ async fn test_delete_data() {
     // evaluate
     assert_eq!(
         result,
-        "{\"is_success\":true,\"result\":{\"type\":\"DATA\",\"command\":\"DELETE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\"}}"
-    );
+        "{\"is_success\":true,\"result\":{\"request_type\":\"DATA\",\"command\":\"DELETE\",\"data_id\":\"da-50a32bab-b3d9-4913-8e20-f79c90a6a211\"}}");
 }
