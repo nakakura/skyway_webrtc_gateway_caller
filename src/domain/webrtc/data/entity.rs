@@ -11,6 +11,8 @@ use crate::domain::webrtc::common::value_object::{PhantomId, SocketInfo};
 
 /// Parameter for POST /data/connections API
 pub use skyway_webrtc_gateway_api::data::ConnectQuery;
+/// Parameter for POST /data/connections API
+pub use skyway_webrtc_gateway_api::data::ConnectionQueryOption;
 /// Enum represents events of DataConnection
 pub use skyway_webrtc_gateway_api::data::DataConnectionEventEnum;
 /// Id associated with DataConnection
